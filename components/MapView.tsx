@@ -13,12 +13,12 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 })
 
-// Icono personalizado para baldosas
+// Icono personalizado para baldosas (sin caracteres especiales)
 const baldosaIcon = new L.Icon({
   iconUrl: 'data:image/svg+xml;base64,' + btoa(`
     <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
       <circle cx="16" cy="16" r="14" fill="#c86b3c" stroke="#2a2520" stroke-width="2"/>
-      <text x="16" y="21" text-anchor="middle" fill="white" font-size="16" font-weight="bold">▪</text>
+      <circle cx="16" cy="16" r="4" fill="white"/>
     </svg>
   `),
   iconSize: [32, 32],
@@ -54,18 +54,17 @@ interface MapViewProps {
 }
 
 // Componente para actualizar bounds del mapa
-function MapUpdater({ baldosas, userLocation }: { baldosas: Baldosa[]; userLocation: { lat: number; lng: number } }) {
+function MapUpdater({ baldosas }: { baldosas: Baldosa[] }) {
   const map = useMap()
   
   useEffect(() => {
     if (baldosas.length > 0) {
-      const bounds = L.latLngBounds([
-        [userLocation.lat, userLocation.lng],
-        ...baldosas.map(b => [b.lat, b.lng] as [number, number])
-      ])
+      const bounds = L.latLngBounds(
+        baldosas.map(b => [b.lat, b.lng] as [number, number])
+      )
       map.fitBounds(bounds, { padding: [50, 50] })
     }
-  }, [baldosas, userLocation, map])
+  }, [baldosas, map])
   
   return null
 }
@@ -78,8 +77,9 @@ export default function MapView({ initialLocation }: MapViewProps) {
   useEffect(() => {
     async function fetchBaldosas() {
       try {
+        // Cargar TODAS las baldosas (son solo 3)
         const response = await fetch(
-          `/api/baldosas/nearby?lat=${initialLocation.lat}&lng=${initialLocation.lng}&radius=1000`
+          `/api/baldosas/nearby?lat=${initialLocation.lat}&lng=${initialLocation.lng}&radius=10000`
         )
         const data = await response.json()
         setBaldosas(data.baldosas || [])
@@ -106,15 +106,6 @@ export default function MapView({ initialLocation }: MapViewProps) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         
-        {/* Marcador de ubicación del usuario */}
-        <Marker position={[initialLocation.lat, initialLocation.lng]} icon={userIcon}>
-          <Popup>
-            <div style={{ fontFamily: 'var(--font-body)' }}>
-              <strong>Tu ubicación</strong>
-            </div>
-          </Popup>
-        </Marker>
-
         {/* Marcadores de baldosas */}
         {baldosas.map((baldosa) => (
           <Marker
@@ -151,19 +142,11 @@ export default function MapView({ initialLocation }: MapViewProps) {
                   <p style={{
                     fontSize: '0.9rem',
                     color: 'var(--color-concrete)',
-                    marginBottom: 'var(--space-xs)',
+                    marginBottom: 'var(--space-sm)',
                   }}>
                     📍 {baldosa.direccion}
                   </p>
                 )}
-                <p style={{
-                  fontSize: '0.85rem',
-                  color: 'var(--color-terracota)',
-                  fontWeight: 500,
-                  marginBottom: 'var(--space-sm)',
-                }}>
-                  A {baldosa.distancia}m de distancia
-                </p>
                 <a
                   href={`/baldosa/${baldosa.id}`}
                   style={{
@@ -185,7 +168,7 @@ export default function MapView({ initialLocation }: MapViewProps) {
           </Marker>
         ))}
 
-        <MapUpdater baldosas={baldosas} userLocation={initialLocation} />
+        <MapUpdater baldosas={baldosas} />
       </MapContainer>
 
       {/* Panel lateral con lista */}
@@ -208,7 +191,7 @@ export default function MapView({ initialLocation }: MapViewProps) {
           marginBottom: 'var(--space-md)',
           color: 'var(--color-stone)',
         }}>
-          Baldosas Cercanas
+          Baldosas de la Memoria
         </h2>
 
         {loading ? (
@@ -250,16 +233,8 @@ export default function MapView({ initialLocation }: MapViewProps) {
                   color: 'var(--color-dust)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
-                  marginBottom: 'var(--space-xs)',
                 }}>
                   {baldosa.categoria}
-                </p>
-                <p style={{
-                  fontSize: '0.9rem',
-                  color: 'var(--color-terracota)',
-                  fontWeight: 500,
-                }}>
-                  {baldosa.distancia}m
                 </p>
               </div>
             ))}

@@ -8,22 +8,22 @@ if (!MONGODB_URI) {
   process.exit(1);
 }
 
-// Baldosas de ejemplo en diferentes zonas de Buenos Aires
+// Baldosas sobre víctimas de la última dictadura militar argentina (1976-1983)
 const baldosasEjemplo = [
   {
     codigo: 'BALD-001',
-    nombre: 'Jorge Luis Borges',
-    descripcion: 'Escritor, poeta y ensayista argentino, considerado uno de los autores más destacados de la literatura del siglo XX.',
-    categoria: 'artista',
+    nombre: 'Azucena Villaflor',
+    descripcion: 'Fundadora de Madres de Plaza de Mayo. Secuestrada y desaparecida el 10 de diciembre de 1977.',
+    categoria: 'historico',
     ubicacion: {
       type: 'Point',
-      coordinates: [-58.3816, -34.6037] // Centro de Buenos Aires
+      coordinates: [-58.3816, -34.6037] // Plaza de Mayo
     },
-    direccion: 'Av. Corrientes 1500',
-    barrio: 'San Nicolás',
-    imagenUrl: 'https://via.placeholder.com/400x300?text=Jorge+Luis+Borges',
-    mensajeAR: '📚 JORGE LUIS BORGES\nEscritor y poeta',
-    infoExtendida: 'Jorge Francisco Isidoro Luis Borges (Buenos Aires, 24 de agosto de 1899 - Ginebra, 14 de junio de 1986) fue un escritor, poeta, ensayista y traductor argentino, extensamente considerado una figura clave tanto para la literatura en habla hispana como para la literatura universal.',
+    direccion: 'Plaza de Mayo',
+    barrio: 'Monserrat',
+    imagenUrl: 'https://via.placeholder.com/400x300?text=Azucena+Villaflor',
+    mensajeAR: '🕊️ AZUCENA VILLAFLOR\nMadre de Plaza de Mayo',
+    infoExtendida: 'Azucena Villaflor de De Vincenti (La Plata, 7 de abril de 1924 - desaparecida el 10 de diciembre de 1977) fue una de las fundadoras de la Asociación Madres de Plaza de Mayo. Secuestrada en una iglesia junto a otras madres y monjas francesas. Sus restos fueron identificados en 2005.',
     vecesEscaneada: 0,
     activo: true,
     createdAt: new Date(),
@@ -31,18 +31,18 @@ const baldosasEjemplo = [
   },
   {
     codigo: 'BALD-002',
-    nombre: 'Mercedes Sosa',
-    descripcion: 'Cantante folklórica argentina, conocida como "La voz de América Latina".',
-    categoria: 'artista',
+    nombre: 'Rodolfo Walsh',
+    descripcion: 'Escritor y periodista. Autor de "Carta Abierta de un Escritor a la Junta Militar". Desaparecido el 25 de marzo de 1977.',
+    categoria: 'historico',
     ubicacion: {
       type: 'Point',
       coordinates: [-58.3826, -34.6047]
     },
-    direccion: 'Av. de Mayo 1100',
-    barrio: 'Monserrat',
-    imagenUrl: 'https://via.placeholder.com/400x300?text=Mercedes+Sosa',
-    mensajeAR: '🎤 MERCEDES SOSA\nLa voz de América Latina',
-    infoExtendida: 'Haydée Mercedes Sosa, conocida simplemente como Mercedes Sosa (San Miguel de Tucumán, 9 de julio de 1935 - Buenos Aires, 4 de octubre de 2009), fue una cantante de música folklórica argentina, considerada la mayor exponente del folklore argentino.',
+    direccion: 'Av. Entre Ríos y San Juan',
+    barrio: 'San Cristóbal',
+    imagenUrl: 'https://via.placeholder.com/400x300?text=Rodolfo+Walsh',
+    mensajeAR: '✍️ RODOLFO WALSH\nEscritor y periodista',
+    infoExtendida: 'Rodolfo Jorge Walsh (Choele Choel, 9 de enero de 1927 - desaparecido el 25 de marzo de 1977) fue un escritor, periodista y traductor argentino. Un día después de enviar su "Carta Abierta de un Escritor a la Junta Militar", fue emboscado y desaparecido por un grupo de tareas de la ESMA.',
     vecesEscaneada: 0,
     activo: true,
     createdAt: new Date(),
@@ -50,56 +50,18 @@ const baldosasEjemplo = [
   },
   {
     codigo: 'BALD-003',
-    nombre: 'Carlos Gardel',
-    descripcion: 'Cantante, compositor y actor de cine, el más conocido representante del género en la historia del tango.',
-    categoria: 'artista',
-    ubicacion: {
-      type: 'Point',
-      coordinates: [-58.3850, -34.6020]
-    },
-    direccion: 'Calle Corrientes 800',
-    barrio: 'San Nicolás',
-    imagenUrl: 'https://via.placeholder.com/400x300?text=Carlos+Gardel',
-    mensajeAR: '🎵 CARLOS GARDEL\nEl rey del tango',
-    infoExtendida: 'Carlos Gardel (11 de diciembre de 1890 - 24 de junio de 1935) fue un cantante, compositor y actor de cine nacionalizado argentino. Es el más conocido representante del género en la historia del tango.',
-    vecesEscaneada: 0,
-    activo: true,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    codigo: 'BALD-004',
-    nombre: 'Julio Cortázar',
-    descripcion: 'Escritor, traductor e intelectual argentino, uno de los autores más innovadores del siglo XX.',
-    categoria: 'artista',
+    nombre: 'Nora Cortiñas',
+    descripcion: 'Madre de Plaza de Mayo - Línea Fundadora. Su hijo Gustavo fue secuestrado el 15 de abril de 1977.',
+    categoria: 'historico',
     ubicacion: {
       type: 'Point',
       coordinates: [-58.3800, -34.6050]
     },
-    direccion: 'Av. Belgrano 1200',
-    barrio: 'Monserrat',
-    imagenUrl: 'https://via.placeholder.com/400x300?text=Julio+Cortazar',
-    mensajeAR: '✍️ JULIO CORTÁZAR\nEscritor y poeta',
-    infoExtendida: 'Julio Florencio Cortázar (Ixelles, 26 de agosto de 1914 - París, 12 de febrero de 1984) fue un escritor, traductor e intelectual argentino de ascendencia francesa, considerado uno de los autores más innovadores y originales de su tiempo.',
-    vecesEscaneada: 0,
-    activo: true,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    codigo: 'BALD-005',
-    nombre: 'Ernesto Sabato',
-    descripcion: 'Escritor, ensayista, físico y pintor argentino.',
-    categoria: 'artista',
-    ubicacion: {
-      type: 'Point',
-      coordinates: [-58.3830, -34.6060]
-    },
-    direccion: 'Av. de Mayo 900',
-    barrio: 'Monserrat',
-    imagenUrl: 'https://via.placeholder.com/400x300?text=Ernesto+Sabato',
-    mensajeAR: '📖 ERNESTO SÁBATO\nEscritor y ensayista',
-    infoExtendida: 'Ernesto Sábato (Rojas, 24 de junio de 1911 - Santos Lugares, 30 de abril de 2011) fue un escritor, ensayista, físico y pintor argentino. Autor de novelas como El túnel, Sobre héroes y tumbas y Abaddón el exterminador.',
+    direccion: 'Diagonal Norte 600',
+    barrio: 'San Nicolás',
+    imagenUrl: 'https://via.placeholder.com/400x300?text=Nora+Cortiñas',
+    mensajeAR: '🤍 NORA CORTIÑAS\nMadre de Plaza de Mayo',
+    infoExtendida: 'Nora Cortiñas (Buenos Aires, 20 de agosto de 1930) es una activista argentina de derechos humanos, integrante de Madres de Plaza de Mayo Línea Fundadora. Su hijo Gustavo fue secuestrado y desaparecido el 15 de abril de 1977 a los 24 años. Desde entonces lucha incansablemente por Memoria, Verdad y Justicia.',
     vecesEscaneada: 0,
     activo: true,
     createdAt: new Date(),
@@ -107,21 +69,21 @@ const baldosasEjemplo = [
   }
 ];
 
-// Cluster de ejemplo para estas baldosas
+// Cluster único para las 3 baldosas
 const clusterEjemplo = {
   codigo: 'CLUSTER-001',
   centro: {
     type: 'Point',
-    coordinates: [-58.3816, -34.6037]
+    coordinates: [-58.3816, -34.6037] // Plaza de Mayo
   },
   radio: 200,
-  barrio: 'Centro',
-  mindFileUrl: null, // Por ahora null, se llenará cuando se compile
+  barrio: 'Centro Histórico',
+  mindFileUrl: '/storage/clusters/cluster-001.mind', // Un solo archivo .mind fijo
   version: 1,
-  baldosasCount: 5,
+  baldosasCount: 3,
   maxBaldosas: 10,
-  necesitaRecompilacion: true,
-  ultimaCompilacion: null,
+  necesitaRecompilacion: false, // Ya está compilado
+  ultimaCompilacion: new Date(),
   activo: true,
   createdAt: new Date(),
   updatedAt: new Date()
@@ -174,7 +136,8 @@ async function seed() {
     console.log('📊 Resumen:');
     console.log(`   • Baldosas: ${Object.keys(baldosasResult.insertedIds).length}`);
     console.log(`   • Clusters: 1`);
-    console.log(`   • Ubicación: Centro de Buenos Aires\n`);
+    console.log(`   • Tema: Víctimas de la última dictadura militar (1976-1983)`);
+    console.log(`   • Ubicación: Centro Histórico de Buenos Aires\n`);
     
   } catch (error) {
     console.error('❌ Error durante el seed:', error);

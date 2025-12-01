@@ -2,6 +2,14 @@
 
 import { useEffect, useState, useRef } from 'react'
 
+// Declaraciones de tipos para window
+declare global {
+  interface Window {
+    AFRAME: any
+    MINDAR: any
+  }
+}
+
 interface Baldosa {
   id: string
   nombre: string
@@ -10,64 +18,84 @@ interface Baldosa {
   descripcion?: string
   imagenUrl: string
   audioUrl?: string
+  targetIndex: number
 }
 
 export default function ARScanner() {
   const [currentBaldosa, setCurrentBaldosa] = useState<Baldosa | null>(null)
   const [isScanning, setIsScanning] = useState(false)
-  const [nearbyBaldosas, setNearbyBaldosas] = useState<any[]>([])
-  const [currentCluster, setCurrentCluster] = useState<any>(null)
+  const [baldosas, setBaldosas] = useState<Baldosa[]>([])
+  const [scriptsLoaded, setScriptsLoaded] = useState(false)
+  const [loadingScripts, setLoadingScripts] = useState(true)
   const sceneRef = useRef<any>(null)
+
+  useEffect(() => {
+    // Cargar las 3 baldosas fijas (sin geolocalización)
+    async function fetchBaldosas() {
+      try {
+        const response = await fetch(
+          `/api/baldosas/nearby?lat=-34.6037&lng=-58.3816&radius=10000`
+        )
+        const data = await response.json()
+        setBaldosas(data.baldosas || [])
+      } catch (error) {
+        console.error('Error cargando baldosas:', error)
+      }
+    }
+
+    fetchBaldosas()
+  }, [])
 
   useEffect(() => {
     // Cargar scripts de A-Frame y MindAR
     const loadScripts = async () => {
-      // A-Frame
-      if (!document.querySelector('script[src*="aframe"]')) {
-        const aframeScript = document.createElement('script')
-        aframeScript.src = 'https://aframe.io/releases/1.4.1/aframe.min.js'
-        document.head.appendChild(aframeScript)
-        
-        await new Promise(resolve => {
-          aframeScript.onload = resolve
-        })
-      }
+      try {
+        // Verificar si ya están cargados
+        if (window.AFRAME && window.MINDAR) {
+          setScriptsLoaded(true)
+          setLoadingScripts(false)
+          return
+        }
 
-      // MindAR
-      if (!document.querySelector('script[src*="mindar-image-aframe"]')) {
-        const mindarScript = document.createElement('script')
-        mindarScript.src = 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js'
-        document.head.appendChild(mindarScript)
-        
-        await new Promise(resolve => {
-          mindarScript.onload = resolve
-        })
-      }
-
-      // Obtener ubicación y baldosas cercanas
-      if ('geolocation' in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            try {
-              const response = await fetch(
-                `/api/baldosas/nearby?lat=${position.coords.latitude}&lng=${position.coords.longitude}&radius=500`
-              )
-              const data = await response.json()
-              
-              setNearbyBaldosas(data.baldosas || [])
-              
-              if (data.clusters && data.clusters.length > 0) {
-                const closestCluster = data.clusters[0]
-                setCurrentCluster(closestCluster)
-              }
-            } catch (error) {
-              console.error('Error cargando baldosas:', error)
-            }
-          },
-          (error) => {
-            console.error('Error obteniendo ubicación:', error)
+        // Cargar A-Frame
+        await new Promise<void>((resolve, reject) => {
+          if (document.querySelector('script[src*="aframe"]')) {
+            resolve()
+            return
           }
-        )
+          
+          const aframeScript = document.createElement('script')
+          aframeScript.src = 'https://aframe.io/releases/1.4.1/aframe.min.js'
+          aframeScript.onload = () => resolve()
+          aframeScript.onerror = () => reject(new Error('Error cargando A-Frame'))
+          document.head.appendChild(aframeScript)
+        })
+
+        // Pequeña pausa para que A-Frame inicialice
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        // Cargar MindAR
+        await new Promise<void>((resolve, reject) => {
+          if (document.querySelector('script[src*="mindar"]')) {
+            resolve()
+            return
+          }
+          
+          const mindarScript = document.createElement('script')
+          mindarScript.src = 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js'
+          mindarScript.onload = () => resolve()
+          mindarScript.onerror = () => reject(new Error('Error cargando MindAR'))
+          document.head.appendChild(mindarScript)
+        })
+
+        // Pausa adicional para que MindAR inicialice
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        setScriptsLoaded(true)
+        setLoadingScripts(false)
+      } catch (error) {
+        console.error('Error cargando scripts:', error)
+        setLoadingScripts(false)
       }
     }
 
@@ -75,10 +103,14 @@ export default function ARScanner() {
 
     return () => {
       // Cleanup
-      if (sceneRef.current) {
-        const scene = sceneRef.current
-        if (scene.systems && scene.systems['mindar-image-system']) {
-          scene.systems['mindar-image-system'].stop()
+      if (sceneRef.current && sceneRef.current.systems) {
+        try {
+          const mindSystem = sceneRef.current.systems['mindar-image-system']
+          if (mindSystem && mindSystem.stop) {
+            mindSystem.stop()
+          }
+        } catch (e) {
+          console.error('Error en cleanup:', e)
         }
       }
     }
@@ -98,6 +130,60 @@ export default function ARScanner() {
   const handleTargetLost = () => {
     setCurrentBaldosa(null)
     setIsScanning(false)
+  }
+
+  if (loadingScripts) {
+    return (
+      <div style={{
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column',
+        gap: 'var(--space-md)',
+        background: 'var(--color-stone)',
+        color: 'var(--color-parchment)',
+      }}>
+        <div className="loading" style={{ 
+          borderColor: 'var(--color-parchment)', 
+          borderTopColor: 'var(--color-terracota)' 
+        }} />
+        <p>Cargando sistema AR...</p>
+      </div>
+    )
+  }
+
+  if (!scriptsLoaded) {
+    return (
+      <div style={{
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 'var(--space-lg)',
+      }}>
+        <div className="container" style={{ textAlign: 'center', maxWidth: '600px' }}>
+          <h1 style={{ color: 'var(--color-terracota)' }}>
+            Error al cargar AR
+          </h1>
+          <p style={{ marginTop: 'var(--space-md)' }}>
+            No se pudieron cargar las librerías necesarias. Por favor, recarga la página.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="btn"
+            style={{
+              marginTop: 'var(--space-md)',
+              background: 'var(--color-terracota)',
+              color: 'white',
+              border: 'none',
+            }}
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -130,28 +216,17 @@ export default function ARScanner() {
             opacity: 0.9,
             marginBottom: 'var(--space-md)',
           }}>
-            Cuando encuentres una baldosa cerca, enfócala con tu cámara para ver su historia
+            Cuando encuentres una baldosa, enfócala con tu cámara para ver su historia
           </p>
-          {nearbyBaldosas.length > 0 && (
+          {baldosas.length > 0 && (
             <div>
               <p style={{
                 fontSize: '0.9rem',
                 color: 'var(--color-terracota)',
                 marginBottom: 'var(--space-xs)',
               }}>
-                {nearbyBaldosas.length} baldosa{nearbyBaldosas.length !== 1 ? 's' : ''} cerca:
+                {baldosas.length} baldosa{baldosas.length !== 1 ? 's' : ''} disponibles
               </p>
-              <div style={{
-                maxHeight: '150px',
-                overflowY: 'auto',
-                fontSize: '0.85rem',
-              }}>
-                {nearbyBaldosas.slice(0, 5).map(b => (
-                  <div key={b.id} style={{ marginBottom: 'var(--space-xs)' }}>
-                    • {b.nombre} ({b.distancia}m)
-                  </div>
-                ))}
-              </div>
             </div>
           )}
         </div>
@@ -197,29 +272,13 @@ export default function ARScanner() {
               {currentBaldosa.descripcion}
             </p>
           )}
-          <a
-            href={`/baldosa/${currentBaldosa.id}`}
-            style={{
-              display: 'inline-block',
-              marginTop: 'var(--space-sm)',
-              padding: 'var(--space-sm) var(--space-md)',
-              background: 'var(--color-terracota)',
-              color: 'white',
-              textDecoration: 'none',
-              borderRadius: '4px',
-              fontSize: '0.9rem',
-              fontWeight: 500,
-            }}
-          >
-            Ver información completa →
-          </a>
         </div>
       )}
 
       {/* Escena A-Frame */}
       <a-scene
         ref={sceneRef}
-        mindar-image={currentCluster?.mindFileUrl ? `imageTargetSrc: ${currentCluster.mindFileUrl}; autoStart: true; uiScanning: no; uiError: no;` : ''}
+        mindar-image="imageTargetSrc: /storage/clusters/cluster-001.mind; autoStart: true; uiScanning: no; uiError: no;"
         color-space="sRGB"
         renderer="colorManagement: true, physicallyCorrectLights"
         vr-mode-ui="enabled: false"
@@ -228,8 +287,8 @@ export default function ARScanner() {
       >
         <a-camera position="0 0 0" look-controls="enabled: false" />
 
-        {nearbyBaldosas.map((baldosa, index) => {
-          if (!baldosa.targetIndex && baldosa.targetIndex !== 0) return null
+        {baldosas.map((baldosa) => {
+          if (baldosa.targetIndex === undefined) return null
           
           return (
             <a-entity

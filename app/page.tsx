@@ -34,8 +34,8 @@ export default function Home() {
             margin: '0 auto var(--space-xl)',
             lineHeight: 1.8,
           }}>
-            Descubre las historias grabadas en las baldosas de Buenos Aires. 
-            Cada placa es un testimonio de memoria colectiva.
+            Recorre las baldosas de la memoria que honran a las víctimas de la última dictadura militar argentina (1976-1983). 
+            Cada baldosa es un testimonio de nuestra historia.
           </p>
 
           {/* Estadísticas */}
@@ -56,7 +56,7 @@ export default function Home() {
                 fontWeight: 700,
                 color: 'var(--color-terracota)',
               }}>
-                3000+
+                30.000
               </div>
               <div style={{
                 fontSize: '0.9rem',
@@ -65,7 +65,7 @@ export default function Home() {
                 letterSpacing: '0.1em',
                 marginTop: 'var(--space-xs)',
               }}>
-                Baldosas
+                Desaparecidos
               </div>
             </div>
             
@@ -85,7 +85,7 @@ export default function Home() {
                 letterSpacing: '0.1em',
                 marginTop: 'var(--space-xs)',
               }}>
-                Realidad Aumentada
+                Tecnología
               </div>
             </div>
             
@@ -96,7 +96,7 @@ export default function Home() {
                 fontWeight: 700,
                 color: 'var(--color-brass)',
               }}>
-                1976
+                Nunca Más
               </div>
               <div style={{
                 fontSize: '0.9rem',
@@ -147,7 +147,7 @@ export default function Home() {
             fontSize: '1.5rem',
             marginBottom: 'var(--space-md)',
           }}>
-            ¿Cómo funciona?
+            Memoria, Verdad y Justicia
           </h2>
           
           <div style={{
@@ -174,10 +174,10 @@ export default function Home() {
                 1
               </div>
               <h3 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-xs)' }}>
-                Explora el Mapa
+                Descubre las Baldosas
               </h3>
               <p style={{ color: 'var(--color-dust)', fontSize: '0.95rem' }}>
-                Encuentra baldosas cercanas a tu ubicación en Buenos Aires
+                Explora el mapa con las baldosas que honran a víctimas de la dictadura
               </p>
             </div>
 
@@ -198,10 +198,10 @@ export default function Home() {
                 2
               </div>
               <h3 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-xs)' }}>
-                Escanea con AR
+                Escanea en Realidad Aumentada
               </h3>
               <p style={{ color: 'var(--color-dust)', fontSize: '0.95rem' }}>
-                Usa tu cámara para descubrir información aumentada sobre cada baldosa
+                Usa tu cámara para ver información sobre cada persona homenajeada
               </p>
             </div>
 
@@ -222,10 +222,10 @@ export default function Home() {
                 3
               </div>
               <h3 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-xs)' }}>
-                Aprende Historia
+                Mantén Viva la Memoria
               </h3>
               <p style={{ color: 'var(--color-dust)', fontSize: '0.95rem' }}>
-                Conoce las historias de quienes construyeron nuestra identidad
+                Conoce las historias de quienes lucharon por la libertad y la justicia
               </p>
             </div>
           </div>
