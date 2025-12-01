@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '../../../lib/mongodb';
-import Baldosa from '../../../models/Baldosa';
-import Cluster from '../../../models/Cluster';
-import { isValidCoordinates } from '../../../lib/geo';
+import connectDB from '../../../../lib/mongodb';
+import Baldosa from '../../../../models/Baldosa';
+import Cluster from '../../../../models/Cluster';
+import { isValidCoordinates } from '../../../../lib/geo';
 
 export async function GET(request: NextRequest) {
   try {

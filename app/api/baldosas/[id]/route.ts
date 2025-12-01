@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import Baldosa from '@/models/Baldosa';
+import connectDB from '../../../../lib/mongodb';
+import Baldosa from '../../../../models/Baldosa';
 
 export async function GET(
   request: NextRequest,
