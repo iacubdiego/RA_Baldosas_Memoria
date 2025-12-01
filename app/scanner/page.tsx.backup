@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 
 const ARScanner = dynamic(
-  () => import('../../components/ARScanner'),
+  () => import('@/components/ARScanner'),
   { 
     ssr: false,
     loading: () => (

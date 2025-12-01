@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 
 // Importar Leaflet dinámicamente para evitar SSR issues
 const MapComponent = dynamic(
-  () => import('../../components/MapView'),
+  () => import('@/components/MapView'),
   { 
     ssr: false,
     loading: () => (
