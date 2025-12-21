@@ -11,7 +11,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: '#2a2520',
+  themeColor: '#1a2a3a',
 }
 
 export default function RootLayout({
@@ -34,7 +34,8 @@ export default function RootLayout({
           position: 'sticky',
           top: 0,
           zIndex: 100,
-          borderBottom: '2px solid var(--color-terracota)',
+          borderBottom: '2px solid var(--color-primary)',
+          boxShadow: 'var(--shadow-medium)',
         }}>
           <div style={{
             maxWidth: '1200px',
@@ -49,6 +50,7 @@ export default function RootLayout({
               fontWeight: 700,
               color: 'var(--color-parchment)',
               letterSpacing: '-0.02em',
+              transition: 'opacity var(--transition-fast)',
             }}>
               Baldosas por la Memoria
             </a>
@@ -62,6 +64,9 @@ export default function RootLayout({
                 color: 'var(--color-parchment)',
                 fontWeight: 500,
                 fontSize: '0.95rem',
+                padding: '0.5rem 1rem',
+                borderRadius: '4px',
+                transition: 'background var(--transition-fast)',
               }}>
                 Mapa
               </a>
@@ -69,6 +74,9 @@ export default function RootLayout({
                 color: 'var(--color-parchment)',
                 fontWeight: 500,
                 fontSize: '0.95rem',
+                padding: '0.5rem 1rem',
+                borderRadius: '4px',
+                transition: 'background var(--transition-fast)',
               }}>
                 Escanear
               </a>
@@ -83,20 +91,23 @@ export default function RootLayout({
           color: 'var(--color-dust)',
           padding: 'var(--space-xl) var(--space-md) var(--space-lg)',
           marginTop: 'var(--space-xl)',
-          borderTop: '2px solid var(--color-terracota)',
+          borderTop: '2px solid var(--color-primary)',
         }}>
           <div className="container" style={{ textAlign: 'center' }}>
             <p style={{
               fontFamily: 'var(--font-display)',
               fontSize: '0.9rem',
               margin: 0,
+              color: 'var(--color-parchment)',
+              opacity: 0.9,
             }}>
               Un proyecto de memoria colectiva y cooperativismo
             </p>
             <p style={{
               fontSize: '0.85rem',
               marginTop: 'var(--space-xs)',
-              opacity: 0.7,
+              opacity: 0.6,
+              color: 'var(--color-parchment)',
             }}>
               © {new Date().getFullYear()} Baldosas por la Memoria
             </p>
