@@ -197,7 +197,7 @@ export default function Home() {
                   Escanea en Realidad Aumentada
                 </h3>
                 <p style={{ color: 'var(--color-dust)', fontSize: '0.95rem', marginBottom: 0 }}>
-                  Usa tu cámara para ver información sobre cada persona homenajeada
+                  Usa tu cámara para ver información de la baldosa y su significado
                 </p>
               </div>
 
