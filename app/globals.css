@@ -116,21 +116,26 @@ button:active, .btn:active {
 .hero-background {
   position: relative;
   min-height: calc(100vh - 200px);
-  background: 
-    linear-gradient(
-      135deg, 
-      rgba(240, 244, 248, 0.92) 0%, 
-      rgba(240, 244, 248, 0.85) 50%,
-      rgba(240, 244, 248, 0.92) 100%
-    ),
-    url('/panuelo-bg.jpeg');
-  background-size: cover, 350px 350px;
-  background-position: center, center;
-  background-repeat: no-repeat, repeat;
+  background-color: rgba(240, 244, 248, 1);
   overflow: hidden;
 }
 
 .hero-background::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('/panuelo-bg.jpeg');
+  background-size: 150px 150px;
+  background-repeat: space;
+  opacity: 0.08;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-background::after {
   content: '';
   position: absolute;
   top: 0;
@@ -329,8 +334,8 @@ button:active, .btn:active {
     --space-xl: 3rem;
   }
   
-  .hero-background {
-    background-size: cover, 250px 250px;
+  .hero-background::before {
+    background-size: 100px 100px;
   }
 }
 

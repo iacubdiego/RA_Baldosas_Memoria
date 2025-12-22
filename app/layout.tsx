@@ -55,16 +55,26 @@ export default function RootLayout({
               letterSpacing: '-0.02em',
               transition: 'opacity var(--transition-fast)',
             }}>
-              <img 
-                src="/panuelo-bg.jpeg" 
-                alt="Pañuelo" 
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  objectFit: 'contain',
-                  borderRadius: '4px',
-                }}
-              />
+              <span style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '42px',
+                  height: '42px',
+                  background: 'white',
+                  borderRadius: '8px',
+                  padding: '4px',
+                }}>
+                <img 
+                  src="/panuelo-bg.jpeg" 
+                  alt="Pañuelo" 
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                  }}
+                />
+              </span>
               Baldosas por la Memoria
             </a>
             
