@@ -45,6 +45,9 @@ export default function RootLayout({
             alignItems: 'center',
           }}>
             <a href="/" style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
               fontFamily: 'var(--font-display)',
               fontSize: '1.5rem',
               fontWeight: 700,
@@ -52,6 +55,16 @@ export default function RootLayout({
               letterSpacing: '-0.02em',
               transition: 'opacity var(--transition-fast)',
             }}>
+              <img 
+                src="/panuelo-bg.jpeg" 
+                alt="Pañuelo" 
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  objectFit: 'contain',
+                  borderRadius: '4px',
+                }}
+              />
               Baldosas por la Memoria
             </a>
             

@@ -1,46 +1,15 @@
 import Link from 'next/link'
 
-// SVG del pañuelo de las Abuelas de Plaza de Mayo
+// Imagen del pañuelo de las Abuelas de Plaza de Mayo
 const PanueloIcon = () => (
-  <svg 
-    viewBox="0 0 100 100" 
+  <img 
+    src="/panuelo-bg.jpeg" 
+    alt="Pañuelo de las Abuelas de Plaza de Mayo"
     className="panuelo-icon animate-float"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    {/* Pañuelo triangular */}
-    <path 
-      d="M50 20 L85 80 L15 80 Z" 
-      fill="none" 
-      stroke="#2563eb" 
-      strokeWidth="3"
-      strokeLinejoin="round"
-    />
-    {/* Nudo decorativo */}
-    <ellipse 
-      cx="50" 
-      cy="75" 
-      rx="12" 
-      ry="6" 
-      fill="none" 
-      stroke="#2563eb" 
-      strokeWidth="2"
-    />
-    {/* Líneas del pañuelo */}
-    <path 
-      d="M38 80 Q35 90 30 95" 
-      fill="none" 
-      stroke="#2563eb" 
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <path 
-      d="M62 80 Q65 90 70 95" 
-      fill="none" 
-      stroke="#2563eb" 
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-  </svg>
+    style={{
+      objectFit: 'contain',
+    }}
+  />
 )
 
 export default function Home() {

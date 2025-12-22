@@ -124,7 +124,7 @@ button:active, .btn:active {
       rgba(240, 244, 248, 0.92) 100%
     ),
     url('/panuelo-bg.jpeg');
-  background-size: cover, 200px 200px;
+  background-size: cover, 350px 350px;
   background-position: center, center;
   background-repeat: no-repeat, repeat;
   overflow: hidden;
@@ -330,7 +330,7 @@ button:active, .btn:active {
   }
   
   .hero-background {
-    background-size: cover, 120px 120px;
+    background-size: cover, 250px 250px;
   }
 }
 
