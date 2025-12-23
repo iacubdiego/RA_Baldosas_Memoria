@@ -93,6 +93,15 @@ export default function Home() {
               }}>
                 Escanear Baldosa
               </Link>
+
+              <Link href="/colaborar" className="btn hover-lift" style={{
+                padding: 'var(--space-md) var(--space-lg)',
+                fontSize: '1rem',
+                borderColor: 'var(--color-accent)',
+                color: 'var(--color-accent)',
+              }}>
+                Colaborar
+              </Link>
             </div>
           </div>
 

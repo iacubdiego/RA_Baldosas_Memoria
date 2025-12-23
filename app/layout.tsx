@@ -103,6 +103,17 @@ export default function RootLayout({
               }}>
                 Escanear
               </a>
+              <a href="/colaborar" style={{
+                color: 'var(--color-parchment)',
+                fontWeight: 500,
+                fontSize: '0.95rem',
+                padding: '0.5rem 1rem',
+                borderRadius: '4px',
+                background: 'rgba(255,255,255,0.1)',
+                transition: 'background var(--transition-fast)',
+              }}>
+                Colaborar
+              </a>
             </div>
           </div>
         </nav>
