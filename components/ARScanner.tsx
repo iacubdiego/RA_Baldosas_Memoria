@@ -394,7 +394,7 @@ export default function ARScanner() {
                 align="center"
                 width="1.5"
                 position="0 0.35 0.01"
-                font="roboto"
+                
               />
               
               {/* Categoría */}
@@ -404,7 +404,7 @@ export default function ARScanner() {
                 align="center"
                 width="1"
                 position="0 0.2 0.01"
-                font="roboto"
+                
               />
               
               {/* Mensaje AR */}
@@ -415,7 +415,7 @@ export default function ARScanner() {
                 width="1.2"
                 position="0 0.08 0.01"
                 wrap-count="35"
-                font="roboto"
+                
               />
             </a-entity>
           )
