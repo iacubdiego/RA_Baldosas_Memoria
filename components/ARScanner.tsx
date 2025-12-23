@@ -135,7 +135,9 @@ export default function ARScanner() {
         })
       }
 
-      if (scene.hasLoaded) {
+      // Cast to any para acceder a propiedades de A-Frame
+      const aframeScene = scene as any
+      if (aframeScene.hasLoaded) {
         onSceneLoaded()
       } else {
         scene.addEventListener('loaded', onSceneLoaded)
