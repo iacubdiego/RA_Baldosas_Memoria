@@ -72,7 +72,7 @@ export default function ARScanner() {
         if (!window.MINDAR) {
           await new Promise<void>((resolve, reject) => {
             const script = document.createElement('script')
-            script.src = 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js'
+            script.src = 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js'
             script.onload = () => {
               console.log('MindAR cargado')
               resolve()

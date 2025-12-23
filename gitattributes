@@ -1,0 +1,10 @@
+# Treat .mind files as binary
+*.mind binary
+
+# Other binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
