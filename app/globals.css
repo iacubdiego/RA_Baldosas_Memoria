@@ -99,6 +99,7 @@ button, .btn {
   font-size: 0.875rem;
   position: relative;
   overflow: hidden;
+  border-radius: 6px;
 }
 
 button:hover, .btn:hover {
@@ -112,7 +113,121 @@ button:active, .btn:active {
   transform: translateY(0);
 }
 
-/* Fondo con pañuelo pattern */
+/* ==================== NAVBAR ==================== */
+.navbar {
+  background: var(--color-stone);
+  color: var(--color-parchment);
+  padding: var(--space-sm) var(--space-md);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 2px solid var(--color-primary);
+  box-shadow: var(--shadow-medium);
+}
+
+.navbar-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-logo-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: var(--color-parchment);
+  transition: opacity var(--transition-fast);
+}
+
+.navbar-logo-link:hover {
+  opacity: 0.9;
+  color: var(--color-parchment);
+}
+
+.navbar-logo {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+
+.navbar-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.navbar-links {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.navbar-link {
+  color: var(--color-parchment);
+  font-weight: 500;
+  font-size: 0.95rem;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: background var(--transition-fast);
+  text-decoration: none;
+}
+
+.navbar-link:hover {
+  background: rgba(255,255,255,0.1);
+  color: var(--color-parchment);
+}
+
+.navbar-link-highlight {
+  background: rgba(255,255,255,0.1);
+}
+
+/* Navbar responsive */
+@media (max-width: 768px) {
+  .navbar {
+    padding: var(--space-sm);
+  }
+  
+  .navbar-container {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+  
+  .navbar-brand {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .navbar-title {
+    font-size: 1.25rem;
+  }
+  
+  .navbar-logo {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .navbar-links {
+    width: 100%;
+    justify-content: center;
+    gap: var(--space-xs);
+  }
+  
+  .navbar-link {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+  }
+}
+
+/* ==================== HERO BACKGROUND ==================== */
 .hero-background {
   position: relative;
   min-height: calc(100vh - 200px);
@@ -162,7 +277,7 @@ button:active, .btn:active {
   z-index: 9999;
 }
 
-/* Animaciones de entrada */
+/* ==================== ANIMACIONES ==================== */
 @keyframes fadeInUp {
   from {
     opacity: 0;

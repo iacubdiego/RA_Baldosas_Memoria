@@ -443,6 +443,23 @@
       // Actualizar contador
       badgeCount.textContent = `${Object.keys(baldosasDB).length} baldosas en el sistema`;
 
+      // Ocultar instrucciones después de 3 segundos
+      let instructionsTimeout = null;
+      function ocultarInstrucciones() {
+        instructions.style.opacity = '0';
+        instructions.style.transition = 'opacity 0.5s ease-out';
+        setTimeout(() => {
+          instructions.style.display = 'none';
+        }, 500);
+      }
+      
+      function mostrarInstrucciones() {
+        instructions.style.display = 'block';
+        instructions.style.opacity = '1';
+        clearTimeout(instructionsTimeout);
+        instructionsTimeout = setTimeout(ocultarInstrucciones, 3000);
+      }
+
       // Mostrar notificación
       function mostrarToast(mensaje, duracion = 3000) {
         const toast = document.createElement('div');
@@ -473,7 +490,7 @@
       // Ocultar info
       function ocultarInfoBaldosa() {
         infoPanel.style.display = 'none';
-        instructions.style.display = 'block';
+        // No volver a mostrar instrucciones cuando se pierde el target
       }
 
       // Eventos de la escena AR
@@ -483,6 +500,8 @@
         console.log('✅ Escena AR cargada');
         loading.style.display = 'none';
         mostrarToast('Cámara lista. Buscá una baldosa.');
+        // Iniciar timer para ocultar instrucciones
+        instructionsTimeout = setTimeout(ocultarInstrucciones, 3000);
       });
 
       sceneEl.addEventListener('arError', () => {

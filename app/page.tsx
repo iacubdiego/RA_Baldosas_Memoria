@@ -3,7 +3,7 @@ import Link from 'next/link'
 // Imagen del pañuelo de las Abuelas de Plaza de Mayo
 const PanueloIcon = () => (
   <img 
-    src="/panuelo-bg.jpeg" 
+    src="/panuelo-bg-sin-fondo.png" 
     alt="Pañuelo de las Abuelas de Plaza de Mayo"
     className="panuelo-icon animate-float"
     style={{

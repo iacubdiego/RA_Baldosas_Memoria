@@ -27,91 +27,29 @@ export default function RootLayout({
       <body>
         <div className="grain-overlay" />
         
-        <nav style={{
-          background: 'var(--color-stone)',
-          color: 'var(--color-parchment)',
-          padding: 'var(--space-sm) var(--space-md)',
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-          borderBottom: '2px solid var(--color-primary)',
-          boxShadow: 'var(--shadow-medium)',
-        }}>
-          <div style={{
-            maxWidth: '1200px',
-            margin: '0 auto',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}>
-            <a href="/" style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              fontFamily: 'var(--font-display)',
-              fontSize: '1.5rem',
-              fontWeight: 700,
-              color: 'var(--color-parchment)',
-              letterSpacing: '-0.02em',
-              transition: 'opacity var(--transition-fast)',
-            }}>
-              <span style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '42px',
-                  height: '42px',
-                  background: 'white',
-                  borderRadius: '8px',
-                  padding: '4px',
-                }}>
+        <nav className="navbar">
+          <div className="navbar-container">
+            {/* Fila superior: Logo y título */}
+            <div className="navbar-brand">
+              <a href="/" className="navbar-logo-link">
                 <img 
-                  src="/panuelo-bg.jpeg" 
+                  src="/panuelo-bg-sin-fondo.png" 
                   alt="Pañuelo" 
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                  }}
+                  className="navbar-logo"
                 />
-              </span>
-              Baldosas por la Memoria
-            </a>
+                <span className="navbar-title">Baldosas por la Memoria</span>
+              </a>
+            </div>
             
-            <div style={{
-              display: 'flex',
-              gap: 'var(--space-md)',
-              alignItems: 'center',
-            }}>
-              <a href="/mapa" style={{
-                color: 'var(--color-parchment)',
-                fontWeight: 500,
-                fontSize: '0.95rem',
-                padding: '0.5rem 1rem',
-                borderRadius: '4px',
-                transition: 'background var(--transition-fast)',
-              }}>
+            {/* Fila inferior en mobile: Links de navegación */}
+            <div className="navbar-links">
+              <a href="/mapa" className="navbar-link">
                 Mapa
               </a>
-              <a href="/scanner" style={{
-                color: 'var(--color-parchment)',
-                fontWeight: 500,
-                fontSize: '0.95rem',
-                padding: '0.5rem 1rem',
-                borderRadius: '4px',
-                transition: 'background var(--transition-fast)',
-              }}>
+              <a href="/scanner" className="navbar-link">
                 Escanear
               </a>
-              <a href="/colaborar" style={{
-                color: 'var(--color-parchment)',
-                fontWeight: 500,
-                fontSize: '0.95rem',
-                padding: '0.5rem 1rem',
-                borderRadius: '4px',
-                background: 'rgba(255,255,255,0.1)',
-                transition: 'background var(--transition-fast)',
-              }}>
+              <a href="/colaborar" className="navbar-link navbar-link-highlight">
                 Colaborar
               </a>
             </div>
