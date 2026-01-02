@@ -1,50 +1,30 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import dynamic from 'next/dynamic'
-
-const ARScanner = dynamic(
-  () => import('@/components/ARScanner'),
-  { 
-    ssr: false,
-    loading: () => (
-      <div style={{
-        height: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'var(--color-stone)',
-        color: 'var(--color-parchment)',
-      }}>
-        <div className="stack" style={{ alignItems: 'center' }}>
-          <div className="loading" style={{ borderColor: 'var(--color-parchment)', borderTopColor: 'var(--color-terracota)' }} />
-          <p>Iniciando cámara AR...</p>
-        </div>
-      </div>
-    )
-  }
-)
 
 export default function ScannerPage() {
-  const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null)
-  const [error, setError] = useState<string>('')
+  const [checking, setChecking] = useState(true)
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null)
 
   useEffect(() => {
-    async function checkCameraPermission() {
+    // Verificar permiso de cámara antes de redirigir
+    async function checkCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true })
         stream.getTracks().forEach(track => track.stop())
-        setPermissionGranted(true)
+        setHasPermission(true)
+        // Redirigir al scanner HTML estático
+        window.location.href = '/scanner.html'
       } catch (err) {
-        setError('Necesitamos acceso a tu cámara para escanear baldosas')
-        setPermissionGranted(false)
+        setHasPermission(false)
+        setChecking(false)
       }
     }
 
-    checkCameraPermission()
+    checkCamera()
   }, [])
 
-  if (permissionGranted === null) {
+  if (checking && hasPermission === null) {
     return (
       <div style={{
         height: '100vh',
@@ -53,14 +33,19 @@ export default function ScannerPage() {
         justifyContent: 'center',
         flexDirection: 'column',
         gap: 'var(--space-md)',
+        background: 'var(--color-stone)',
+        color: 'var(--color-parchment)',
       }}>
-        <div className="loading" />
-        <p style={{ color: 'var(--color-dust)' }}>Verificando permisos...</p>
+        <div className="loading" style={{ 
+          borderColor: 'var(--color-parchment)', 
+          borderTopColor: 'var(--color-primary)' 
+        }} />
+        <p>Verificando permisos de cámara...</p>
       </div>
     )
   }
 
-  if (!permissionGranted) {
+  if (!hasPermission) {
     return (
       <div style={{
         height: '100vh',
@@ -68,32 +53,64 @@ export default function ScannerPage() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: 'var(--space-lg)',
+        background: 'var(--color-parchment)',
       }}>
-        <div className="container" style={{ textAlign: 'center', maxWidth: '600px' }}>
-          <h1 style={{ marginBottom: 'var(--space-md)', color: 'var(--color-terracota)' }}>
-            📷 Permiso de Cámara Requerido
+        <div className="container" style={{ textAlign: 'center', maxWidth: '500px' }}>
+          <div style={{ fontSize: '4rem', marginBottom: 'var(--space-md)' }}>📷</div>
+          <h1 style={{ 
+            color: 'var(--color-stone)', 
+            marginBottom: 'var(--space-md)',
+            fontSize: '1.8rem',
+          }}>
+            Permiso de Cámara Requerido
           </h1>
           <p style={{
-            fontSize: '1.1rem',
             color: 'var(--color-concrete)',
             marginBottom: 'var(--space-lg)',
+            lineHeight: 1.6,
           }}>
-            {error}
+            Para escanear las baldosas necesitamos acceso a tu cámara. 
+            Por favor, permite el acceso en la configuración de tu navegador.
           </p>
-          <p style={{ color: 'var(--color-dust)', marginBottom: 'var(--space-md)' }}>
-            Por favor, permite el acceso a la cámara en la configuración de tu navegador y recarga la página.
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="btn"
-            style={{ background: 'var(--color-terracota)', color: 'white', border: 'none' }}
-          >
-            Reintentar
-          </button>
+          <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => window.location.reload()}
+              className="btn"
+              style={{
+                background: 'var(--color-primary)',
+                color: 'white',
+                border: 'none',
+              }}
+            >
+              Reintentar
+            </button>
+            <a
+              href="/"
+              className="btn"
+              style={{
+                borderColor: 'var(--color-stone)',
+                color: 'var(--color-stone)',
+              }}
+            >
+              Volver al inicio
+            </a>
+          </div>
         </div>
       </div>
     )
   }
 
-  return <ARScanner />
+  // Si tiene permiso, se redirige automáticamente
+  return (
+    <div style={{
+      height: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'var(--color-stone)',
+      color: 'var(--color-parchment)',
+    }}>
+      <p>Cargando scanner AR...</p>
+    </div>
+  )
 }
