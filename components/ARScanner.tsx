@@ -30,15 +30,17 @@ export default function ARScanner() {
   const sceneRef = useRef<HTMLElement | null>(null)
   const targetRefs = useRef<Map<number, HTMLElement>>(new Map())
 
-  // Cargar baldosas
+  // Cargar baldosas (API simple sin geolocalización)
   useEffect(() => {
     async function fetchBaldosas() {
       try {
-        const response = await fetch(
-          `/api/baldosas/nearby?lat=-34.6037&lng=-58.3816&radius=10000`
-        )
+        const response = await fetch('/api/baldosas')
         const data = await response.json()
-        console.log('Baldosas cargadas:', data.baldosas?.length || 0)
+        console.log('Baldosas cargadas:', data.baldosas?.length || 0, data)
+        if (data.error) {
+          console.error('Error de API:', data.error, data.detail)
+          setError(data.detail || data.error)
+        }
         setBaldosas(data.baldosas || [])
       } catch (error) {
         console.error('Error cargando baldosas:', error)
