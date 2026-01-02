@@ -13,16 +13,18 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 })
 
+// Icono personalizado para baldosas
 const baldosaIcon = new L.Icon({
   iconUrl: 'data:image/svg+xml;base64,' + btoa(`
-    <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="16" cy="16" r="14" fill="#c86b3c" stroke="#2a2520" stroke-width="2"/>
-      <circle cx="16" cy="16" r="4" fill="white"/>
+    <svg width="32" height="40" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16 0C7.163 0 0 7.163 0 16c0 12 16 24 16 24s16-12 16-24c0-8.837-7.163-16-16-16z" fill="#2563eb"/>
+      <circle cx="16" cy="16" r="8" fill="white"/>
+      <circle cx="16" cy="16" r="4" fill="#2563eb"/>
     </svg>
   `),
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-  popupAnchor: [0, -32],
+  iconSize: [32, 40],
+  iconAnchor: [16, 40],
+  popupAnchor: [0, -40],
 })
 
 interface Baldosa {
@@ -32,8 +34,9 @@ interface Baldosa {
   lat: number
   lng: number
   direccion?: string
-  distancia: number
+  barrio?: string
   mensajeAR: string
+  descripcion?: string
 }
 
 interface MapViewProps {
@@ -48,7 +51,7 @@ function MapUpdater({ baldosas }: { baldosas: Baldosa[] }) {
       const bounds = L.latLngBounds(
         baldosas.map(b => [b.lat, b.lng] as [number, number])
       )
-      map.fitBounds(bounds, { padding: [50, 50] })
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 })
     }
   }, [baldosas, map])
   
@@ -58,32 +61,40 @@ function MapUpdater({ baldosas }: { baldosas: Baldosa[] }) {
 export default function MapView({ initialLocation }: MapViewProps) {
   const [baldosas, setBaldosas] = useState<Baldosa[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [selectedBaldosa, setSelectedBaldosa] = useState<Baldosa | null>(null)
 
   useEffect(() => {
     async function fetchBaldosas() {
       try {
-        const response = await fetch(
-          `/api/baldosas/nearby?lat=${initialLocation.lat}&lng=${initialLocation.lng}&radius=10000`
-        )
+        // Usar la API simple que devuelve todas las baldosas
+        const response = await fetch('/api/baldosas')
         const data = await response.json()
-        setBaldosas(data.baldosas || [])
-      } catch (error) {
-        console.error('Error cargando baldosas:', error)
+        
+        console.log('Respuesta API baldosas:', data)
+        
+        if (data.error) {
+          setError(data.error)
+        } else {
+          setBaldosas(data.baldosas || [])
+        }
+      } catch (err) {
+        console.error('Error cargando baldosas:', err)
+        setError('Error al cargar las baldosas')
       } finally {
         setLoading(false)
       }
     }
 
     fetchBaldosas()
-  }, [initialLocation])
+  }, [])
 
   return (
     <div style={{ position: 'relative' }}>
       <MapContainer
         center={[initialLocation.lat, initialLocation.lng]}
-        zoom={15}
-        style={{ height: 'calc(100vh - 70px)', width: '100%' }}
+        zoom={13}
+        style={{ height: 'calc(100vh - 120px)', width: '100%' }}
         zoomControl={true}
       >
         <TileLayer
@@ -101,48 +112,47 @@ export default function MapView({ initialLocation }: MapViewProps) {
             }}
           >
             <Popup>
-              <div style={{ fontFamily: 'var(--font-body)', minWidth: '200px' }}>
+              <div style={{ fontFamily: 'sans-serif', minWidth: '200px' }}>
                 <h3 style={{
-                  fontFamily: 'var(--font-display)',
                   fontSize: '1.1rem',
-                  marginBottom: 'var(--space-xs)',
-                  color: 'var(--color-stone)',
+                  marginBottom: '5px',
+                  color: '#1a2a3a',
+                  fontWeight: 600,
                 }}>
                   {baldosa.nombre}
                 </h3>
                 <p style={{
-                  fontSize: '0.85rem',
-                  color: 'var(--color-dust)',
+                  fontSize: '0.8rem',
+                  color: '#2563eb',
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
-                  marginBottom: 'var(--space-xs)',
+                  marginBottom: '8px',
                 }}>
                   {baldosa.categoria}
                 </p>
                 {baldosa.direccion && (
                   <p style={{
                     fontSize: '0.9rem',
-                    color: 'var(--color-concrete)',
-                    marginBottom: 'var(--space-sm)',
+                    color: '#4a6b7c',
+                    marginBottom: '10px',
                   }}>
                     📍 {baldosa.direccion}
                   </p>
                 )}
                 <a
-                  href={`/baldosa/${baldosa.id}`}
+                  href={`/scanner`}
                   style={{
                     display: 'inline-block',
-                    marginTop: 'var(--space-xs)',
-                    padding: 'var(--space-xs) var(--space-sm)',
-                    background: 'var(--color-terracota)',
+                    padding: '8px 16px',
+                    background: '#2563eb',
                     color: 'white',
                     textDecoration: 'none',
-                    borderRadius: '2px',
+                    borderRadius: '6px',
                     fontSize: '0.85rem',
                     fontWeight: 500,
                   }}
                 >
-                  Ver detalles
+                  Escanear baldosa
                 </a>
               </div>
             </Popup>
@@ -158,70 +168,146 @@ export default function MapView({ initialLocation }: MapViewProps) {
         top: 0,
         right: 0,
         width: '320px',
-        maxWidth: '90vw',
-        height: 'calc(100vh - 70px)',
-        background: 'var(--color-parchment)',
-        boxShadow: 'var(--shadow-strong)',
+        maxWidth: '100%',
+        height: 'calc(100vh - 120px)',
+        background: 'white',
+        boxShadow: '-4px 0 20px rgba(0,0,0,0.1)',
         overflowY: 'auto',
         zIndex: 1000,
-        padding: 'var(--space-md)',
+        padding: '20px',
       }}>
         <h2 style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: '1.5rem',
-          marginBottom: 'var(--space-md)',
-          color: 'var(--color-stone)',
+          fontSize: '1.4rem',
+          marginBottom: '20px',
+          color: '#1a2a3a',
+          fontWeight: 600,
         }}>
           Baldosas de la Memoria
         </h2>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 'var(--space-lg)' }}>
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
             <div className="loading" />
+            <p style={{ marginTop: '10px', color: '#4a6b7c' }}>Cargando baldosas...</p>
+          </div>
+        ) : error ? (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '20px',
+            background: '#fef2f2',
+            borderRadius: '8px',
+            color: '#dc2626',
+          }}>
+            <p>{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              style={{
+                marginTop: '10px',
+                padding: '8px 16px',
+                background: '#dc2626',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+              }}
+            >
+              Reintentar
+            </button>
           </div>
         ) : baldosas.length === 0 ? (
-          <p style={{ color: 'var(--color-dust)', textAlign: 'center' }}>
-            No hay baldosas cerca de tu ubicación
-          </p>
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '40px 20px',
+            background: '#f0f4f8',
+            borderRadius: '8px',
+          }}>
+            <p style={{ color: '#4a6b7c', marginBottom: '10px' }}>
+              No hay baldosas cargadas en el sistema
+            </p>
+            <a 
+              href="/colaborar"
+              style={{
+                color: '#2563eb',
+                textDecoration: 'underline',
+              }}
+            >
+              ¿Conocés una baldosa? Colaborá
+            </a>
+          </div>
         ) : (
-          <div className="stack">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <p style={{ 
+              fontSize: '0.9rem', 
+              color: '#4a6b7c',
+              marginBottom: '10px',
+            }}>
+              {baldosas.length} baldosa{baldosas.length !== 1 ? 's' : ''} encontrada{baldosas.length !== 1 ? 's' : ''}
+            </p>
+            
             {baldosas.map((baldosa) => (
               <div
                 key={baldosa.id}
                 onClick={() => setSelectedBaldosa(baldosa)}
                 style={{
-                  padding: 'var(--space-sm)',
+                  padding: '15px',
                   border: selectedBaldosa?.id === baldosa.id 
-                    ? '2px solid var(--color-terracota)' 
-                    : '1px solid rgba(42, 37, 32, 0.1)',
-                  borderRadius: '4px',
+                    ? '2px solid #2563eb' 
+                    : '1px solid #e5e7eb',
+                  borderRadius: '8px',
                   cursor: 'pointer',
-                  transition: 'all var(--transition-fast)',
+                  transition: 'all 0.2s',
                   background: selectedBaldosa?.id === baldosa.id 
-                    ? 'rgba(200, 107, 60, 0.05)' 
-                    : 'transparent',
+                    ? 'rgba(37, 99, 235, 0.05)' 
+                    : 'white',
                 }}
               >
                 <h3 style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '1.1rem',
-                  marginBottom: 'var(--space-xs)',
+                  fontSize: '1rem',
+                  marginBottom: '5px',
+                  color: '#1a2a3a',
+                  fontWeight: 600,
                 }}>
                   {baldosa.nombre}
                 </h3>
                 <p style={{
-                  fontSize: '0.85rem',
-                  color: 'var(--color-dust)',
+                  fontSize: '0.8rem',
+                  color: '#2563eb',
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
+                  marginBottom: '5px',
                 }}>
                   {baldosa.categoria}
                 </p>
+                {baldosa.direccion && (
+                  <p style={{
+                    fontSize: '0.85rem',
+                    color: '#4a6b7c',
+                  }}>
+                    📍 {baldosa.direccion}
+                  </p>
+                )}
               </div>
             ))}
           </div>
         )}
       </div>
+      
+      {/* Estilos para responsive */}
+      <style jsx>{`
+        @media (max-width: 768px) {
+          div[style*="position: absolute"][style*="right: 0"] {
+            position: fixed !important;
+            bottom: 0 !important;
+            top: auto !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            max-height: 40vh !important;
+            border-radius: 20px 20px 0 0 !important;
+          }
+        }
+      `}</style>
     </div>
   )
 }
