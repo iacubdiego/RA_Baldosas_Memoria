@@ -495,14 +495,14 @@ button:active, .btn:active {
 }
 
 .panuelo-icon {
-  width: 100px;
-  height: 100px;
+  width: 200px;
+  height: 200px;
 }
 
 @media (max-width: 768px) {
   .panuelo-icon {
-    width: 70px;
-    height: 70px;
+    width: 140px;
+    height: 140px;
   }
 }
 
