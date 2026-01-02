@@ -4,16 +4,9 @@ import Baldosa from '@/models/Baldosa';
 
 export async function GET(request: NextRequest) {
   try {
-    const conn = await connectDB();
-    
-    // Debug: mostrar info de conexión
-    const dbName = conn.connection.db?.databaseName;
-    console.log('Conectado a DB:', dbName);
+    await connectDB();
 
-    // Intentar obtener baldosas sin filtro
     const baldosas = await Baldosa.find({}).limit(50);
-    
-    console.log('Baldosas encontradas:', baldosas.length);
 
     const result = baldosas.map(baldosa => {
       const [lng, lat] = baldosa.ubicacion.coordinates;
@@ -36,10 +29,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       baldosas: result,
       total: result.length,
-      debug: {
-        database: dbName,
-        mongoUri: process.env.MONGODB_URI?.substring(0, 50) + '...',
-      }
     });
   } catch (error) {
     console.error('Error en /api/baldosas:', error);

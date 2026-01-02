@@ -79,6 +79,7 @@
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255,255,255,0.1);
         box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        transition: opacity 0.5s ease-out;
       }
       
       #instructions .icon {
@@ -247,7 +248,7 @@
       <div class="icon">📷</div>
       <h2>Apuntá tu cámara a una baldosa</h2>
       <p>Cuando encuentres una baldosa de la memoria, enfocala con tu cámara para ver su historia</p>
-      <span class="badge" id="baldosas-count">Cargando...</span>
+      <span class="badge" id="baldosas-count">Cargando baldosas...</span>
     </div>
     
     <!-- Panel de información -->
@@ -262,8 +263,9 @@
       </div>
     </div>
 
-    <!-- Escena AR -->
+    <!-- Escena AR - los targets se agregan dinámicamente -->
     <a-scene 
+      id="ar-scene"
       mindar-image="imageTargetSrc: /targets/targets.mind; maxTrack: 1; filterMinCF: 0.0001; filterBeta: 0.001;"
       color-space="sRGB" 
       renderer="colorManagement: true, physicallyCorrectLights" 
@@ -272,192 +274,158 @@
       
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- Target 0: Azucena Villaflor -->
-      <a-entity mindar-image-target="targetIndex: 0">
-        <a-plane 
-          position="0 0.15 0" 
-          height="0.55" 
-          width="0.85" 
-          color="#ffffff"
-          opacity="0.95"
-          material="shader: flat">
-        </a-plane>
-        
-        <a-plane 
-          position="0 0.38 0.001" 
-          height="0.08" 
-          width="0.85" 
-          color="#2563eb"
-          material="shader: flat">
-        </a-plane>
-        
-        <a-text 
-          value="AZUCENA VILLAFLOR" 
-          position="0 0.25 0.01" 
-          align="center" 
-          color="#1a2a3a" 
-          width="1.4"
-          wrap-count="25">
-        </a-text>
-        
-        <a-text 
-          value="HISTORICO" 
-          position="0 0.12 0.01" 
-          align="center" 
-          color="#2563eb" 
-          width="0.8"
-          wrap-count="20">
-        </a-text>
-        
-        <a-text 
-          value="Fundadora de Madres\nde Plaza de Mayo\n1924 - 1977" 
-          position="0 -0.05 0.01" 
-          align="center" 
-          color="#4a6b7c" 
-          width="1.2"
-          wrap-count="30">
-        </a-text>
-      </a-entity>
-
-      <!-- Target 1: Rodolfo Walsh -->
-      <a-entity mindar-image-target="targetIndex: 1">
-        <a-plane 
-          position="0 0.15 0" 
-          height="0.55" 
-          width="0.85" 
-          color="#ffffff"
-          opacity="0.95"
-          material="shader: flat">
-        </a-plane>
-        
-        <a-plane 
-          position="0 0.38 0.001" 
-          height="0.08" 
-          width="0.85" 
-          color="#0ea5e9"
-          material="shader: flat">
-        </a-plane>
-        
-        <a-text 
-          value="RODOLFO WALSH" 
-          position="0 0.25 0.01" 
-          align="center" 
-          color="#1a2a3a" 
-          width="1.4"
-          wrap-count="25">
-        </a-text>
-        
-        <a-text 
-          value="HISTORICO" 
-          position="0 0.12 0.01" 
-          align="center" 
-          color="#0ea5e9" 
-          width="0.8"
-          wrap-count="20">
-        </a-text>
-        
-        <a-text 
-          value="Escritor y Periodista\nCarta Abierta a la\nJunta Militar\n1927 - 1977" 
-          position="0 -0.08 0.01" 
-          align="center" 
-          color="#4a6b7c" 
-          width="1.2"
-          wrap-count="30">
-        </a-text>
-      </a-entity>
-
-      <!-- Target 2: Nora Cortiñas -->
-      <a-entity mindar-image-target="targetIndex: 2">
-        <a-plane 
-          position="0 0.15 0" 
-          height="0.55" 
-          width="0.85" 
-          color="#ffffff"
-          opacity="0.95"
-          material="shader: flat">
-        </a-plane>
-        
-        <a-plane 
-          position="0 0.38 0.001" 
-          height="0.08" 
-          width="0.85" 
-          color="#6366f1"
-          material="shader: flat">
-        </a-plane>
-        
-        <a-text 
-          value="NORA CORTINAS" 
-          position="0 0.25 0.01" 
-          align="center" 
-          color="#1a2a3a" 
-          width="1.4"
-          wrap-count="25">
-        </a-text>
-        
-        <a-text 
-          value="HISTORICO" 
-          position="0 0.12 0.01" 
-          align="center" 
-          color="#6366f1" 
-          width="0.8"
-          wrap-count="20">
-        </a-text>
-        
-        <a-text 
-          value="Madre de Plaza de Mayo\nLinea Fundadora" 
-          position="0 -0.02 0.01" 
-          align="center" 
-          color="#4a6b7c" 
-          width="1.2"
-          wrap-count="30">
-        </a-text>
-      </a-entity>
+      <!-- Los targets se agregan dinámicamente desde la API -->
     </a-scene>
 
     <script>
-      // Base de datos de baldosas
-      const baldosasDB = {
-        0: {
-          nombre: "Azucena Villaflor",
-          categoria: "Histórico",
-          descripcion: "Fundadora de Madres de Plaza de Mayo. Secuestrada y desaparecida el 10 de diciembre de 1977. Sus restos fueron identificados en 2005."
-        },
-        1: {
-          nombre: "Rodolfo Walsh",
-          categoria: "Histórico", 
-          descripcion: "Escritor y periodista argentino. Autor de 'Carta Abierta de un Escritor a la Junta Militar'. Desaparecido el 25 de marzo de 1977."
-        },
-        2: {
-          nombre: "Nora Cortiñas",
-          categoria: "Histórico",
-          descripcion: "Madre de Plaza de Mayo - Línea Fundadora. Incansable luchadora por los derechos humanos y la memoria."
-        }
-      };
-
+      // Base de datos de baldosas (se carga desde la API)
+      let baldosasDB = {};
+      
       // Elementos del DOM
       const loading = document.getElementById('loading');
       const instructions = document.getElementById('instructions');
       const infoPanel = document.getElementById('info-panel');
       const badgeCount = document.getElementById('baldosas-count');
-      
-      // Actualizar contador
-      badgeCount.textContent = `${Object.keys(baldosasDB).length} baldosas en el sistema`;
+      const arScene = document.getElementById('ar-scene');
+
+      // Timer para ocultar instrucciones
+      let instructionsTimeout = null;
+
+      // Cargar baldosas desde la API
+      async function cargarBaldosas() {
+        try {
+          const response = await fetch('/api/baldosas');
+          const data = await response.json();
+          
+          console.log('Baldosas cargadas:', data);
+          
+          if (data.baldosas && data.baldosas.length > 0) {
+            // Convertir array a objeto indexado por targetIndex
+            data.baldosas.forEach(baldosa => {
+              if (baldosa.targetIndex !== undefined && baldosa.targetIndex !== null) {
+                baldosasDB[baldosa.targetIndex] = {
+                  nombre: baldosa.nombre,
+                  categoria: baldosa.categoria,
+                  descripcion: baldosa.descripcion || baldosa.mensajeAR
+                };
+              }
+            });
+            
+            // Actualizar contador
+            badgeCount.textContent = `${data.baldosas.length} baldosa${data.baldosas.length !== 1 ? 's' : ''} en el sistema`;
+            
+            // Crear los targets AR dinámicamente
+            crearTargetsAR(data.baldosas);
+            
+            console.log('baldosasDB:', baldosasDB);
+          } else {
+            badgeCount.textContent = 'No hay baldosas cargadas';
+          }
+        } catch (error) {
+          console.error('Error cargando baldosas:', error);
+          badgeCount.textContent = 'Error al cargar baldosas';
+        }
+      }
+
+      // Crear elementos AR para cada baldosa
+      function crearTargetsAR(baldosas) {
+        const colores = ['#2563eb', '#0ea5e9', '#6366f1', '#8b5cf6', '#ec4899'];
+        
+        baldosas.forEach((baldosa) => {
+          if (baldosa.targetIndex === undefined || baldosa.targetIndex === null) return;
+          
+          const color = colores[baldosa.targetIndex % colores.length];
+          
+          // Crear entidad target
+          const targetEntity = document.createElement('a-entity');
+          targetEntity.setAttribute('mindar-image-target', `targetIndex: ${baldosa.targetIndex}`);
+          
+          // Fondo blanco
+          const planeBackground = document.createElement('a-plane');
+          planeBackground.setAttribute('position', '0 0.15 0');
+          planeBackground.setAttribute('height', '0.55');
+          planeBackground.setAttribute('width', '0.85');
+          planeBackground.setAttribute('color', '#ffffff');
+          planeBackground.setAttribute('opacity', '0.95');
+          planeBackground.setAttribute('material', 'shader: flat');
+          targetEntity.appendChild(planeBackground);
+          
+          // Barra de color superior
+          const planeHeader = document.createElement('a-plane');
+          planeHeader.setAttribute('position', '0 0.38 0.001');
+          planeHeader.setAttribute('height', '0.08');
+          planeHeader.setAttribute('width', '0.85');
+          planeHeader.setAttribute('color', color);
+          planeHeader.setAttribute('material', 'shader: flat');
+          targetEntity.appendChild(planeHeader);
+          
+          // Nombre
+          const textNombre = document.createElement('a-text');
+          textNombre.setAttribute('value', baldosa.nombre.toUpperCase());
+          textNombre.setAttribute('position', '0 0.25 0.01');
+          textNombre.setAttribute('align', 'center');
+          textNombre.setAttribute('color', '#1a2a3a');
+          textNombre.setAttribute('width', '1.4');
+          textNombre.setAttribute('wrap-count', '25');
+          targetEntity.appendChild(textNombre);
+          
+          // Categoría
+          const textCategoria = document.createElement('a-text');
+          textCategoria.setAttribute('value', (baldosa.categoria || 'HISTORICO').toUpperCase());
+          textCategoria.setAttribute('position', '0 0.12 0.01');
+          textCategoria.setAttribute('align', 'center');
+          textCategoria.setAttribute('color', color);
+          textCategoria.setAttribute('width', '0.8');
+          targetEntity.appendChild(textCategoria);
+          
+          // Mensaje/Descripción corta
+          const mensajeCorto = baldosa.mensajeAR || baldosa.descripcion || '';
+          const textMensaje = document.createElement('a-text');
+          textMensaje.setAttribute('value', mensajeCorto.substring(0, 80));
+          textMensaje.setAttribute('position', '0 -0.02 0.01');
+          textMensaje.setAttribute('align', 'center');
+          textMensaje.setAttribute('color', '#4a6b7c');
+          textMensaje.setAttribute('width', '1.2');
+          textMensaje.setAttribute('wrap-count', '30');
+          targetEntity.appendChild(textMensaje);
+          
+          // Agregar a la escena
+          arScene.appendChild(targetEntity);
+          
+          console.log(`Target ${baldosa.targetIndex} creado para: ${baldosa.nombre}`);
+        });
+        
+        // Configurar eventos después de crear los targets
+        configurarEventosTargets();
+      }
+
+      // Configurar eventos de detección
+      function configurarEventosTargets() {
+        const targets = document.querySelectorAll('[mindar-image-target]');
+        
+        targets.forEach((target) => {
+          const targetAttr = target.getAttribute('mindar-image-target');
+          const match = targetAttr.match(/targetIndex:\s*(\d+)/);
+          const index = match ? parseInt(match[1]) : null;
+          
+          target.addEventListener('targetFound', () => {
+            console.log(`🎯 Target ${index} encontrado:`, baldosasDB[index]?.nombre);
+            mostrarInfoBaldosa(index);
+          });
+          
+          target.addEventListener('targetLost', () => {
+            console.log(`👋 Target ${index} perdido`);
+            ocultarInfoBaldosa();
+          });
+        });
+      }
 
       // Ocultar instrucciones después de 3 segundos
-      let instructionsTimeout = null;
       function ocultarInstrucciones() {
         instructions.style.opacity = '0';
-        instructions.style.transition = 'opacity 0.5s ease-out';
         setTimeout(() => {
           instructions.style.display = 'none';
         }, 500);
-      }
-      
-      function mostrarInstrucciones() {
-        instructions.style.display = 'block';
-        instructions.style.opacity = '1';
-        clearTimeout(instructionsTimeout);
-        instructionsTimeout = setTimeout(ocultarInstrucciones, 3000);
       }
 
       // Mostrar notificación
@@ -477,11 +445,14 @@
       // Mostrar info de baldosa
       function mostrarInfoBaldosa(index) {
         const baldosa = baldosasDB[index];
-        if (!baldosa) return;
+        if (!baldosa) {
+          console.warn('Baldosa no encontrada para index:', index);
+          return;
+        }
         
         document.getElementById('info-nombre').textContent = baldosa.nombre;
-        document.getElementById('info-categoria').textContent = baldosa.categoria;
-        document.getElementById('info-descripcion').textContent = baldosa.descripcion;
+        document.getElementById('info-categoria').textContent = baldosa.categoria || 'Histórico';
+        document.getElementById('info-descripcion').textContent = baldosa.descripcion || '';
         
         instructions.style.display = 'none';
         infoPanel.style.display = 'block';
@@ -490,7 +461,6 @@
       // Ocultar info
       function ocultarInfoBaldosa() {
         infoPanel.style.display = 'none';
-        // No volver a mostrar instrucciones cuando se pierde el target
       }
 
       // Eventos de la escena AR
@@ -500,31 +470,18 @@
         console.log('✅ Escena AR cargada');
         loading.style.display = 'none';
         mostrarToast('Cámara lista. Buscá una baldosa.');
-        // Iniciar timer para ocultar instrucciones
+        
+        // Ocultar instrucciones después de 3 segundos
         instructionsTimeout = setTimeout(ocultarInstrucciones, 3000);
       });
 
-      sceneEl.addEventListener('arError', () => {
-        console.error('❌ Error AR');
+      sceneEl.addEventListener('arError', (e) => {
+        console.error('❌ Error AR:', e);
         loading.innerHTML = '<p>Error al iniciar AR</p><p class="hint">Verificá los permisos de cámara</p>';
       });
 
-      // Eventos de targets
-      document.addEventListener('DOMContentLoaded', () => {
-        const targets = document.querySelectorAll('[mindar-image-target]');
-        
-        targets.forEach((target, index) => {
-          target.addEventListener('targetFound', () => {
-            console.log(`🎯 Target ${index} encontrado:`, baldosasDB[index]?.nombre);
-            mostrarInfoBaldosa(index);
-          });
-          
-          target.addEventListener('targetLost', () => {
-            console.log(`👋 Target ${index} perdido`);
-            ocultarInfoBaldosa();
-          });
-        });
-      });
+      // Cargar baldosas al iniciar
+      cargarBaldosas();
     </script>
   </body>
 </html>
