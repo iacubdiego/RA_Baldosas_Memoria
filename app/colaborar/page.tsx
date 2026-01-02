@@ -98,7 +98,7 @@ export default function ColaborarPage() {
     e.preventDefault()
     setMensaje(null)
 
-    // Validaciones
+    // Validaciones - todos los campos son requeridos
     if (!formData.nombrePersona.trim()) {
       setMensaje({ tipo: 'error', texto: 'El nombre de la persona homenajeada es requerido' })
       return
@@ -111,6 +111,28 @@ export default function ColaborarPage() {
 
     if (!ubicacion) {
       setMensaje({ tipo: 'error', texto: 'Debes capturar la ubicación de la baldosa' })
+      return
+    }
+
+    if (!formData.direccion.trim()) {
+      setMensaje({ tipo: 'error', texto: 'La dirección es requerida' })
+      return
+    }
+
+    if (!imagen) {
+      setMensaje({ tipo: 'error', texto: 'Debes subir una foto de la baldosa' })
+      return
+    }
+
+    if (!formData.emailContacto.trim()) {
+      setMensaje({ tipo: 'error', texto: 'El email de contacto es requerido' })
+      return
+    }
+
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.emailContacto)) {
+      setMensaje({ tipo: 'error', texto: 'El formato del email no es válido' })
       return
     }
 
@@ -177,6 +199,7 @@ export default function ColaborarPage() {
               justifyContent: 'center',
               margin: '0 auto var(--space-lg)',
               fontSize: '2.5rem',
+              color: 'white',
             }}>
               ✓
             </div>
@@ -278,7 +301,7 @@ export default function ColaborarPage() {
                   fontWeight: 500,
                   color: 'var(--color-stone)',
                 }}>
-                  Nombre de la persona homenajeada *
+                  Nombre de la persona homenajeada <span style={{ color: '#dc2626' }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -309,7 +332,7 @@ export default function ColaborarPage() {
                   fontWeight: 500,
                   color: 'var(--color-stone)',
                 }}>
-                  Descripción o historia *
+                  Descripción o historia <span style={{ color: '#dc2626' }}>*</span>
                 </label>
                 <textarea
                   name="descripcion"
@@ -341,7 +364,7 @@ export default function ColaborarPage() {
                   fontWeight: 500,
                   color: 'var(--color-stone)',
                 }}>
-                  Ubicación de la baldosa *
+                  Ubicación de la baldosa <span style={{ color: '#dc2626' }}>*</span>
                 </label>
                 <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'center', flexWrap: 'wrap' }}>
                   <button
@@ -380,7 +403,7 @@ export default function ColaborarPage() {
                 </p>
               </div>
 
-              {/* Dirección (opcional) */}
+              {/* Dirección */}
               <div style={{ marginBottom: 'var(--space-md)' }}>
                 <label style={{
                   display: 'block',
@@ -388,7 +411,7 @@ export default function ColaborarPage() {
                   fontWeight: 500,
                   color: 'var(--color-stone)',
                 }}>
-                  Dirección (opcional)
+                  Dirección <span style={{ color: '#dc2626' }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -396,6 +419,7 @@ export default function ColaborarPage() {
                   value={formData.direccion}
                   onChange={handleInputChange}
                   placeholder="Ej: Av. Corrientes 1234, CABA"
+                  required
                   style={{
                     width: '100%',
                     padding: 'var(--space-sm)',
@@ -417,7 +441,7 @@ export default function ColaborarPage() {
                   fontWeight: 500,
                   color: 'var(--color-stone)',
                 }}>
-                  Foto de la baldosa (opcional)
+                  Foto de la baldosa <span style={{ color: '#dc2626' }}>*</span>
                 </label>
                 
                 {!imagenPreview ? (
@@ -495,7 +519,7 @@ export default function ColaborarPage() {
                 />
               </div>
 
-              {/* Email (opcional) */}
+              {/* Email */}
               <div style={{ marginBottom: 'var(--space-lg)' }}>
                 <label style={{
                   display: 'block',
@@ -503,7 +527,7 @@ export default function ColaborarPage() {
                   fontWeight: 500,
                   color: 'var(--color-stone)',
                 }}>
-                  Email de contacto (opcional)
+                  Email de contacto <span style={{ color: '#dc2626' }}>*</span>
                 </label>
                 <input
                   type="email"
@@ -511,6 +535,7 @@ export default function ColaborarPage() {
                   value={formData.emailContacto}
                   onChange={handleInputChange}
                   placeholder="tu@email.com"
+                  required
                   style={{
                     width: '100%',
                     padding: 'var(--space-sm)',
@@ -526,6 +551,16 @@ export default function ColaborarPage() {
                   Te contactaremos si necesitamos más información
                 </p>
               </div>
+
+              {/* Nota de campos requeridos */}
+              <p style={{ 
+                fontSize: '0.85rem', 
+                color: 'var(--color-dust)', 
+                marginBottom: 'var(--space-md)',
+                textAlign: 'center',
+              }}>
+                <span style={{ color: '#dc2626' }}>*</span> Todos los campos son requeridos
+              </p>
 
               {/* Botón enviar */}
               <button
