@@ -5,10 +5,6 @@
     <meta charset="UTF-8">
     <title>Escanear Baldosa - Baldosas por la Memoria</title>
     
-    <!-- A-Frame y MindAR -->
-    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    
     <style>
       * {
         margin: 0;
@@ -54,12 +50,86 @@
       #loading p {
         font-size: 16px;
         opacity: 0.9;
+        text-align: center;
+        padding: 0 20px;
       }
       
       #loading .hint {
         font-size: 13px;
         opacity: 0.6;
         margin-top: 10px;
+      }
+      
+      #loading .status {
+        margin-top: 20px;
+        padding: 10px 20px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 8px;
+        font-size: 14px;
+      }
+      
+      /* Pantalla de no hay baldosa cerca */
+      #no-baldosa {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #1a2a3a;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9998;
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+      
+      #no-baldosa .icon {
+        font-size: 64px;
+        margin-bottom: 20px;
+      }
+      
+      #no-baldosa h2 {
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+      }
+      
+      #no-baldosa p {
+        opacity: 0.8;
+        margin-bottom: 10px;
+        max-width: 400px;
+      }
+      
+      #no-baldosa .distance {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #2563eb;
+        margin: 20px 0;
+      }
+      
+      #no-baldosa .baldosa-name {
+        font-size: 1.1rem;
+        color: #0ea5e9;
+        margin-bottom: 20px;
+      }
+      
+      #no-baldosa button {
+        padding: 12px 30px;
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-top: 20px;
+      }
+      
+      #no-baldosa .btn-secondary {
+        background: transparent;
+        border: 2px solid rgba(255,255,255,0.3);
+        margin-left: 10px;
       }
       
       /* Panel de instrucciones */
@@ -80,6 +150,7 @@
         border: 1px solid rgba(255,255,255,0.1);
         box-shadow: 0 20px 60px rgba(0,0,0,0.4);
         transition: opacity 0.5s ease-out;
+        display: none;
       }
       
       #instructions .icon {
@@ -100,13 +171,23 @@
         margin-bottom: 15px;
       }
       
-      #instructions .badge {
-        display: inline-block;
-        background: rgba(14, 165, 233, 0.2);
+      #instructions .baldosa-info {
+        background: rgba(37, 99, 235, 0.2);
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 15px;
+      }
+      
+      #instructions .baldosa-info .name {
+        font-weight: 600;
+        font-size: 1.1rem;
         color: #0ea5e9;
-        padding: 6px 14px;
-        border-radius: 20px;
+      }
+      
+      #instructions .baldosa-info .address {
         font-size: 0.85rem;
+        opacity: 0.7;
+        margin-top: 5px;
       }
       
       /* Panel de información de baldosa detectada */
@@ -217,6 +298,10 @@
         animation: fadeInUp 0.3s ease-out;
       }
       
+      .toast.error {
+        background: #dc2626;
+      }
+      
       @keyframes fadeInUp {
         from {
           opacity: 0;
@@ -227,6 +312,13 @@
           transform: translateX(-50%) translateY(0);
         }
       }
+      
+      /* AR Scene container */
+      #ar-container {
+        display: none;
+        width: 100%;
+        height: 100%;
+      }
     </style>
   </head>
 
@@ -234,8 +326,25 @@
     <!-- Loading -->
     <div id="loading">
       <div class="spinner"></div>
-      <p>Cargando experiencia AR...</p>
-      <p class="hint">Permitir acceso a la cámara cuando se solicite</p>
+      <p id="loading-text">Obteniendo tu ubicación...</p>
+      <p class="hint">Permitir acceso a la ubicación cuando se solicite</p>
+      <div class="status" id="loading-status"></div>
+    </div>
+    
+    <!-- No hay baldosa cerca -->
+    <div id="no-baldosa">
+      <div class="icon">📍</div>
+      <h2>No hay baldosas cerca</h2>
+      <p>Para escanear una baldosa, necesitás estar físicamente cerca de ella.</p>
+      <div id="nearest-info" style="display: none;">
+        <p>La baldosa más cercana está a:</p>
+        <div class="distance" id="nearest-distance">--</div>
+        <div class="baldosa-name" id="nearest-name">--</div>
+      </div>
+      <div>
+        <button onclick="reintentar()">🔄 Actualizar ubicación</button>
+        <a href="/mapa" class="btn-secondary" style="display: inline-block; padding: 12px 30px; color: white; text-decoration: none; border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; margin-left: 10px;">Ver mapa</a>
+      </div>
     </div>
     
     <!-- Botón volver -->
@@ -246,9 +355,12 @@
     <!-- Instrucciones -->
     <div id="instructions">
       <div class="icon">📷</div>
-      <h2>Apuntá tu cámara a una baldosa</h2>
-      <p>Cuando encuentres una baldosa de la memoria, enfocala con tu cámara para ver su historia</p>
-      <span class="badge" id="baldosas-count">Cargando baldosas...</span>
+      <h2>Apuntá tu cámara a la baldosa</h2>
+      <p>Estás cerca de una baldosa de la memoria. Enfocala con tu cámara para ver su historia.</p>
+      <div class="baldosa-info">
+        <div class="name" id="instruction-baldosa-name">--</div>
+        <div class="address" id="instruction-baldosa-address">--</div>
+      </div>
     </div>
     
     <!-- Panel de información -->
@@ -263,178 +375,46 @@
       </div>
     </div>
 
-    <!-- Escena AR - los targets se agregan dinámicamente -->
-    <a-scene 
-      id="ar-scene"
-      mindar-image="imageTargetSrc: /targets/targets.mind; maxTrack: 1; filterMinCF: 0.0001; filterBeta: 0.001;"
-      color-space="sRGB" 
-      renderer="colorManagement: true, physicallyCorrectLights" 
-      vr-mode-ui="enabled: false" 
-      device-orientation-permission-ui="enabled: false">
-      
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-      <!-- Los targets se agregan dinámicamente desde la API -->
-    </a-scene>
+    <!-- Contenedor AR (se llena dinámicamente) -->
+    <div id="ar-container"></div>
 
     <script>
-      // Base de datos de baldosas (se carga desde la API)
-      let baldosasDB = {};
+      // Configuración
+      const RADIO_MAXIMO = 100; // metros - distancia máxima para activar AR
       
-      // Elementos del DOM
-      const loading = document.getElementById('loading');
-      const instructions = document.getElementById('instructions');
-      const infoPanel = document.getElementById('info-panel');
-      const badgeCount = document.getElementById('baldosas-count');
-      const arScene = document.getElementById('ar-scene');
+      // Estado
+      let baldosaCercana = null;
+      let userLocation = null;
+      let arScene = null;
+      
+      // Elementos DOM
+      const loadingEl = document.getElementById('loading');
+      const loadingText = document.getElementById('loading-text');
+      const loadingStatus = document.getElementById('loading-status');
+      const noBaldosaEl = document.getElementById('no-baldosa');
+      const instructionsEl = document.getElementById('instructions');
+      const infoPanelEl = document.getElementById('info-panel');
+      const arContainer = document.getElementById('ar-container');
 
-      // Timer para ocultar instrucciones
-      let instructionsTimeout = null;
-
-      // Cargar baldosas desde la API
-      async function cargarBaldosas() {
-        try {
-          const response = await fetch('/api/baldosas');
-          const data = await response.json();
-          
-          console.log('Baldosas cargadas:', data);
-          
-          if (data.baldosas && data.baldosas.length > 0) {
-            // Convertir array a objeto indexado por targetIndex
-            data.baldosas.forEach(baldosa => {
-              if (baldosa.targetIndex !== undefined && baldosa.targetIndex !== null) {
-                baldosasDB[baldosa.targetIndex] = {
-                  nombre: baldosa.nombre,
-                  categoria: baldosa.categoria,
-                  descripcion: baldosa.descripcion || baldosa.mensajeAR
-                };
-              }
-            });
-            
-            // Actualizar contador
-            badgeCount.textContent = `${data.baldosas.length} baldosa${data.baldosas.length !== 1 ? 's' : ''} en el sistema`;
-            
-            // Crear los targets AR dinámicamente
-            crearTargetsAR(data.baldosas);
-            
-            console.log('baldosasDB:', baldosasDB);
-          } else {
-            badgeCount.textContent = 'No hay baldosas cargadas';
-          }
-        } catch (error) {
-          console.error('Error cargando baldosas:', error);
-          badgeCount.textContent = 'Error al cargar baldosas';
-        }
+      // Calcular distancia entre dos puntos
+      function calcularDistancia(lat1, lng1, lat2, lng2) {
+        const R = 6371e3;
+        const φ1 = (lat1 * Math.PI) / 180;
+        const φ2 = (lat2 * Math.PI) / 180;
+        const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+        const Δλ = ((lng2 - lng1) * Math.PI) / 180;
+        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                  Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
       }
 
-      // Crear elementos AR para cada baldosa
-      function crearTargetsAR(baldosas) {
-        const colores = ['#2563eb', '#0ea5e9', '#6366f1', '#8b5cf6', '#ec4899'];
-        
-        baldosas.forEach((baldosa) => {
-          if (baldosa.targetIndex === undefined || baldosa.targetIndex === null) return;
-          
-          const color = colores[baldosa.targetIndex % colores.length];
-          
-          // Crear entidad target
-          const targetEntity = document.createElement('a-entity');
-          targetEntity.setAttribute('mindar-image-target', `targetIndex: ${baldosa.targetIndex}`);
-          
-          // Fondo blanco
-          const planeBackground = document.createElement('a-plane');
-          planeBackground.setAttribute('position', '0 0.15 0');
-          planeBackground.setAttribute('height', '0.55');
-          planeBackground.setAttribute('width', '0.85');
-          planeBackground.setAttribute('color', '#ffffff');
-          planeBackground.setAttribute('opacity', '0.95');
-          planeBackground.setAttribute('material', 'shader: flat');
-          targetEntity.appendChild(planeBackground);
-          
-          // Barra de color superior
-          const planeHeader = document.createElement('a-plane');
-          planeHeader.setAttribute('position', '0 0.38 0.001');
-          planeHeader.setAttribute('height', '0.08');
-          planeHeader.setAttribute('width', '0.85');
-          planeHeader.setAttribute('color', color);
-          planeHeader.setAttribute('material', 'shader: flat');
-          targetEntity.appendChild(planeHeader);
-          
-          // Nombre
-          const textNombre = document.createElement('a-text');
-          textNombre.setAttribute('value', baldosa.nombre.toUpperCase());
-          textNombre.setAttribute('position', '0 0.25 0.01');
-          textNombre.setAttribute('align', 'center');
-          textNombre.setAttribute('color', '#1a2a3a');
-          textNombre.setAttribute('width', '1.4');
-          textNombre.setAttribute('wrap-count', '25');
-          targetEntity.appendChild(textNombre);
-          
-          // Categoría
-          const textCategoria = document.createElement('a-text');
-          textCategoria.setAttribute('value', (baldosa.categoria || 'HISTORICO').toUpperCase());
-          textCategoria.setAttribute('position', '0 0.12 0.01');
-          textCategoria.setAttribute('align', 'center');
-          textCategoria.setAttribute('color', color);
-          textCategoria.setAttribute('width', '0.8');
-          targetEntity.appendChild(textCategoria);
-          
-          // Mensaje/Descripción corta
-          const mensajeCorto = baldosa.mensajeAR || baldosa.descripcion || '';
-          const textMensaje = document.createElement('a-text');
-          textMensaje.setAttribute('value', mensajeCorto.substring(0, 80));
-          textMensaje.setAttribute('position', '0 -0.02 0.01');
-          textMensaje.setAttribute('align', 'center');
-          textMensaje.setAttribute('color', '#4a6b7c');
-          textMensaje.setAttribute('width', '1.2');
-          textMensaje.setAttribute('wrap-count', '30');
-          targetEntity.appendChild(textMensaje);
-          
-          // Agregar a la escena
-          arScene.appendChild(targetEntity);
-          
-          console.log(`Target ${baldosa.targetIndex} creado para: ${baldosa.nombre}`);
-        });
-        
-        // Configurar eventos después de crear los targets
-        configurarEventosTargets();
-      }
-
-      // Configurar eventos de detección
-      function configurarEventosTargets() {
-        const targets = document.querySelectorAll('[mindar-image-target]');
-        
-        targets.forEach((target) => {
-          const targetAttr = target.getAttribute('mindar-image-target');
-          const match = targetAttr.match(/targetIndex:\s*(\d+)/);
-          const index = match ? parseInt(match[1]) : null;
-          
-          target.addEventListener('targetFound', () => {
-            console.log(`🎯 Target ${index} encontrado:`, baldosasDB[index]?.nombre);
-            mostrarInfoBaldosa(index);
-          });
-          
-          target.addEventListener('targetLost', () => {
-            console.log(`👋 Target ${index} perdido`);
-            ocultarInfoBaldosa();
-          });
-        });
-      }
-
-      // Ocultar instrucciones después de 3 segundos
-      function ocultarInstrucciones() {
-        instructions.style.opacity = '0';
-        setTimeout(() => {
-          instructions.style.display = 'none';
-        }, 500);
-      }
-
-      // Mostrar notificación
-      function mostrarToast(mensaje, duracion = 3000) {
+      // Mostrar toast
+      function mostrarToast(mensaje, tipo = 'info', duracion = 3000) {
         const toast = document.createElement('div');
-        toast.className = 'toast';
+        toast.className = 'toast' + (tipo === 'error' ? ' error' : '');
         toast.textContent = mensaje;
         document.body.appendChild(toast);
-        
         setTimeout(() => {
           toast.style.opacity = '0';
           toast.style.transition = 'opacity 0.3s';
@@ -442,46 +422,271 @@
         }, duracion);
       }
 
-      // Mostrar info de baldosa
-      function mostrarInfoBaldosa(index) {
-        const baldosa = baldosasDB[index];
-        if (!baldosa) {
-          console.warn('Baldosa no encontrada para index:', index);
-          return;
+      // Obtener ubicación del usuario
+      async function obtenerUbicacion() {
+        return new Promise((resolve, reject) => {
+          if (!navigator.geolocation) {
+            reject(new Error('Geolocalización no disponible'));
+            return;
+          }
+          
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              resolve({
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                accuracy: position.coords.accuracy
+              });
+            },
+            (error) => {
+              let msg = 'Error obteniendo ubicación';
+              if (error.code === error.PERMISSION_DENIED) msg = 'Permiso de ubicación denegado';
+              if (error.code === error.POSITION_UNAVAILABLE) msg = 'Ubicación no disponible';
+              if (error.code === error.TIMEOUT) msg = 'Tiempo de espera agotado';
+              reject(new Error(msg));
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+          );
+        });
+      }
+
+      // Buscar baldosas cercanas
+      async function buscarBaldosasCercanas(lat, lng) {
+        const response = await fetch(`/api/baldosas`);
+        const data = await response.json();
+        return data.baldosas || [];
+      }
+
+      // Cargar scripts de AR
+      async function cargarScriptsAR() {
+        // Cargar A-Frame
+        if (!window.AFRAME) {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://aframe.io/releases/1.4.2/aframe.min.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
         }
         
-        document.getElementById('info-nombre').textContent = baldosa.nombre;
-        document.getElementById('info-categoria').textContent = baldosa.categoria || 'Histórico';
-        document.getElementById('info-descripcion').textContent = baldosa.descripcion || '';
-        
-        instructions.style.display = 'none';
-        infoPanel.style.display = 'block';
+        // Cargar MindAR
+        if (!window.MINDAR) {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        }
       }
 
-      // Ocultar info
-      function ocultarInfoBaldosa() {
-        infoPanel.style.display = 'none';
+      // Iniciar escena AR para una baldosa específica
+      async function iniciarAR(baldosa) {
+        loadingText.textContent = 'Cargando experiencia AR...';
+        loadingStatus.textContent = `Baldosa: ${baldosa.nombre}`;
+        
+        await cargarScriptsAR();
+        
+        // Determinar URL del archivo .mind
+        const mindUrl = baldosa.mindFileUrl || `/targets/baldosa-${baldosa.id}.mind`;
+        
+        console.log('Cargando .mind desde:', mindUrl);
+        
+        // Crear escena AR
+        arContainer.innerHTML = `
+          <a-scene
+            mindar-image="imageTargetSrc: ${mindUrl}; maxTrack: 1; filterMinCF: 0.0001; filterBeta: 0.001;"
+            color-space="sRGB"
+            renderer="colorManagement: true, physicallyCorrectLights"
+            vr-mode-ui="enabled: false"
+            device-orientation-permission-ui="enabled: false"
+            style="width: 100%; height: 100%;">
+            
+            <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+            
+            <a-entity mindar-image-target="targetIndex: 0">
+              <a-plane
+                position="0 0.15 0"
+                height="0.55"
+                width="0.85"
+                color="#ffffff"
+                opacity="0.95"
+                material="shader: flat">
+              </a-plane>
+              
+              <a-plane
+                position="0 0.38 0.001"
+                height="0.08"
+                width="0.85"
+                color="#2563eb"
+                material="shader: flat">
+              </a-plane>
+              
+              <a-text
+                value="${baldosa.nombre.toUpperCase()}"
+                position="0 0.25 0.01"
+                align="center"
+                color="#1a2a3a"
+                width="1.4"
+                wrap-count="25">
+              </a-text>
+              
+              <a-text
+                value="${(baldosa.categoria || 'HISTORICO').toUpperCase()}"
+                position="0 0.12 0.01"
+                align="center"
+                color="#2563eb"
+                width="0.8">
+              </a-text>
+              
+              <a-text
+                value="${(baldosa.mensajeAR || baldosa.descripcion || '').substring(0, 80)}"
+                position="0 -0.02 0.01"
+                align="center"
+                color="#4a6b7c"
+                width="1.2"
+                wrap-count="30">
+              </a-text>
+            </a-entity>
+          </a-scene>
+        `;
+        
+        arContainer.style.display = 'block';
+        
+        // Esperar a que la escena cargue
+        const scene = arContainer.querySelector('a-scene');
+        
+        scene.addEventListener('loaded', () => {
+          console.log('✅ Escena AR cargada');
+          loadingEl.style.display = 'none';
+          
+          // Mostrar instrucciones
+          document.getElementById('instruction-baldosa-name').textContent = baldosa.nombre;
+          document.getElementById('instruction-baldosa-address').textContent = baldosa.direccion || '';
+          instructionsEl.style.display = 'block';
+          
+          // Ocultar instrucciones después de 3 segundos
+          setTimeout(() => {
+            instructionsEl.style.opacity = '0';
+            setTimeout(() => instructionsEl.style.display = 'none', 500);
+          }, 3000);
+          
+          mostrarToast('Cámara lista. Enfocá la baldosa.');
+        });
+        
+        scene.addEventListener('arError', (e) => {
+          console.error('Error AR:', e);
+          mostrarToast('Error al iniciar la cámara', 'error');
+        });
+        
+        // Eventos de detección
+        setTimeout(() => {
+          const target = arContainer.querySelector('[mindar-image-target]');
+          if (target) {
+            target.addEventListener('targetFound', () => {
+              console.log('🎯 Baldosa detectada:', baldosa.nombre);
+              instructionsEl.style.display = 'none';
+              document.getElementById('info-nombre').textContent = baldosa.nombre;
+              document.getElementById('info-categoria').textContent = baldosa.categoria || 'Histórico';
+              document.getElementById('info-descripcion').textContent = baldosa.descripcion || '';
+              infoPanelEl.style.display = 'block';
+            });
+            
+            target.addEventListener('targetLost', () => {
+              console.log('👋 Baldosa perdida');
+              infoPanelEl.style.display = 'none';
+            });
+          }
+        }, 1000);
       }
 
-      // Eventos de la escena AR
-      const sceneEl = document.querySelector('a-scene');
-      
-      sceneEl.addEventListener('loaded', () => {
-        console.log('✅ Escena AR cargada');
-        loading.style.display = 'none';
-        mostrarToast('Cámara lista. Buscá una baldosa.');
+      // Mostrar pantalla de "no hay baldosa cerca"
+      function mostrarNoBaldosa(baldosas, userLat, userLng) {
+        loadingEl.style.display = 'none';
+        noBaldosaEl.style.display = 'flex';
         
-        // Ocultar instrucciones después de 3 segundos
-        instructionsTimeout = setTimeout(ocultarInstrucciones, 3000);
-      });
+        if (baldosas.length > 0) {
+          // Encontrar la más cercana
+          let cercana = baldosas[0];
+          let distanciaMinima = calcularDistancia(userLat, userLng, cercana.lat, cercana.lng);
+          
+          baldosas.forEach(b => {
+            const d = calcularDistancia(userLat, userLng, b.lat, b.lng);
+            if (d < distanciaMinima) {
+              distanciaMinima = d;
+              cercana = b;
+            }
+          });
+          
+          document.getElementById('nearest-info').style.display = 'block';
+          document.getElementById('nearest-distance').textContent = 
+            distanciaMinima < 1000 ? `${Math.round(distanciaMinima)} metros` : `${(distanciaMinima/1000).toFixed(1)} km`;
+          document.getElementById('nearest-name').textContent = cercana.nombre;
+        }
+      }
 
-      sceneEl.addEventListener('arError', (e) => {
-        console.error('❌ Error AR:', e);
-        loading.innerHTML = '<p>Error al iniciar AR</p><p class="hint">Verificá los permisos de cámara</p>';
-      });
+      // Reintentar
+      async function reintentar() {
+        noBaldosaEl.style.display = 'none';
+        loadingEl.style.display = 'flex';
+        loadingText.textContent = 'Actualizando ubicación...';
+        loadingStatus.textContent = '';
+        await iniciar();
+      }
 
-      // Cargar baldosas al iniciar
-      cargarBaldosas();
+      // Iniciar aplicación
+      async function iniciar() {
+        try {
+          // 1. Obtener ubicación
+          loadingText.textContent = 'Obteniendo tu ubicación...';
+          loadingStatus.textContent = 'Esto puede tardar unos segundos';
+          
+          userLocation = await obtenerUbicacion();
+          console.log('📍 Ubicación:', userLocation);
+          loadingStatus.textContent = `Precisión: ±${Math.round(userLocation.accuracy)}m`;
+          
+          // 2. Buscar baldosas cercanas
+          loadingText.textContent = 'Buscando baldosas cercanas...';
+          
+          const baldosas = await buscarBaldosasCercanas(userLocation.lat, userLocation.lng);
+          console.log('🗺️ Baldosas encontradas:', baldosas.length);
+          
+          // 3. Verificar si hay alguna dentro del radio
+          baldosaCercana = null;
+          let distanciaMinima = Infinity;
+          
+          baldosas.forEach(b => {
+            const distancia = calcularDistancia(userLocation.lat, userLocation.lng, b.lat, b.lng);
+            console.log(`  - ${b.nombre}: ${Math.round(distancia)}m`);
+            if (distancia < distanciaMinima) {
+              distanciaMinima = distancia;
+              if (distancia <= RADIO_MAXIMO) {
+                baldosaCercana = { ...b, distancia };
+              }
+            }
+          });
+          
+          if (baldosaCercana) {
+            console.log('✅ Baldosa cercana encontrada:', baldosaCercana.nombre, `(${Math.round(baldosaCercana.distancia)}m)`);
+            loadingStatus.textContent = `${baldosaCercana.nombre} a ${Math.round(baldosaCercana.distancia)}m`;
+            await iniciarAR(baldosaCercana);
+          } else {
+            console.log('❌ No hay baldosas dentro del radio de', RADIO_MAXIMO, 'm');
+            mostrarNoBaldosa(baldosas, userLocation.lat, userLocation.lng);
+          }
+          
+        } catch (error) {
+          console.error('Error:', error);
+          loadingText.textContent = 'Error';
+          loadingStatus.textContent = error.message;
+          mostrarToast(error.message, 'error', 5000);
+        }
+      }
+
+      // Iniciar
+      iniciar();
     </script>
   </body>
 </html>

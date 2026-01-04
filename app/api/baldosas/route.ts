@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
         barrio: baldosa.barrio,
         mensajeAR: baldosa.mensajeAR,
         imagenUrl: baldosa.imagenUrl,
+        mindFileUrl: baldosa.mindFileUrl,
         targetIndex: baldosa.targetIndex,
       };
     });
