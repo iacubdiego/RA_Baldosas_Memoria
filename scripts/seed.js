@@ -17,7 +17,7 @@ const baldosasEjemplo = [
     categoria: 'historico',
     ubicacion: {
       type: 'Point',
-      coordinates: [-58.3816, -34.6037]  // [lng, lat] - Plaza de Mayo
+      coordinates: [-34.5757, -58.4731]  // [lng, lat] - GCOOP
     },
     direccion: 'Plaza de Mayo',
     barrio: 'Monserrat',
@@ -37,7 +37,7 @@ const baldosasEjemplo = [
     categoria: 'historico',
     ubicacion: {
       type: 'Point',
-      coordinates: [-58.9826, -34.8047]  // [lng, lat] - Actualizar con ubicación real
+      coordinates: [-34.5667, -58.4621]  // [lng, lat] - Actualizar con ubicación real
     },
     direccion: 'Av. Entre Ríos y San Juan',
     barrio: 'San Cristóbal',
