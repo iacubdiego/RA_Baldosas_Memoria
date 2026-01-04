@@ -43,11 +43,8 @@ export default function RootLayout({
             
             {/* Fila inferior en mobile: Links de navegación */}
             <div className="navbar-links">
-              <a href="/mapa" className="navbar-link">
-                Mapa
-              </a>
               <a href="/scanner" className="navbar-link">
-                Escanear
+                Encontrar
               </a>
               <a href="/colaborar" className="navbar-link navbar-link-highlight">
                 Colaborar

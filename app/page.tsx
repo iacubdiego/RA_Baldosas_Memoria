@@ -73,7 +73,7 @@ export default function Home() {
           {/* Botones de acción */}
           <div className="animate-fade-in-up delay-400" style={{ marginTop: 'var(--space-xl)' }}>
             <div className="cluster" style={{ justifyContent: 'center', marginBottom: 'var(--space-lg)' }}>
-              <Link href="/mapa" className="btn hover-lift hover-glow" style={{
+              <Link href="/scanner" className="btn hover-lift hover-glow" style={{
                 background: 'var(--color-primary)',
                 color: 'var(--color-parchment)',
                 border: 'none',
@@ -82,16 +82,7 @@ export default function Home() {
                 fontWeight: 600,
                 boxShadow: 'var(--shadow-medium)',
               }}>
-                Explorar Mapa
-              </Link>
-              
-              <Link href="/scanner" className="btn hover-lift" style={{
-                padding: 'var(--space-md) var(--space-lg)',
-                fontSize: '1rem',
-                borderColor: 'var(--color-primary)',
-                color: 'var(--color-primary)',
-              }}>
-                Escanear Baldosa
+                Encontrar Baldosa
               </Link>
 
               <Link href="/colaborar" className="btn hover-lift" style={{
