@@ -57,7 +57,7 @@ const baldosasEjemplo = [
     categoria: 'historico',
     ubicacion: {
       type: 'Point',
-      coordinates: [-58.3000, -34.6050]  // [lng, lat] - Actualizar con ubicación real
+      coordinates: [-34.581091, -58.480708]  // [lng, lat] - Actualizar con ubicación real
     },
     direccion: 'Diagonal Norte 600',
     barrio: 'San Nicolás',
