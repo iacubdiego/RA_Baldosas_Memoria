@@ -206,6 +206,146 @@
         animation: slideUp 0.3s ease-out;
       }
       
+      /* Overlay de memorial */
+      #memorial-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 999;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        animation: fadeIn 0.5s ease-out;
+      }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      
+      /* Contenedor de siluetas */
+      #siluetas-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+      
+      .silueta {
+        position: absolute;
+        opacity: 0;
+        filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
+        animation: aparecer 1s ease-out forwards;
+      }
+      
+      @keyframes aparecer {
+        0% {
+          opacity: 0;
+          transform: translateY(50px) scale(0.8);
+        }
+        100% {
+          opacity: 0.7;
+          transform: translateY(0) scale(1);
+        }
+      }
+      
+      /* Mensaje principal */
+      #memorial-mensaje {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+        color: white;
+        animation: mensajeAparece 1.5s ease-out forwards;
+        animation-delay: 2s;
+        opacity: 0;
+      }
+      
+      @keyframes mensajeAparece {
+        0% {
+          opacity: 0;
+          transform: scale(0.9);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      
+      #memorial-mensaje .numero {
+        font-size: 4rem;
+        font-weight: bold;
+        color: #ffffff;
+        text-shadow: 0 0 30px rgba(255,255,255,0.5);
+        letter-spacing: 0.1em;
+        margin-bottom: 10px;
+      }
+      
+      #memorial-mensaje .texto {
+        font-size: 1.5rem;
+        font-weight: 300;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        color: #e5e7eb;
+      }
+      
+      #memorial-mensaje .presentes {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #2563eb;
+        margin-top: 20px;
+        text-shadow: 0 0 20px rgba(37, 99, 235, 0.5);
+        animation: pulso 2s ease-in-out infinite;
+        animation-delay: 3.5s;
+      }
+      
+      @keyframes pulso {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.8; transform: scale(1.05); }
+      }
+      
+      /* Botón cerrar memorial */
+      #cerrar-memorial {
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.3);
+        color: white;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-size: 14px;
+        cursor: pointer;
+        z-index: 3;
+        opacity: 0;
+        animation: aparecer 0.5s ease-out forwards;
+        animation-delay: 4s;
+      }
+      
+      #cerrar-memorial:hover {
+        background: rgba(255,255,255,0.2);
+      }
+      
+      @media (max-width: 480px) {
+        #memorial-mensaje .numero {
+          font-size: 2.5rem;
+        }
+        #memorial-mensaje .texto {
+          font-size: 1rem;
+        }
+        #memorial-mensaje .presentes {
+          font-size: 1.8rem;
+        }
+      }
+      
       @keyframes slideUp {
         from {
           transform: translateY(100%);
@@ -404,13 +544,24 @@
         </div>
       </div>
     </div>
+    
+    <!-- Overlay de memorial con siluetas -->
+    <div id="memorial-overlay">
+      <div id="siluetas-container"></div>
+      <div id="memorial-mensaje">
+        <div class="numero">30.000</div>
+        <div class="texto">Detenidos Desaparecidos</div>
+        <div class="presentes">¡PRESENTES!</div>
+      </div>
+      <button id="cerrar-memorial" onclick="cerrarMemorial()">Continuar</button>
+    </div>
 
     <!-- Contenedor AR (se llena dinámicamente) -->
     <div id="ar-container"></div>
 
     <script>
       // Configuración
-      const RADIO_MAXIMO = 1000; // metros - distancia máxima para activar AR
+      const RADIO_MAXIMO = 100; // metros - distancia máxima para activar AR
       
       // Estado
       let baldosaCercana = null;
@@ -425,6 +576,68 @@
       const instructionsEl = document.getElementById('instructions');
       const infoPanelEl = document.getElementById('info-panel');
       const arContainer = document.getElementById('ar-container');
+      const memorialOverlay = document.getElementById('memorial-overlay');
+      const siluetasContainer = document.getElementById('siluetas-container');
+      
+      // SVG de siluetas (diferentes poses de personas)
+      const siluetasSVG = [
+        // Persona de pie
+        `<svg viewBox="0 0 100 200" fill="white"><ellipse cx="50" cy="20" rx="15" ry="18"/><path d="M50 38 L50 100 M50 60 L20 90 M50 60 L80 90 M50 100 L30 180 M50 100 L70 180" stroke="white" stroke-width="6" fill="none" stroke-linecap="round"/></svg>`,
+        // Persona con brazos arriba
+        `<svg viewBox="0 0 100 200" fill="white"><ellipse cx="50" cy="20" rx="15" ry="18"/><path d="M50 38 L50 100 M50 50 L20 20 M50 50 L80 20 M50 100 L30 180 M50 100 L70 180" stroke="white" stroke-width="6" fill="none" stroke-linecap="round"/></svg>`,
+        // Persona caminando
+        `<svg viewBox="0 0 100 200" fill="white"><ellipse cx="50" cy="20" rx="15" ry="18"/><path d="M50 38 L50 100 M50 60 L25 95 M50 60 L75 85 M50 100 L25 180 M50 100 L75 170" stroke="white" stroke-width="6" fill="none" stroke-linecap="round"/></svg>`,
+        // Persona con mano levantada
+        `<svg viewBox="0 0 100 200" fill="white"><ellipse cx="50" cy="20" rx="15" ry="18"/><path d="M50 38 L50 100 M50 55 L30 85 M50 55 L75 25 M50 100 L35 180 M50 100 L65 180" stroke="white" stroke-width="6" fill="none" stroke-linecap="round"/></svg>`,
+        // Madre con pañuelo (silueta especial)
+        `<svg viewBox="0 0 100 200" fill="white"><ellipse cx="50" cy="22" rx="16" ry="18"/><path d="M34 10 L50 5 L66 10" stroke="white" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M50 40 L50 105 M50 60 L25 90 M50 60 L75 90 M50 105 L35 180 M50 105 L65 180" stroke="white" stroke-width="6" fill="none" stroke-linecap="round"/></svg>`,
+      ];
+      
+      // Mostrar animación de memorial
+      function mostrarMemorial() {
+        memorialOverlay.style.display = 'flex';
+        siluetasContainer.innerHTML = '';
+        
+        // Agregar siluetas progresivamente
+        const numSiluetas = 15;
+        for (let i = 0; i < numSiluetas; i++) {
+          setTimeout(() => {
+            agregarSilueta(i);
+          }, i * 200);
+        }
+      }
+      
+      function agregarSilueta(index) {
+        const silueta = document.createElement('div');
+        silueta.className = 'silueta';
+        silueta.innerHTML = siluetasSVG[index % siluetasSVG.length];
+        
+        // Posición aleatoria
+        const lado = index % 2 === 0 ? 'left' : 'right';
+        const posX = lado === 'left' 
+          ? Math.random() * 30 + 5 
+          : Math.random() * 30 + 65;
+        const posY = Math.random() * 60 + 10;
+        const size = Math.random() * 40 + 60;
+        
+        silueta.style.cssText = `
+          ${lado}: ${lado === 'left' ? posX : 100 - posX - 10}%;
+          top: ${posY}%;
+          width: ${size}px;
+          animation-delay: ${index * 0.15}s;
+        `;
+        
+        siluetasContainer.appendChild(silueta);
+      }
+      
+      function cerrarMemorial() {
+        memorialOverlay.style.opacity = '0';
+        memorialOverlay.style.transition = 'opacity 0.5s';
+        setTimeout(() => {
+          memorialOverlay.style.display = 'none';
+          memorialOverlay.style.opacity = '1';
+        }, 500);
+      }
 
       // Calcular distancia entre dos puntos
       function calcularDistancia(lat1, lng1, lat2, lng2) {
@@ -625,11 +838,18 @@
               document.getElementById('info-categoria').textContent = baldosa.categoria || 'Histórico';
               document.getElementById('info-descripcion').textContent = baldosa.descripcion || '';
               infoPanelEl.style.display = 'block';
+              
+              // Mostrar animación de memorial
+              mostrarMemorial();
             });
             
             target.addEventListener('targetLost', () => {
               console.log('👋 Baldosa perdida');
               infoPanelEl.style.display = 'none';
+              // Cerrar memorial si está abierto
+              if (memorialOverlay.style.display === 'flex') {
+                cerrarMemorial();
+              }
             });
           }
         }, 1000);
