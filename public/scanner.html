@@ -218,8 +218,9 @@
         display: none;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-end;
         padding: 20px;
+        padding-bottom: 180px; /* Espacio para el panel de info */
         animation: fadeIn 0.5s ease-out;
       }
       
@@ -228,32 +229,43 @@
         to { opacity: 1; }
       }
       
-      /* Contenedor de siluetas */
+      /* Contenedor de siluetas - crece desde abajo */
       #siluetas-container {
         position: absolute;
-        top: 0;
+        bottom: 180px; /* Arriba del panel de info */
         left: 0;
         right: 0;
-        bottom: 0;
+        display: flex;
+        flex-wrap: wrap-reverse;
+        justify-content: center;
+        align-content: flex-start;
+        gap: 5px;
+        padding: 10px;
+        max-height: calc(100vh - 280px);
         overflow: hidden;
-        pointer-events: none;
       }
       
       .silueta {
-        position: absolute;
+        width: 60px;
+        height: auto;
         opacity: 0;
-        filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
-        animation: aparecer 1s ease-out forwards;
+        animation: aparecerSilueta 0.5s ease-out forwards;
       }
       
-      @keyframes aparecer {
+      .silueta img {
+        width: 100%;
+        height: auto;
+        filter: brightness(0) invert(1); /* Hacer las siluetas blancas */
+      }
+      
+      @keyframes aparecerSilueta {
         0% {
           opacity: 0;
-          transform: translateY(50px) scale(0.8);
+          transform: translateY(20px);
         }
         100% {
-          opacity: 0.7;
-          transform: translateY(0) scale(1);
+          opacity: 0.9;
+          transform: translateY(0);
         }
       }
       
@@ -263,9 +275,10 @@
         z-index: 2;
         text-align: center;
         color: white;
-        animation: mensajeAparece 1.5s ease-out forwards;
-        animation-delay: 2s;
+        animation: mensajeAparece 1s ease-out forwards;
+        animation-delay: 3s;
         opacity: 0;
+        margin-bottom: 20px;
       }
       
       @keyframes mensajeAparece {
@@ -280,30 +293,30 @@
       }
       
       #memorial-mensaje .numero {
-        font-size: 4rem;
+        font-size: 3.5rem;
         font-weight: bold;
         color: #ffffff;
         text-shadow: 0 0 30px rgba(255,255,255,0.5);
         letter-spacing: 0.1em;
-        margin-bottom: 10px;
+        margin-bottom: 5px;
       }
       
       #memorial-mensaje .texto {
-        font-size: 1.5rem;
+        font-size: 1.3rem;
         font-weight: 300;
         text-transform: uppercase;
-        letter-spacing: 0.2em;
+        letter-spacing: 0.15em;
         color: #e5e7eb;
       }
       
       #memorial-mensaje .presentes {
-        font-size: 2.5rem;
+        font-size: 2.2rem;
         font-weight: bold;
         color: #2563eb;
-        margin-top: 20px;
+        margin-top: 15px;
         text-shadow: 0 0 20px rgba(37, 99, 235, 0.5);
         animation: pulso 2s ease-in-out infinite;
-        animation-delay: 3.5s;
+        animation-delay: 4s;
       }
       
       @keyframes pulso {
@@ -313,28 +326,36 @@
       
       /* Botón cerrar memorial */
       #cerrar-memorial {
-        position: absolute;
-        bottom: 30px;
+        position: fixed;
+        bottom: 200px;
         left: 50%;
         transform: translateX(-50%);
-        background: rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.15);
         border: 1px solid rgba(255,255,255,0.3);
         color: white;
         padding: 12px 30px;
         border-radius: 25px;
         font-size: 14px;
         cursor: pointer;
-        z-index: 3;
+        z-index: 1001;
         opacity: 0;
         animation: aparecer 0.5s ease-out forwards;
-        animation-delay: 4s;
+        animation-delay: 4.5s;
+      }
+      
+      @keyframes aparecer {
+        from { opacity: 0; }
+        to { opacity: 1; }
       }
       
       #cerrar-memorial:hover {
-        background: rgba(255,255,255,0.2);
+        background: rgba(255,255,255,0.25);
       }
       
       @media (max-width: 480px) {
+        .silueta {
+          width: 45px;
+        }
         #memorial-mensaje .numero {
           font-size: 2.5rem;
         }
@@ -342,7 +363,13 @@
           font-size: 1rem;
         }
         #memorial-mensaje .presentes {
-          font-size: 1.8rem;
+          font-size: 1.6rem;
+        }
+        #siluetas-container {
+          bottom: 160px;
+        }
+        #cerrar-memorial {
+          bottom: 180px;
         }
       }
       
@@ -579,53 +606,32 @@
       const memorialOverlay = document.getElementById('memorial-overlay');
       const siluetasContainer = document.getElementById('siluetas-container');
       
-      // SVG de siluetas (diferentes poses de personas)
-      const siluetasSVG = [
-        // Persona de pie
-        `<svg viewBox="0 0 100 200" fill="white"><ellipse cx="50" cy="20" rx="15" ry="18"/><path d="M50 38 L50 100 M50 60 L20 90 M50 60 L80 90 M50 100 L30 180 M50 100 L70 180" stroke="white" stroke-width="6" fill="none" stroke-linecap="round"/></svg>`,
-        // Persona con brazos arriba
-        `<svg viewBox="0 0 100 200" fill="white"><ellipse cx="50" cy="20" rx="15" ry="18"/><path d="M50 38 L50 100 M50 50 L20 20 M50 50 L80 20 M50 100 L30 180 M50 100 L70 180" stroke="white" stroke-width="6" fill="none" stroke-linecap="round"/></svg>`,
-        // Persona caminando
-        `<svg viewBox="0 0 100 200" fill="white"><ellipse cx="50" cy="20" rx="15" ry="18"/><path d="M50 38 L50 100 M50 60 L25 95 M50 60 L75 85 M50 100 L25 180 M50 100 L75 170" stroke="white" stroke-width="6" fill="none" stroke-linecap="round"/></svg>`,
-        // Persona con mano levantada
-        `<svg viewBox="0 0 100 200" fill="white"><ellipse cx="50" cy="20" rx="15" ry="18"/><path d="M50 38 L50 100 M50 55 L30 85 M50 55 L75 25 M50 100 L35 180 M50 100 L65 180" stroke="white" stroke-width="6" fill="none" stroke-linecap="round"/></svg>`,
-        // Madre con pañuelo (silueta especial)
-        `<svg viewBox="0 0 100 200" fill="white"><ellipse cx="50" cy="22" rx="16" ry="18"/><path d="M34 10 L50 5 L66 10" stroke="white" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M50 40 L50 105 M50 60 L25 90 M50 60 L75 90 M50 105 L35 180 M50 105 L65 180" stroke="white" stroke-width="6" fill="none" stroke-linecap="round"/></svg>`,
-      ];
+      // Total de imágenes de siluetas disponibles
+      const TOTAL_SILUETAS = 11;
       
       // Mostrar animación de memorial
       function mostrarMemorial() {
         memorialOverlay.style.display = 'flex';
         siluetasContainer.innerHTML = '';
         
-        // Agregar siluetas progresivamente
-        const numSiluetas = 15;
+        // Agregar siluetas progresivamente (en orden 1 a 11, luego repetir)
+        const numSiluetas = 22; // Mostrar 2 rondas de siluetas
         for (let i = 0; i < numSiluetas; i++) {
           setTimeout(() => {
             agregarSilueta(i);
-          }, i * 200);
+          }, i * 150); // 150ms entre cada silueta
         }
       }
       
       function agregarSilueta(index) {
         const silueta = document.createElement('div');
         silueta.className = 'silueta';
-        silueta.innerHTML = siluetasSVG[index % siluetasSVG.length];
         
-        // Posición aleatoria
-        const lado = index % 2 === 0 ? 'left' : 'right';
-        const posX = lado === 'left' 
-          ? Math.random() * 30 + 5 
-          : Math.random() * 30 + 65;
-        const posY = Math.random() * 60 + 10;
-        const size = Math.random() * 40 + 60;
+        // Número de imagen (1 a 11, cíclico)
+        const numImagen = (index % TOTAL_SILUETAS) + 1;
         
-        silueta.style.cssText = `
-          ${lado}: ${lado === 'left' ? posX : 100 - posX - 10}%;
-          top: ${posY}%;
-          width: ${size}px;
-          animation-delay: ${index * 0.15}s;
-        `;
+        silueta.innerHTML = `<img src="/siluetas${numImagen}.png" alt="Silueta ${numImagen}">`;
+        silueta.style.animationDelay = `${index * 0.1}s`;
         
         siluetasContainer.appendChild(silueta);
       }

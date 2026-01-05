@@ -69,6 +69,26 @@ const baldosasEjemplo = [
     activo: true,
     createdAt: new Date(),
     updatedAt: new Date()
+  },
+  {
+    codigo: 'BALD-004',
+    nombre: 'Abriata, Hernán',
+    descripcion: 'Hernán era estudiante de arquitectura, se había casado hacía pocos meses con Mónica. Militaba en la JUP de la Facultad de Arquitectura. Tenía 4 hermanas menores. Esto fue lo que dijo su familia en el acto de colocación de la baldosa que lo recuerda. Fue secuestrado en su vivienda de Elcano 3265.',
+    categoria: 'historico',
+    ubicacion: {
+      type: 'Point',
+      coordinates: [-34.5732, -58.4597]  // [lng, lat] - Actualizar con ubicación real
+    },
+    direccion: 'Av. Elcano 3235',
+    barrio: 'Colegiales',
+    imagenUrl: 'https://via.placeholder.com/400x300?text=Hernán+Abriata',
+    mindFileUrl: '/targets/baldosa-0004.mind',
+    mensajeAR: 'Madre de Plaza de Mayo - Línea Fundadora',
+    infoExtendida: 'Hernán era estudiante de arquitectura, se había casado hacía pocos meses con Mónica. Militaba en la JUP de la Facultad de Arquitectura. Tenía 4 hermanas menores.',
+    vecesEscaneada: 0,
+    activo: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
   }
 ];
 
