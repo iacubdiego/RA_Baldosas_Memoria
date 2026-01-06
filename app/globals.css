@@ -514,6 +514,7 @@ button:active, .btn:active {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
 }
 
 .baldosa-animada {
@@ -522,6 +523,7 @@ button:active, .btn:active {
   height: 180px;
   transform-style: preserve-3d;
   animation: levantarBaldosa 2.5s ease-out forwards;
+  margin: 0 auto;
 }
 
 .baldosa-img {
@@ -556,74 +558,17 @@ button:active, .btn:active {
   animation: apareceVenecita 0.5s ease-out forwards;
 }
 
-/* Posiciones de venecitas en el perímetro */
-.venecita-1 {
-  top: 8px;
-  left: 8px;
-  animation-delay: 2.2s;
-  transform: rotate(-5deg);
-}
-
-.venecita-2 {
-  top: 10px;
-  left: 50px;
-  animation-delay: 2.4s;
-  transform: rotate(3deg);
-}
-
-.venecita-3 {
-  top: 6px;
-  right: 45px;
-  animation-delay: 2.6s;
-  transform: rotate(-2deg);
-}
-
-.venecita-4 {
-  top: 12px;
-  right: 8px;
-  animation-delay: 2.3s;
-  transform: rotate(4deg);
-}
-
-.venecita-5 {
-  bottom: 10px;
-  left: 12px;
-  animation-delay: 2.5s;
-  transform: rotate(2deg);
-}
-
-.venecita-6 {
-  bottom: 8px;
-  left: 55px;
-  animation-delay: 2.7s;
-  transform: rotate(-3deg);
-}
-
-.venecita-7 {
-  bottom: 12px;
-  right: 50px;
-  animation-delay: 2.35s;
-  transform: rotate(5deg);
-}
-
-.venecita-8 {
-  bottom: 6px;
-  right: 10px;
-  animation-delay: 2.55s;
-  transform: rotate(-4deg);
-}
-
 @keyframes apareceVenecita {
   0% {
     opacity: 0;
-    transform: scale(0) rotate(0deg);
+    scale: 0;
   }
   50% {
-    transform: scale(1.2);
+    scale: 1.2;
   }
   100% {
     opacity: 1;
-    transform: scale(1);
+    scale: 1;
   }
 }
 
@@ -631,8 +576,8 @@ button:active, .btn:active {
 .nuncamas-centro {
   position: absolute;
   top: 50%;
-  left: 40%;
-  transform: translate(-50%, -50%);
+  left: 50%;
+  transform: translate(-70%, -50%);
   width: 90px;
   height: 90px;
   object-fit: cover;
@@ -647,14 +592,14 @@ button:active, .btn:active {
 @keyframes apareceNuncaMas {
   0% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.3);
+    transform: translate(-70%, -50%) scale(0.3);
   }
   60% {
-    transform: translate(-50%, -50%) scale(1.1);
+    transform: translate(-70%, -50%) scale(1.1);
   }
   100% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translate(-70%, -50%) scale(1);
   }
 }
 
@@ -662,7 +607,7 @@ button:active, .btn:active {
 .logo-en-baldosa {
   position: absolute;
   top: 50%;
-  right: 15px;
+  right: 25px;
   transform: translateY(-50%);
   width: 70px;
   height: 70px;
@@ -723,7 +668,7 @@ button:active, .btn:active {
   .logo-en-baldosa {
     width: 55px;
     height: 55px;
-    right: 10px;
+    right: 15px;
   }
 }
 
@@ -742,12 +687,11 @@ button:active, .btn:active {
   .nuncamas-centro {
     width: 55px;
     height: 55px;
-    left: 35%;
   }
   .logo-en-baldosa {
     width: 45px;
     height: 45px;
-    right: 8px;
+    right: 10px;
   }
 }
 

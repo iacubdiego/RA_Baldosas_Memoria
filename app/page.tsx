@@ -1,6 +1,67 @@
+'use client'
+
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
+
+// Generar posiciones aleatorias para venecitas en el perímetro
+function generarVenecitas(cantidad: number) {
+  const venecitas = [];
+  const usados: {x: number, y: number}[] = [];
+  
+  for (let i = 0; i < cantidad; i++) {
+    let x, y, lado;
+    let intentos = 0;
+    
+    do {
+      // Elegir un lado del perímetro (0: arriba, 1: abajo, 2: izquierda, 3: derecha)
+      lado = Math.floor(Math.random() * 4);
+      
+      if (lado === 0) { // Arriba
+        x = Math.random() * 80 + 5; // 5% a 85%
+        y = Math.random() * 15 + 3; // 3% a 18%
+      } else if (lado === 1) { // Abajo
+        x = Math.random() * 80 + 5;
+        y = Math.random() * 15 + 78; // 78% a 93%
+      } else if (lado === 2) { // Izquierda
+        x = Math.random() * 12 + 3; // 3% a 15%
+        y = Math.random() * 50 + 25; // 25% a 75%
+      } else { // Derecha
+        x = Math.random() * 12 + 82; // 82% a 94%
+        y = Math.random() * 50 + 25;
+      }
+      
+      intentos++;
+    } while (
+      intentos < 20 && 
+      usados.some(u => Math.abs(u.x - x) < 12 && Math.abs(u.y - y) < 15)
+    );
+    
+    usados.push({x, y});
+    
+    const rotacion = Math.random() * 30 - 15; // -15 a 15 grados
+    const delay = 2.1 + Math.random() * 0.8; // 2.1s a 2.9s
+    const imgNum = (i % 8) + 1; // Ciclar entre 1-8
+    
+    venecitas.push({
+      id: i,
+      imgNum,
+      x,
+      y,
+      rotacion,
+      delay
+    });
+  }
+  
+  return venecitas;
+}
 
 export default function Home() {
+  const [venecitas, setVenecitas] = useState<any[]>([]);
+  
+  useEffect(() => {
+    setVenecitas(generarVenecitas(16)); // 16 venecitas (el doble)
+  }, []);
+
   return (
     <div className="hero-background">
       <div style={{
@@ -27,14 +88,20 @@ export default function Home() {
               
               {/* Venecitas que aparecen en el perímetro */}
               <div className="venecitas-container">
-                <img src="/venecitas/venecita01.png" alt="" className="venecita venecita-1" />
-                <img src="/venecitas/venecita02.png" alt="" className="venecita venecita-2" />
-                <img src="/venecitas/venecita03.png" alt="" className="venecita venecita-3" />
-                <img src="/venecitas/venecita04.png" alt="" className="venecita venecita-4" />
-                <img src="/venecitas/venecita05.png" alt="" className="venecita venecita-5" />
-                <img src="/venecitas/venecita06.png" alt="" className="venecita venecita-6" />
-                <img src="/venecitas/venecita07.png" alt="" className="venecita venecita-7" />
-                <img src="/venecitas/venecita08.png" alt="" className="venecita venecita-8" />
+                {venecitas.map((v) => (
+                  <img 
+                    key={v.id}
+                    src={`/venecitas/venecita0${v.imgNum}.jpg`}
+                    alt="" 
+                    className="venecita"
+                    style={{
+                      left: `${v.x}%`,
+                      top: `${v.y}%`,
+                      transform: `translate(-50%, -50%) rotate(${v.rotacion}deg)`,
+                      animationDelay: `${v.delay}s`,
+                    }}
+                  />
+                ))}
               </div>
               
               {/* Imagen central - Nunca Más */}
