@@ -27,14 +27,14 @@ export default function Home() {
               
               {/* Venecitas que aparecen en el perímetro */}
               <div className="venecitas-container">
-                <img src="/venecitas/venecita01.jpg" alt="" className="venecita venecita-1" />
-                <img src="/venecitas/venecita02.jpg" alt="" className="venecita venecita-2" />
-                <img src="/venecitas/venecita03.jpg" alt="" className="venecita venecita-3" />
-                <img src="/venecitas/venecita04.jpg" alt="" className="venecita venecita-4" />
-                <img src="/venecitas/venecita05.jpg" alt="" className="venecita venecita-5" />
-                <img src="/venecitas/venecita06.jpg" alt="" className="venecita venecita-6" />
-                <img src="/venecitas/venecita07.jpg" alt="" className="venecita venecita-7" />
-                <img src="/venecitas/venecita08.jpg" alt="" className="venecita venecita-8" />
+                <img src="/venecitas/venecita01.png" alt="" className="venecita venecita-1" />
+                <img src="/venecitas/venecita02.png" alt="" className="venecita venecita-2" />
+                <img src="/venecitas/venecita03.png" alt="" className="venecita venecita-3" />
+                <img src="/venecitas/venecita04.png" alt="" className="venecita venecita-4" />
+                <img src="/venecitas/venecita05.png" alt="" className="venecita venecita-5" />
+                <img src="/venecitas/venecita06.png" alt="" className="venecita venecita-6" />
+                <img src="/venecitas/venecita07.png" alt="" className="venecita venecita-7" />
+                <img src="/venecitas/venecita08.png" alt="" className="venecita venecita-8" />
               </div>
               
               {/* Imagen central - Nunca Más */}
