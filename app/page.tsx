@@ -109,6 +109,11 @@ export default function Home() {
                 ))}
               </div>
               
+              {/* Texto superior - Memoria, Verdad y Justicia */}
+              <span className="baldosa-texto-superior">
+                Memoria, Verdad y Justicia
+              </span>
+              
               {/* Imagen central - Nunca Más */}
               <img 
                 src="/nuncamas-avatar.jpg" 
@@ -116,12 +121,14 @@ export default function Home() {
                 className="nuncamas-centro"
               />
               
-              {/* Logo del pañuelo a la derecha */}
-              <img 
-                src="/panuelo-bg-sin-fondo.png" 
-                alt="Pañuelo de las Abuelas de Plaza de Mayo"
-                className="logo-en-baldosa"
-              />
+              {/* Texto inferior - Fecha dinámica */}
+              <span className="baldosa-texto-inferior">
+                {new Date().toLocaleDateString('es-AR', { 
+                  day: 'numeric', 
+                  month: 'long', 
+                  year: 'numeric' 
+                })}
+              </span>
             </div>
           </div>
 
