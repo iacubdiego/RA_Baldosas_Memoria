@@ -68,6 +68,157 @@
         font-size: 14px;
       }
       
+      /* Pantalla de solicitud de permiso de ubicación */
+      #permission-request {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #1a2a3a;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+      
+      #permission-request .icon {
+        font-size: 72px;
+        margin-bottom: 25px;
+        animation: pulse 2s ease-in-out infinite;
+      }
+      
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.8; }
+      }
+      
+      #permission-request h2 {
+        font-size: 1.6rem;
+        margin-bottom: 15px;
+        font-weight: 600;
+      }
+      
+      #permission-request p {
+        opacity: 0.85;
+        margin-bottom: 15px;
+        max-width: 400px;
+        line-height: 1.5;
+      }
+      
+      #permission-request .why {
+        font-size: 0.9rem;
+        opacity: 0.7;
+        margin-bottom: 30px;
+        max-width: 350px;
+      }
+      
+      #permission-request button {
+        padding: 15px 40px;
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-bottom: 15px;
+      }
+      
+      #permission-request button:hover {
+        background: #1d4ed8;
+        transform: scale(1.02);
+      }
+      
+      #permission-request .skip-btn {
+        background: transparent;
+        border: 2px solid rgba(255,255,255,0.3);
+        font-size: 14px;
+        padding: 10px 25px;
+      }
+      
+      #permission-request .skip-btn:hover {
+        border-color: rgba(255,255,255,0.5);
+        background: rgba(255,255,255,0.1);
+      }
+      
+      /* Pantalla de permiso denegado */
+      #permission-denied {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #1a2a3a;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+      
+      #permission-denied .icon {
+        font-size: 64px;
+        margin-bottom: 20px;
+      }
+      
+      #permission-denied h2 {
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+        color: #ef4444;
+      }
+      
+      #permission-denied p {
+        opacity: 0.85;
+        margin-bottom: 10px;
+        max-width: 400px;
+        line-height: 1.5;
+      }
+      
+      #permission-denied .instructions {
+        background: rgba(255,255,255,0.1);
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+        text-align: left;
+        max-width: 350px;
+      }
+      
+      #permission-denied .instructions h3 {
+        font-size: 1rem;
+        margin-bottom: 10px;
+        color: #0ea5e9;
+      }
+      
+      #permission-denied .instructions ol {
+        margin-left: 20px;
+        font-size: 0.9rem;
+        opacity: 0.9;
+      }
+      
+      #permission-denied .instructions li {
+        margin-bottom: 8px;
+      }
+      
+      #permission-denied button {
+        padding: 12px 30px;
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-top: 20px;
+      }
+      
       /* Pantalla de no hay baldosa cerca */
       #no-baldosa {
         position: fixed;
@@ -461,11 +612,40 @@
   </head>
 
   <body>
+    <!-- Pantalla de solicitud de permiso -->
+    <div id="permission-request">
+      <div class="icon">📍</div>
+      <h2>Necesitamos tu ubicación</h2>
+      <p>Para encontrar las baldosas de la memoria cercanas, necesitamos acceder a tu ubicación.</p>
+      <p class="why">Tu ubicación solo se usa para mostrar baldosas cercanas y no se guarda ni comparte.</p>
+      <button onclick="solicitarPermiso()">Permitir ubicación</button>
+      <button class="skip-btn" onclick="window.location.href='/mapa'">Ver mapa sin ubicación</button>
+    </div>
+    
+    <!-- Pantalla de permiso denegado -->
+    <div id="permission-denied">
+      <div class="icon">🚫</div>
+      <h2>Ubicación no disponible</h2>
+      <p>No pudimos acceder a tu ubicación. Para usar el escáner, necesitás habilitar el permiso de ubicación.</p>
+      <div class="instructions">
+        <h3>¿Cómo habilitarlo?</h3>
+        <ol>
+          <li>Tocá el ícono de candado 🔒 en la barra de direcciones</li>
+          <li>Buscá "Ubicación" o "Location"</li>
+          <li>Cambiá a "Permitir"</li>
+          <li>Recargá la página</li>
+        </ol>
+      </div>
+      <button onclick="window.location.reload()">🔄 Reintentar</button>
+      <br>
+      <a href="/mapa" style="display: inline-block; margin-top: 15px; color: #0ea5e9; text-decoration: none;">Ver mapa sin ubicación →</a>
+    </div>
+    
     <!-- Loading -->
-    <div id="loading">
+    <div id="loading" style="display: none;">
       <div class="spinner"></div>
       <p id="loading-text">Obteniendo tu ubicación...</p>
-      <p class="hint">Permitir acceso a la ubicación cuando se solicite</p>
+      <p class="hint">Esto puede tardar unos segundos</p>
       <div class="status" id="loading-status"></div>
     </div>
     
@@ -846,15 +1026,44 @@
         await iniciar();
       }
 
-      // Iniciar aplicación
-      async function iniciar() {
+      // Elementos DOM adicionales para permisos
+      const permissionRequestEl = document.getElementById('permission-request');
+      const permissionDeniedEl = document.getElementById('permission-denied');
+
+      // Verificar estado del permiso de ubicación
+      async function verificarPermisoUbicacion() {
+        // Verificar si el navegador soporta la API de permisos
+        if (navigator.permissions && navigator.permissions.query) {
+          try {
+            const result = await navigator.permissions.query({ name: 'geolocation' });
+            return result.state; // 'granted', 'denied', 'prompt'
+          } catch (e) {
+            // Algunos navegadores no soportan query para geolocation
+            return 'prompt';
+          }
+        }
+        return 'prompt'; // Asumir que necesita preguntar
+      }
+
+      // Solicitar permiso de ubicación
+      async function solicitarPermiso() {
+        permissionRequestEl.style.display = 'none';
+        loadingEl.style.display = 'flex';
+        
         try {
-          // 1. Obtener ubicación
-          loadingText.textContent = 'Obteniendo tu ubicación...';
-          loadingStatus.textContent = 'Esto puede tardar unos segundos';
-          
           userLocation = await obtenerUbicacion();
-          console.log('📍 Ubicación:', userLocation);
+          console.log('📍 Ubicación obtenida:', userLocation);
+          await continuarConUbicacion();
+        } catch (error) {
+          console.error('Error obteniendo ubicación:', error);
+          loadingEl.style.display = 'none';
+          permissionDeniedEl.style.display = 'flex';
+        }
+      }
+
+      // Continuar con la ubicación obtenida
+      async function continuarConUbicacion() {
+        try {
           loadingStatus.textContent = `Precisión: ±${Math.round(userLocation.accuracy)}m`;
           
           // 2. Buscar baldosas cercanas
@@ -892,6 +1101,30 @@
           loadingText.textContent = 'Error';
           loadingStatus.textContent = error.message;
           mostrarToast(error.message, 'error', 5000);
+        }
+      }
+
+      // Iniciar aplicación - verifica permisos primero
+      async function iniciar() {
+        const estadoPermiso = await verificarPermisoUbicacion();
+        console.log('🔐 Estado del permiso:', estadoPermiso);
+        
+        if (estadoPermiso === 'granted') {
+          // Permiso ya otorgado, continuar directamente
+          loadingEl.style.display = 'flex';
+          try {
+            userLocation = await obtenerUbicacion();
+            await continuarConUbicacion();
+          } catch (error) {
+            loadingEl.style.display = 'none';
+            permissionDeniedEl.style.display = 'flex';
+          }
+        } else if (estadoPermiso === 'denied') {
+          // Permiso denegado, mostrar pantalla de ayuda
+          permissionDeniedEl.style.display = 'flex';
+        } else {
+          // Necesita preguntar, mostrar pantalla de solicitud
+          permissionRequestEl.style.display = 'flex';
         }
       }
 
