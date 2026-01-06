@@ -24,7 +24,27 @@ export default function Home() {
                 alt="Baldosa"
                 className="baldosa-img"
               />
-              {/* Logo superpuesto en la baldosa */}
+              
+              {/* Venecitas que aparecen en el perímetro */}
+              <div className="venecitas-container">
+                <img src="/venecitas/venecita01.jpg" alt="" className="venecita venecita-1" />
+                <img src="/venecitas/venecita02.jpg" alt="" className="venecita venecita-2" />
+                <img src="/venecitas/venecita03.jpg" alt="" className="venecita venecita-3" />
+                <img src="/venecitas/venecita04.jpg" alt="" className="venecita venecita-4" />
+                <img src="/venecitas/venecita05.jpg" alt="" className="venecita venecita-5" />
+                <img src="/venecitas/venecita06.jpg" alt="" className="venecita venecita-6" />
+                <img src="/venecitas/venecita07.jpg" alt="" className="venecita venecita-7" />
+                <img src="/venecitas/venecita08.jpg" alt="" className="venecita venecita-8" />
+              </div>
+              
+              {/* Imagen central - Nunca Más */}
+              <img 
+                src="/nuncamas-avatar.jpg" 
+                alt="Nunca Más"
+                className="nuncamas-centro"
+              />
+              
+              {/* Logo del pañuelo a la derecha */}
               <img 
                 src="/panuelo-bg-sin-fondo.png" 
                 alt="Pañuelo de las Abuelas de Plaza de Mayo"

@@ -508,9 +508,9 @@ button:active, .btn:active {
 
 /* Animación de baldosa que se levanta */
 .logo-baldosa-container {
-  perspective: 1000px;
+  perspective: 1200px;
   margin-bottom: var(--space-lg);
-  height: 180px;
+  height: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -518,8 +518,8 @@ button:active, .btn:active {
 
 .baldosa-animada {
   position: relative;
-  width: 150px;
-  height: 150px;
+  width: 320px;
+  height: 180px;
   transform-style: preserve-3d;
   animation: levantarBaldosa 2.5s ease-out forwards;
 }
@@ -533,18 +533,144 @@ button:active, .btn:active {
   box-shadow: 0 20px 40px rgba(0,0,0,0.4);
 }
 
+/* Contenedor de venecitas */
+.venecitas-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.venecita {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  border-radius: 3px;
+  opacity: 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  animation: apareceVenecita 0.5s ease-out forwards;
+}
+
+/* Posiciones de venecitas en el perímetro */
+.venecita-1 {
+  top: 8px;
+  left: 8px;
+  animation-delay: 2.2s;
+  transform: rotate(-5deg);
+}
+
+.venecita-2 {
+  top: 10px;
+  left: 50px;
+  animation-delay: 2.4s;
+  transform: rotate(3deg);
+}
+
+.venecita-3 {
+  top: 6px;
+  right: 45px;
+  animation-delay: 2.6s;
+  transform: rotate(-2deg);
+}
+
+.venecita-4 {
+  top: 12px;
+  right: 8px;
+  animation-delay: 2.3s;
+  transform: rotate(4deg);
+}
+
+.venecita-5 {
+  bottom: 10px;
+  left: 12px;
+  animation-delay: 2.5s;
+  transform: rotate(2deg);
+}
+
+.venecita-6 {
+  bottom: 8px;
+  left: 55px;
+  animation-delay: 2.7s;
+  transform: rotate(-3deg);
+}
+
+.venecita-7 {
+  bottom: 12px;
+  right: 50px;
+  animation-delay: 2.35s;
+  transform: rotate(5deg);
+}
+
+.venecita-8 {
+  bottom: 6px;
+  right: 10px;
+  animation-delay: 2.55s;
+  transform: rotate(-4deg);
+}
+
+@keyframes apareceVenecita {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Imagen central Nunca Más */
+.nuncamas-centro {
+  position: absolute;
+  top: 50%;
+  left: 40%;
+  transform: translate(-50%, -50%);
+  width: 90px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 50%;
+  opacity: 0;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+  border: 3px solid white;
+  animation: apareceNuncaMas 0.8s ease-out forwards;
+  animation-delay: 2s;
+}
+
+@keyframes apareceNuncaMas {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  60% {
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Logo del pañuelo a la derecha */
 .logo-en-baldosa {
   position: absolute;
   top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 75%;
-  height: 75%;
+  right: 15px;
+  transform: translateY(-50%);
+  width: 70px;
+  height: 70px;
   object-fit: contain;
   filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4));
   opacity: 0;
   animation: apareceLogoEnBaldosa 0.8s ease-out forwards;
-  animation-delay: 1.8s;
+  animation-delay: 2.3s;
 }
 
 @keyframes levantarBaldosa {
@@ -570,21 +696,58 @@ button:active, .btn:active {
 @keyframes apareceLogoEnBaldosa {
   0% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.5);
+    transform: translateY(-50%) scale(0.5);
   }
   100% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateY(-50%) scale(1);
   }
 }
 
 @media (max-width: 768px) {
   .logo-baldosa-container {
+    height: 180px;
+  }
+  .baldosa-animada {
+    width: 280px;
+    height: 160px;
+  }
+  .venecita {
+    width: 22px;
+    height: 22px;
+  }
+  .nuncamas-centro {
+    width: 70px;
+    height: 70px;
+  }
+  .logo-en-baldosa {
+    width: 55px;
+    height: 55px;
+    right: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo-baldosa-container {
     height: 150px;
   }
   .baldosa-animada {
-    width: 120px;
-    height: 120px;
+    width: 240px;
+    height: 140px;
+  }
+  .venecita {
+    width: 18px;
+    height: 18px;
+  }
+  .nuncamas-centro {
+    width: 55px;
+    height: 55px;
+    left: 35%;
+  }
+  .logo-en-baldosa {
+    width: 45px;
+    height: 45px;
+    right: 8px;
   }
 }
 
