@@ -19,18 +19,28 @@ function generarVenecitas(cantidad: number) {
       // Elegir un lado del perímetro (0: arriba, 1: abajo, 2: izquierda, 3: derecha)
       lado = Math.floor(Math.random() * 4);
       
-      if (lado === 0) { // Arriba
-        x = Math.random() * 80 + 5; // 5% a 85%
-        y = Math.random() * 15 + 3; // 3% a 18%
-      } else if (lado === 1) { // Abajo
-        x = Math.random() * 80 + 5;
-        y = Math.random() * 15 + 78; // 78% a 93%
+      if (lado === 0) { // Arriba - solo en las esquinas, evitando el texto superior
+        const esIzquierda = Math.random() > 0.5;
+        if (esIzquierda) {
+          x = Math.random() * 20 + 3; // 3% a 23%
+        } else {
+          x = Math.random() * 20 + 77; // 77% a 97%
+        }
+        y = Math.random() * 12 + 3; // 3% a 15%
+      } else if (lado === 1) { // Abajo - solo en las esquinas, evitando el texto de fecha
+        const esIzquierda = Math.random() > 0.5;
+        if (esIzquierda) {
+          x = Math.random() * 20 + 3; // 3% a 23%
+        } else {
+          x = Math.random() * 20 + 77; // 77% a 97%
+        }
+        y = Math.random() * 12 + 83; // 83% a 95%
       } else if (lado === 2) { // Izquierda
-        x = Math.random() * 12 + 3; // 3% a 15%
-        y = Math.random() * 50 + 25; // 25% a 75%
+        x = Math.random() * 10 + 3; // 3% a 13%
+        y = Math.random() * 40 + 30; // 30% a 70%
       } else { // Derecha
-        x = Math.random() * 12 + 82; // 82% a 94%
-        y = Math.random() * 50 + 25;
+        x = Math.random() * 10 + 87; // 87% a 97%
+        y = Math.random() * 40 + 30; // 30% a 70%
       }
       
       // Verificar que no se superponga con ninguna existente
