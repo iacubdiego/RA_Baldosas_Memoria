@@ -134,10 +134,10 @@ export default function Home() {
               {/* Texto inferior - Fecha dinámica */}
               <span className="baldosa-texto-inferior">
                 {new Date().toLocaleDateString('es-AR', { 
-                  day: 'numeric', 
-                  month: 'long', 
+                  day: '2-digit', 
+                  month: '2-digit', 
                   year: 'numeric' 
-                })}
+                }).replace(/\//g, '-')}
               </span>
             </div>
           </div>

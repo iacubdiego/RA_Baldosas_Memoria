@@ -510,7 +510,7 @@ button:active, .btn:active {
 .logo-baldosa-container {
   perspective: 1200px;
   margin-bottom: var(--space-lg);
-  height: 260px;
+  height: 320px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -520,8 +520,8 @@ button:active, .btn:active {
 
 .baldosa-animada {
   position: relative;
-  width: 380px;
-  height: 220px;
+  width: 480px;
+  height: 280px;
   transform-style: preserve-3d;
   animation: levantarBaldosa 2.5s ease-out forwards;
   margin: 0 auto;
@@ -646,7 +646,7 @@ button:active, .btn:active {
     transform: translate(-50%, -50%) scale(1.1);
   }
   100% {
-    opacity: 0.85;
+    opacity: 0.7;
     transform: translate(-50%, -50%) scale(1);
   }
 }
