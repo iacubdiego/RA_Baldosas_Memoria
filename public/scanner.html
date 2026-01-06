@@ -213,76 +213,41 @@
         left: 0;
         right: 0;
         bottom: 0;
-        z-index: 998;
+        z-index: 997; /* Debajo del info-panel (1000) */
         display: none;
-        pointer-events: none; /* Permite interactuar con la cámara debajo */
+        pointer-events: none;
       }
       
-      /* Contenedor de siluetas - crece desde arriba del info-panel */
+      /* Contenedor de siluetas - detrás del cartel, sin espacios */
       #siluetas-container {
         position: fixed;
-        bottom: 160px; /* Arriba del info-panel */
+        bottom: 0;
         left: 0;
         right: 0;
         top: 0;
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        align-content: flex-end; /* Alinea desde abajo hacia arriba */
-        gap: 8px;
-        padding: 15px;
         overflow: hidden;
         pointer-events: none;
       }
       
       .silueta {
-        width: 55px;
+        position: absolute;
+        width: 60px;
         height: auto;
         opacity: 0;
         animation: aparecerSilueta 0.6s ease-out forwards;
-        flex-shrink: 0;
       }
       
       .silueta img {
         width: 100%;
         height: auto;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        opacity: 0.6; /* Transparencia */
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
       }
       
       @keyframes aparecerSilueta {
         0% {
           opacity: 0;
-          transform: translateY(30px) scale(0.8);
-        }
-        100% {
-          opacity: 1;
-          transform: translateY(0) scale(1);
-        }
-      }
-      
-      /* Mensaje principal - ahora sobre las siluetas */
-      #memorial-mensaje {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 1000;
-        text-align: center;
-        color: white;
-        animation: mensajeAparece 1s ease-out forwards;
-        animation-delay: 3s;
-        opacity: 0;
-        background: rgba(26, 42, 58, 0.9);
-        padding: 25px 40px;
-        border-radius: 16px;
-        backdrop-filter: blur(10px);
-        pointer-events: auto;
-      }
-      
-      @keyframes mensajeAparece {
-        0% {
-          opacity: 0;
-          transform: scale(0.9);
+          transform: scale(0.5);
         }
         100% {
           opacity: 1;
@@ -290,36 +255,30 @@
         }
       }
       
-      #memorial-mensaje .numero {
-        font-size: 3.5rem;
-        font-weight: bold;
-        color: #ffffff;
-        text-shadow: 0 0 30px rgba(255,255,255,0.5);
-        letter-spacing: 0.1em;
-        margin-bottom: 5px;
+      /* GIF de memorial - centrado en pantalla */
+      #memorial-gif {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 999;
+        max-width: 200px;
+        max-height: 200px;
+        opacity: 0;
+        animation: apareceGif 1s ease-out forwards;
+        animation-delay: 2s;
+        pointer-events: none;
       }
       
-      #memorial-mensaje .texto {
-        font-size: 1.3rem;
-        font-weight: 300;
-        text-transform: uppercase;
-        letter-spacing: 0.15em;
-        color: #e5e7eb;
-      }
-      
-      #memorial-mensaje .presentes {
-        font-size: 2.2rem;
-        font-weight: bold;
-        color: #2563eb;
-        margin-top: 15px;
-        text-shadow: 0 0 20px rgba(37, 99, 235, 0.5);
-        animation: pulso 2s ease-in-out infinite;
-        animation-delay: 4s;
-      }
-      
-      @keyframes pulso {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.8; transform: scale(1.05); }
+      @keyframes apareceGif {
+        0% {
+          opacity: 0;
+          transform: translate(-50%, -50%) scale(0.5);
+        }
+        100% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1);
+        }
       }
       
       /* Botón cerrar memorial */
@@ -352,21 +311,11 @@
       
       @media (max-width: 480px) {
         .silueta {
-          width: 45px;
+          width: 50px;
         }
-        #siluetas-container {
-          bottom: 140px;
-          gap: 6px;
-          padding: 10px;
-        }
-        #memorial-mensaje .numero {
-          font-size: 2.5rem;
-        }
-        #memorial-mensaje .texto {
-          font-size: 1rem;
-        }
-        #memorial-mensaje .presentes {
-          font-size: 1.6rem;
+        #memorial-gif {
+          max-width: 150px;
+          max-height: 150px;
         }
       }
       
@@ -572,12 +521,9 @@
     <!-- Overlay de memorial con siluetas -->
     <div id="memorial-overlay">
       <div id="siluetas-container"></div>
-      <div id="memorial-mensaje">
-        <div class="numero">30.000</div>
-        <div class="texto">Detenidos Desaparecidos</div>
-        <div class="presentes">¡PRESENTES!</div>
-      </div>
-      <button id="cerrar-memorial" onclick="cerrarMemorial()">Continuar</button>
+      <!-- GIF de memorial - colocar tu GIF en /public/memorial.gif -->
+      <img id="memorial-gif" src="/memorial.gif" alt="Memorial" onerror="this.style.display='none'">
+      <button id="cerrar-memorial" onclick="cerrarMemorial()">✕ Cerrar</button>
     </div>
 
     <!-- Contenedor AR (se llena dinámicamente) -->
@@ -611,12 +557,12 @@
         memorialOverlay.style.display = 'block';
         siluetasContainer.innerHTML = '';
         
-        // Agregar siluetas progresivamente para llenar la pantalla
-        const numSiluetas = 50; // Más siluetas para llenar
+        // Agregar siluetas progresivamente en posiciones aleatorias
+        const numSiluetas = 60;
         for (let i = 0; i < numSiluetas; i++) {
           setTimeout(() => {
             agregarSilueta(i);
-          }, i * 120); // 120ms entre cada silueta
+          }, i * 100); // 100ms entre cada silueta
         }
       }
       
@@ -627,9 +573,16 @@
         // Número de imagen (1 a 11, cíclico)
         const numImagen = (index % TOTAL_SILUETAS) + 1;
         
+        // Posición aleatoria en la pantalla
+        const randomX = Math.random() * (window.innerWidth - 60);
+        const randomY = Math.random() * (window.innerHeight - 100);
+        
+        silueta.style.left = `${randomX}px`;
+        silueta.style.top = `${randomY}px`;
+        silueta.style.animationDelay = `${Math.random() * 0.3}s`;
+        
         // Ruta correcta: /siluetas/silueta1.png, /siluetas/silueta2.png, etc
-        silueta.innerHTML = `<img src="/siluetas/silueta${numImagen}.png" alt="" onerror="this.style.display='none'">`;
-        silueta.style.animationDelay = `${index * 0.08}s`;
+        silueta.innerHTML = `<img src="/siluetas/silueta${numImagen}.png" alt="" onerror="this.parentElement.remove()">`;
         
         siluetasContainer.appendChild(silueta);
       }
