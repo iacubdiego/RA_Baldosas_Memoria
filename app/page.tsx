@@ -1,17 +1,5 @@
 import Link from 'next/link'
 
-// Imagen del pañuelo de las Abuelas de Plaza de Mayo
-const PanueloIcon = () => (
-  <img 
-    src="/panuelo-bg-sin-fondo.png" 
-    alt="Pañuelo de las Abuelas de Plaza de Mayo"
-    className="panuelo-icon animate-float"
-    style={{
-      objectFit: 'contain',
-    }}
-  />
-)
-
 export default function Home() {
   return (
     <div className="hero-background">
@@ -27,9 +15,22 @@ export default function Home() {
       }}>
         <div className="container" style={{ textAlign: 'center', maxWidth: '900px' }}>
           
-          {/* Pañuelo Icon */}
-          <div className="panuelo-container animate-fade-in">
-            <PanueloIcon />
+          {/* Logo con animación de baldosa que se levanta */}
+          <div className="logo-baldosa-container">
+            {/* Baldosa que se levanta desde el piso */}
+            <div className="baldosa-animada">
+              <img 
+                src="/baldoson.jpg" 
+                alt="Baldosa"
+                className="baldosa-img"
+              />
+              {/* Logo superpuesto en la baldosa */}
+              <img 
+                src="/panuelo-bg-sin-fondo.png" 
+                alt="Pañuelo de las Abuelas de Plaza de Mayo"
+                className="logo-en-baldosa"
+              />
+            </div>
           </div>
 
           {/* Título principal */}
