@@ -9,7 +9,9 @@ function generarVenecitas(cantidad: number) {
   const usados: {x: number, y: number}[] = [];
   
   for (let i = 0; i < cantidad; i++) {
-    let x, y, lado;
+    let x: number = 0;
+    let y: number = 0;
+    let lado: number = 0;
     let intentos = 0;
     
     do {
