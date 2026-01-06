@@ -515,6 +515,7 @@ button:active, .btn:active {
   align-items: center;
   justify-content: center;
   width: 100%;
+  text-align: left; /* Evitar herencia de text-align: center */
 }
 
 .baldosa-animada {
@@ -524,6 +525,7 @@ button:active, .btn:active {
   transform-style: preserve-3d;
   animation: levantarBaldosa 2.5s ease-out forwards;
   margin: 0 auto;
+  text-align: left; /* Evitar herencia de text-align: center */
 }
 
 .baldosa-img {

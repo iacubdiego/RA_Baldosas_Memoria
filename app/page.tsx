@@ -13,6 +13,7 @@ function generarVenecitas(cantidad: number) {
     let y: number = 0;
     let lado: number = 0;
     let intentos = 0;
+    let posicionValida = false;
     
     do {
       // Elegir un lado del perímetro (0: arriba, 1: abajo, 2: izquierda, 3: derecha)
@@ -32,26 +33,28 @@ function generarVenecitas(cantidad: number) {
         y = Math.random() * 50 + 25;
       }
       
+      // Verificar que no se superponga con ninguna existente
+      posicionValida = !usados.some(u => Math.abs(u.x - x) < 15 && Math.abs(u.y - y) < 20);
       intentos++;
-    } while (
-      intentos < 20 && 
-      usados.some(u => Math.abs(u.x - x) < 12 && Math.abs(u.y - y) < 15)
-    );
+    } while (!posicionValida && intentos < 50);
     
-    usados.push({x, y});
-    
-    const rotacion = Math.random() * 30 - 15; // -15 a 15 grados
-    const delay = 2.1 + Math.random() * 0.8; // 2.1s a 2.9s
-    const imgNum = (i % 8) + 1; // Ciclar entre 1-8
-    
-    venecitas.push({
-      id: i,
-      imgNum,
-      x,
-      y,
-      rotacion,
-      delay
-    });
+    // Solo agregar si encontramos una posición válida
+    if (posicionValida) {
+      usados.push({x, y});
+      
+      const rotacion = Math.random() * 30 - 15; // -15 a 15 grados
+      const delay = 2.1 + Math.random() * 0.8; // 2.1s a 2.9s
+      const imgNum = (i % 8) + 1; // Ciclar entre 1-8
+      
+      venecitas.push({
+        id: i,
+        imgNum,
+        x,
+        y,
+        rotacion,
+        delay
+      });
+    }
   }
   
   return venecitas;
@@ -93,7 +96,7 @@ export default function Home() {
                 {venecitas.map((v) => (
                   <img 
                     key={v.id}
-                    src={`/venecitas/venecita0${v.imgNum}.jpg`}
+                    src={`/venecitas/venecita0${v.imgNum}.png`}
                     alt="" 
                     className="venecita"
                     style={{
