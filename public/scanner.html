@@ -206,79 +206,77 @@
         animation: slideUp 0.3s ease-out;
       }
       
-      /* Overlay de memorial */
+      /* Overlay de memorial - SIN fondo oscuro */
       #memorial-overlay {
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.85);
-        z-index: 999;
+        z-index: 998;
         display: none;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-end;
-        padding: 20px;
-        padding-bottom: 180px; /* Espacio para el panel de info */
-        animation: fadeIn 0.5s ease-out;
+        pointer-events: none; /* Permite interactuar con la cámara debajo */
       }
       
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-      
-      /* Contenedor de siluetas - crece desde abajo */
+      /* Contenedor de siluetas - crece desde arriba del info-panel */
       #siluetas-container {
-        position: absolute;
-        bottom: 180px; /* Arriba del panel de info */
+        position: fixed;
+        bottom: 160px; /* Arriba del info-panel */
         left: 0;
         right: 0;
+        top: 0;
         display: flex;
-        flex-wrap: wrap-reverse;
+        flex-wrap: wrap;
         justify-content: center;
-        align-content: flex-start;
-        gap: 5px;
-        padding: 10px;
-        max-height: calc(100vh - 280px);
+        align-content: flex-end; /* Alinea desde abajo hacia arriba */
+        gap: 8px;
+        padding: 15px;
         overflow: hidden;
+        pointer-events: none;
       }
       
       .silueta {
-        width: 60px;
+        width: 55px;
         height: auto;
         opacity: 0;
-        animation: aparecerSilueta 0.5s ease-out forwards;
+        animation: aparecerSilueta 0.6s ease-out forwards;
+        flex-shrink: 0;
       }
       
       .silueta img {
         width: 100%;
         height: auto;
-        filter: brightness(0) invert(1); /* Hacer las siluetas blancas */
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
       }
       
       @keyframes aparecerSilueta {
         0% {
           opacity: 0;
-          transform: translateY(20px);
+          transform: translateY(30px) scale(0.8);
         }
         100% {
-          opacity: 0.9;
-          transform: translateY(0);
+          opacity: 1;
+          transform: translateY(0) scale(1);
         }
       }
       
-      /* Mensaje principal */
+      /* Mensaje principal - ahora sobre las siluetas */
       #memorial-mensaje {
-        position: relative;
-        z-index: 2;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1000;
         text-align: center;
         color: white;
         animation: mensajeAparece 1s ease-out forwards;
         animation-delay: 3s;
         opacity: 0;
-        margin-bottom: 20px;
+        background: rgba(26, 42, 58, 0.9);
+        padding: 25px 40px;
+        border-radius: 16px;
+        backdrop-filter: blur(10px);
+        pointer-events: auto;
       }
       
       @keyframes mensajeAparece {
@@ -327,20 +325,20 @@
       /* Botón cerrar memorial */
       #cerrar-memorial {
         position: fixed;
-        bottom: 200px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(255,255,255,0.15);
+        top: 20px;
+        right: 20px;
+        background: rgba(26, 42, 58, 0.9);
         border: 1px solid rgba(255,255,255,0.3);
         color: white;
-        padding: 12px 30px;
+        padding: 10px 20px;
         border-radius: 25px;
         font-size: 14px;
         cursor: pointer;
         z-index: 1001;
         opacity: 0;
         animation: aparecer 0.5s ease-out forwards;
-        animation-delay: 4.5s;
+        animation-delay: 1s;
+        pointer-events: auto;
       }
       
       @keyframes aparecer {
@@ -349,12 +347,17 @@
       }
       
       #cerrar-memorial:hover {
-        background: rgba(255,255,255,0.25);
+        background: rgba(37, 99, 235, 0.9);
       }
       
       @media (max-width: 480px) {
         .silueta {
           width: 45px;
+        }
+        #siluetas-container {
+          bottom: 140px;
+          gap: 6px;
+          padding: 10px;
         }
         #memorial-mensaje .numero {
           font-size: 2.5rem;
@@ -364,12 +367,6 @@
         }
         #memorial-mensaje .presentes {
           font-size: 1.6rem;
-        }
-        #siluetas-container {
-          bottom: 160px;
-        }
-        #cerrar-memorial {
-          bottom: 180px;
         }
       }
       
@@ -611,15 +608,15 @@
       
       // Mostrar animación de memorial
       function mostrarMemorial() {
-        memorialOverlay.style.display = 'flex';
+        memorialOverlay.style.display = 'block';
         siluetasContainer.innerHTML = '';
         
-        // Agregar siluetas progresivamente (en orden 1 a 11, luego repetir)
-        const numSiluetas = 22; // Mostrar 2 rondas de siluetas
+        // Agregar siluetas progresivamente para llenar la pantalla
+        const numSiluetas = 50; // Más siluetas para llenar
         for (let i = 0; i < numSiluetas; i++) {
           setTimeout(() => {
             agregarSilueta(i);
-          }, i * 150); // 150ms entre cada silueta
+          }, i * 120); // 120ms entre cada silueta
         }
       }
       
@@ -630,8 +627,9 @@
         // Número de imagen (1 a 11, cíclico)
         const numImagen = (index % TOTAL_SILUETAS) + 1;
         
-        silueta.innerHTML = `<img src="/siluetas${numImagen}.png" alt="Silueta ${numImagen}">`;
-        silueta.style.animationDelay = `${index * 0.1}s`;
+        // Ruta correcta: /siluetas/silueta1.png, /siluetas/silueta2.png, etc
+        silueta.innerHTML = `<img src="/siluetas/silueta${numImagen}.png" alt="" onerror="this.style.display='none'">`;
+        silueta.style.animationDelay = `${index * 0.08}s`;
         
         siluetasContainer.appendChild(silueta);
       }
