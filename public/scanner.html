@@ -865,8 +865,11 @@
       // Total de imágenes de siluetas disponibles
       const TOTAL_SILUETAS = 11;
       
-      // Mostrar animación de memorial
+      // Mostrar animación de memorial - COMENTADO
       function mostrarMemorial() {
+        console.log('🎭 Memorial desactivado - usando modelo GLB');
+        // COMENTADO: No mostrar siluetas, solo el modelo 3D
+        /*
         console.log('🎭 Iniciando memorial...');
         memorialOverlay.style.display = 'block';
         siluetasContainer.innerHTML = '';
@@ -885,8 +888,11 @@
             agregarSilueta(i, numSiluetas);
           }, i * 50); // 50ms entre cada silueta (más rápido)
         }
+        */
       }
       
+      // COMENTADO: función de agregar siluetas
+      /*
       function agregarSilueta(index, total) {
         const silueta = document.createElement('div');
         silueta.className = 'silueta';
@@ -1287,9 +1293,9 @@
               document.getElementById('info-descripcion').textContent = baldosa.descripcion || '';
               infoPanelEl.style.display = 'block';
               
-              console.log('🎭 Iniciando animación memorial...');
-              // Mostrar animación de memorial
-              mostrarMemorial();
+              console.log('🎮 Modelo GLB debería estar visible ahora');
+              // COMENTADO: No mostrar siluetas memorial
+              // mostrarMemorial();
             });
             
             target.addEventListener('targetLost', () => {
