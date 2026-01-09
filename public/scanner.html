@@ -1064,6 +1064,9 @@
         
         console.log('🏗️ Creando escena A-Frame con modelo GLB...');
         
+        // URL del modelo - cambiar a test_cubo.glb para probar
+        const glbUrl = `/models/test_cubo.glb`;
+        
         // Crear escena AR solo con el modelo GLB
         arContainer.innerHTML = `
           <a-scene
@@ -1074,22 +1077,33 @@
             device-orientation-permission-ui="enabled: false"
             style="width: 100%; height: 100%;">
             
-            <a-assets>
-              <a-asset-item id="abuelas-model" src="${glbUrl}"></a-asset-item>
+            <a-assets timeout="10000">
+              <a-asset-item id="modelo-3d" src="${glbUrl}"></a-asset-item>
             </a-assets>
             
             <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
             
             <a-entity mindar-image-target="targetIndex: 0">
               
-              <!-- MODELO 3D GLB - Abuelas levantando la baldosa -->
+              <!-- MODELO 3D GLB -->
               <a-entity 
-                gltf-model="#abuelas-model"
-                position="0 0 0"
-                rotation="-90 0 0"
-                scale="0.3 0.3 0.3"
+                id="modelo-principal"
+                gltf-model="#modelo-3d"
+                position="0 0.3 0"
+                rotation="0 0 0"
+                scale="0.2 0.2 0.2"
                 animation-mixer="loop: repeat; timeScale: 1;">
               </a-entity>
+              
+              <!-- Cubo de referencia (siempre visible si el target funciona) -->
+              <a-box
+                position="0 0 0"
+                width="0.3"
+                height="0.05"
+                depth="0.3"
+                color="#2563eb"
+                opacity="0.8">
+              </a-box>
               
             </a-entity>
           </a-scene>
@@ -1101,10 +1115,39 @@
         // Esperar a que la escena cargue
         const scene = arContainer.querySelector('a-scene');
         
+        // Debug: escuchar eventos de assets
         scene.addEventListener('loaded', () => {
           console.log('🎬 ============================================');
           console.log('🎬 ESCENA AR CARGADA COMPLETAMENTE');
           console.log('🎬 ============================================');
+          
+          // Verificar si el modelo se cargó
+          const modelo = document.getElementById('modelo-principal');
+          if (modelo) {
+            console.log('📦 Elemento modelo encontrado:', modelo);
+            
+            modelo.addEventListener('model-loaded', () => {
+              console.log('✅ ¡MODELO GLB CARGADO EXITOSAMENTE!');
+            });
+            
+            modelo.addEventListener('model-error', (e) => {
+              console.error('❌ ERROR cargando modelo GLB:', e);
+            });
+          } else {
+            console.log('⚠️ Elemento modelo no encontrado');
+          }
+          
+          // Verificar assets
+          const assets = scene.querySelector('a-assets');
+          if (assets) {
+            assets.addEventListener('loaded', () => {
+              console.log('✅ Assets cargados');
+            });
+            assets.addEventListener('timeout', () => {
+              console.error('❌ Timeout cargando assets');
+            });
+          }
+          
           loadingEl.style.display = 'none';
           
           // Mostrar botón de mapa
