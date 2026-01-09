@@ -913,17 +913,18 @@
         silueta.style.animationDelay = `${Math.random() * 0.2}s`;
         
         // Ruta: /siluetas/silueta1.png a silueta11.png
-        silueta.innerHTML = `<img src="/siluetas/silueta${numImagen}.png" alt="" onerror="console.log('❌ Error cargando silueta${numImagen}.png'); this.parentElement.remove()">`;
+        silueta.innerHTML = `<img src="/siluetas/silueta${numImagen}.png" alt="" onerror="console.log('Error cargando silueta'); this.parentElement.remove()">`;
         
         siluetasContainer.appendChild(silueta);
         
         if (index === 0) {
-          console.log('✅ Primera silueta agregada');
+          console.log('Primera silueta agregada');
         }
         if (index === total - 1) {
-          console.log(`✅ Todas las ${total} siluetas agregadas`);
+          console.log('Todas las siluetas agregadas');
         }
       }
+      */
       
       function cerrarMemorial() {
         memorialOverlay.style.opacity = '0';
@@ -1073,7 +1074,6 @@
             device-orientation-permission-ui="enabled: false"
             style="width: 100%; height: 100%;">
             
-            <!-- Assets: precargar el modelo GLB -->
             <a-assets>
               <a-asset-item id="abuelas-model" src="${glbUrl}"></a-asset-item>
             </a-assets>
@@ -1082,9 +1082,7 @@
             
             <a-entity mindar-image-target="targetIndex: 0">
               
-              <!-- ============================================ -->
               <!-- MODELO 3D GLB - Abuelas levantando la baldosa -->
-              <!-- ============================================ -->
               <a-entity 
                 gltf-model="#abuelas-model"
                 position="0 0 0"
@@ -1092,144 +1090,6 @@
                 scale="0.3 0.3 0.3"
                 animation-mixer="loop: repeat; timeScale: 1;">
               </a-entity>
-              
-              <!-- ============================================ -->
-              <!-- CÓDIGO ANTERIOR COMENTADO (cartel + partículas)
-              ============================================
-              
-              <!-- Cartel principal -->
-              <!--
-              <a-plane
-                position="0 0.15 0"
-                height="0.55"
-                width="0.85"
-                color="#ffffff"
-                opacity="0.95"
-                material="shader: flat">
-              </a-plane>
-              -->
-              
-              <!-- Barra superior azul -->
-              <!--
-              <a-plane
-                position="0 0.38 0.001"
-                height="0.08"
-                width="0.85"
-                color="#2563eb"
-                material="shader: flat">
-              </a-plane>
-              -->
-              
-              <!-- Nombre -->
-              <!--
-              <a-text
-                value="${baldosa.nombre.toUpperCase()}"
-                position="0 0.25 0.01"
-                align="center"
-                color="#1a2a3a"
-                width="1.4"
-                wrap-count="25">
-              </a-text>
-              -->
-              
-              <!-- Categoría -->
-              <!--
-              <a-text
-                value="${(baldosa.categoria || 'HISTORICO').toUpperCase()}"
-                position="0 0.12 0.01"
-                align="center"
-                color="#2563eb"
-                width="0.8">
-              </a-text>
-              -->
-              
-              <!-- Mensaje -->
-              <!--
-              <a-text
-                value="${(baldosa.mensajeAR || baldosa.descripcion || '').substring(0, 80)}"
-                position="0 -0.02 0.01"
-                align="center"
-                color="#4a6b7c"
-                width="1.2"
-                wrap-count="30">
-              </a-text>
-              -->
-              
-              <!-- PARTÍCULAS FLOTANTES - comentadas -->
-              <!--
-              <a-sphere 
-                position="-0.3 0.5 0" 
-                radius="0.015" 
-                color="#ffffff"
-                material="emissive: #ffffff; emissiveIntensity: 0.8"
-                animation="property: position; to: -0.25 0.7 0.1; dur: 3000; dir: alternate; loop: true; easing: easeInOutSine"
-                animation__opacity="property: material.opacity; from: 0.3; to: 1; dur: 1500; dir: alternate; loop: true">
-              </a-sphere>
-              
-              <a-sphere 
-                position="0.3 0.45 0" 
-                radius="0.012" 
-                color="#2563eb"
-                material="emissive: #2563eb; emissiveIntensity: 0.8"
-                animation="property: position; to: 0.35 0.65 -0.1; dur: 2500; dir: alternate; loop: true; easing: easeInOutSine"
-                animation__opacity="property: material.opacity; from: 0.4; to: 1; dur: 1200; dir: alternate; loop: true">
-              </a-sphere>
-              
-              <a-sphere 
-                position="0 0.6 0.1" 
-                radius="0.018" 
-                color="#ffffff"
-                material="emissive: #ffffff; emissiveIntensity: 0.9"
-                animation="property: position; to: 0.1 0.8 0; dur: 4000; dir: alternate; loop: true; easing: easeInOutSine"
-                animation__opacity="property: material.opacity; from: 0.5; to: 1; dur: 2000; dir: alternate; loop: true">
-              </a-sphere>
-              
-              <a-sphere 
-                position="-0.2 0.55 -0.05" 
-                radius="0.01" 
-                color="#0ea5e9"
-                material="emissive: #0ea5e9; emissiveIntensity: 0.7"
-                animation="property: position; to: -0.15 0.75 0.05; dur: 3500; dir: alternate; loop: true; easing: easeInOutSine"
-                animation__opacity="property: material.opacity; from: 0.3; to: 0.9; dur: 1800; dir: alternate; loop: true">
-              </a-sphere>
-              
-              <a-sphere 
-                position="0.2 0.5 0.05" 
-                radius="0.014" 
-                color="#ffffff"
-                material="emissive: #ffffff; emissiveIntensity: 0.8"
-                animation="property: position; to: 0.25 0.7 -0.05; dur: 2800; dir: alternate; loop: true; easing: easeInOutSine"
-                animation__opacity="property: material.opacity; from: 0.4; to: 1; dur: 1400; dir: alternate; loop: true">
-              </a-sphere>
-              
-              <a-sphere 
-                position="-0.35 0.4 0" 
-                radius="0.011" 
-                color="#2563eb"
-                material="emissive: #2563eb; emissiveIntensity: 0.7"
-                animation="property: position; to: -0.4 0.6 0.1; dur: 3200; dir: alternate; loop: true; easing: easeInOutSine"
-                animation__opacity="property: material.opacity; from: 0.3; to: 0.8; dur: 1600; dir: alternate; loop: true">
-              </a-sphere>
-              
-              <a-sphere 
-                position="0.35 0.35 0" 
-                radius="0.013" 
-                color="#ffffff"
-                material="emissive: #ffffff; emissiveIntensity: 0.9"
-                animation="property: position; to: 0.4 0.55 0.1; dur: 2600; dir: alternate; loop: true; easing: easeInOutSine"
-                animation__opacity="property: material.opacity; from: 0.5; to: 1; dur: 1300; dir: alternate; loop: true">
-              </a-sphere>
-              
-              <a-sphere 
-                position="0 0.7 0" 
-                radius="0.02" 
-                color="#ffffff"
-                material="emissive: #ffffff; emissiveIntensity: 1"
-                animation="property: position; to: 0 0.9 0; dur: 5000; dir: alternate; loop: true; easing: easeInOutSine"
-                animation__scale="property: scale; from: 1 1 1; to: 1.3 1.3 1.3; dur: 2000; dir: alternate; loop: true">
-              </a-sphere>
-              -->
-              <!-- FIN CÓDIGO COMENTADO -->
               
             </a-entity>
           </a-scene>
