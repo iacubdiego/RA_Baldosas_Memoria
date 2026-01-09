@@ -347,14 +347,112 @@
         bottom: 0;
         left: 0;
         right: 0;
-        background: linear-gradient(to top, rgba(26, 42, 58, 0.98), rgba(26, 42, 58, 0.9));
         color: white;
-        padding: 25px;
+        padding: 0;
         z-index: 1000;
-        backdrop-filter: blur(10px);
-        border-top: 3px solid #2563eb;
         display: none;
         animation: slideUp 0.3s ease-out;
+        overflow: hidden;
+      }
+      
+      #info-panel .baldosa-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url('/baldoson.jpg');
+        background-size: cover;
+        background-position: center;
+        filter: brightness(0.3);
+        z-index: 0;
+      }
+      
+      #info-panel .content {
+        position: relative;
+        z-index: 1;
+        padding: 25px;
+        display: flex;
+        align-items: flex-start;
+        gap: 15px;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      
+      #info-panel .checkmark {
+        width: 50px;
+        height: 50px;
+        background: #2563eb;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        flex-shrink: 0;
+      }
+      
+      #info-panel .info-text {
+        flex: 1;
+      }
+      
+      #info-panel h3 {
+        font-size: 1.3rem;
+        margin-bottom: 5px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      }
+      
+      #info-panel .categoria {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #0ea5e9;
+        margin-bottom: 8px;
+      }
+      
+      #info-panel .descripcion {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        line-height: 1.4;
+        max-height: 60px;
+        overflow: hidden;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      }
+      
+      #info-panel .btn-mas-info {
+        margin-top: 15px;
+        padding: 10px 20px;
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s;
+      }
+      
+      #info-panel .btn-mas-info:hover {
+        background: #1d4ed8;
+        transform: scale(1.02);
+      }
+      
+      /* Placeholder para animación 3D de abuelas */
+      #abuelas-container {
+        position: fixed;
+        bottom: 200px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 999;
+        display: none;
+        pointer-events: none;
+      }
+      
+      #abuelas-container img {
+        max-width: 300px;
+        max-height: 150px;
       }
       
       /* Overlay de memorial - SIN fondo oscuro */
@@ -364,12 +462,12 @@
         left: 0;
         right: 0;
         bottom: 0;
-        z-index: 997; /* Debajo del info-panel (1000) */
+        z-index: 100; /* Muy atrás, debajo de todo */
         display: none;
         pointer-events: none;
       }
       
-      /* Contenedor de siluetas - detrás del cartel, sin espacios */
+      /* Contenedor de siluetas - muy al fondo */
       #siluetas-container {
         position: fixed;
         bottom: 0;
@@ -378,21 +476,22 @@
         top: 0;
         overflow: hidden;
         pointer-events: none;
+        z-index: 100;
       }
       
       .silueta {
         position: absolute;
-        width: 60px;
+        width: 50px;
         height: auto;
         opacity: 0;
-        animation: aparecerSilueta 0.6s ease-out forwards;
+        animation: aparecerSilueta 0.8s ease-out forwards;
       }
       
       .silueta img {
         width: 100%;
         height: auto;
-        opacity: 0.6; /* Transparencia */
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        opacity: 0.25; /* Mucha más transparencia */
+        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
       }
       
       @keyframes aparecerSilueta {
@@ -688,14 +787,24 @@
     
     <!-- Panel de información -->
     <div id="info-panel">
+      <div class="baldosa-bg"></div>
       <div class="content">
         <div class="checkmark">✓</div>
-        <div>
+        <div class="info-text">
           <h3 id="info-nombre">Nombre</h3>
           <div class="categoria" id="info-categoria">Categoría</div>
           <p class="descripcion" id="info-descripcion">Descripción</p>
+          <button class="btn-mas-info" onclick="mostrarMasInfo()">
+            📖 Más información
+          </button>
         </div>
       </div>
+    </div>
+    
+    <!-- Contenedor para animación de abuelas (placeholder) -->
+    <div id="abuelas-container">
+      <!-- Cuando tengas la animación, colocar: -->
+      <!-- <img src="/abuelas-animacion.gif" alt="Abuelas levantando baldosa"> -->
     </div>
     
     <!-- Overlay de memorial con siluetas -->
@@ -715,6 +824,7 @@
       
       // Estado
       let baldosaCercana = null;
+      let currentBaldosa = null; // Baldosa actualmente detectada
       let userLocation = null;
       let arScene = null;
       
@@ -728,43 +838,85 @@
       const arContainer = document.getElementById('ar-container');
       const memorialOverlay = document.getElementById('memorial-overlay');
       const siluetasContainer = document.getElementById('siluetas-container');
+      const abuelasContainer = document.getElementById('abuelas-container');
+      
+      // Función para mostrar más información
+      function mostrarMasInfo() {
+        if (currentBaldosa) {
+          console.log('📖 Mostrando más info de:', currentBaldosa.nombre);
+          // Redirigir a página de detalle o mostrar modal
+          if (currentBaldosa.id) {
+            window.open(`/baldosa/${currentBaldosa.id}`, '_blank');
+          } else {
+            // Mostrar alerta con info completa si no hay página de detalle
+            alert(`${currentBaldosa.nombre}\n\n${currentBaldosa.descripcion || 'Sin descripción adicional'}\n\nCategoría: ${currentBaldosa.categoria || 'Histórico'}\nDirección: ${currentBaldosa.direccion || 'No especificada'}`);
+          }
+        }
+      }
+      
+      // Función para mostrar animación de abuelas (placeholder)
+      function mostrarAbuelasAnimacion() {
+        console.log('👵 Mostrando animación de abuelas...');
+        // Cuando tengas el GIF/animación:
+        // abuelasContainer.innerHTML = '<img src="/abuelas-animacion.gif" alt="Abuelas">';
+        // abuelasContainer.style.display = 'block';
+      }
       
       // Total de imágenes de siluetas disponibles
       const TOTAL_SILUETAS = 11;
       
       // Mostrar animación de memorial
       function mostrarMemorial() {
+        console.log('🎭 Iniciando memorial...');
         memorialOverlay.style.display = 'block';
         siluetasContainer.innerHTML = '';
         
-        // Agregar siluetas progresivamente en posiciones aleatorias
-        const numSiluetas = 60;
+        // Calcular cuántas siluetas necesitamos para llenar la pantalla
+        const siluetaSize = 50;
+        const cols = Math.ceil(window.innerWidth / siluetaSize) + 2;
+        const rows = Math.ceil(window.innerHeight / siluetaSize) + 2;
+        const numSiluetas = Math.min(cols * rows, 150); // Máximo 150
+        
+        console.log(`📊 Pantalla: ${window.innerWidth}x${window.innerHeight}, generando ${numSiluetas} siluetas`);
+        
+        // Agregar siluetas progresivamente
         for (let i = 0; i < numSiluetas; i++) {
           setTimeout(() => {
-            agregarSilueta(i);
-          }, i * 100); // 100ms entre cada silueta
+            agregarSilueta(i, numSiluetas);
+          }, i * 50); // 50ms entre cada silueta (más rápido)
         }
       }
       
-      function agregarSilueta(index) {
+      function agregarSilueta(index, total) {
         const silueta = document.createElement('div');
         silueta.className = 'silueta';
         
         // Número de imagen (1 a 11, cíclico)
         const numImagen = (index % TOTAL_SILUETAS) + 1;
         
-        // Posición aleatoria en la pantalla
-        const randomX = Math.random() * (window.innerWidth - 60);
-        const randomY = Math.random() * (window.innerHeight - 100);
+        // Posición aleatoria cubriendo toda la pantalla
+        const randomX = Math.random() * window.innerWidth;
+        const randomY = Math.random() * window.innerHeight;
+        
+        // Tamaño variable para más naturalidad
+        const sizeVariation = 40 + Math.random() * 30; // 40-70px
         
         silueta.style.left = `${randomX}px`;
         silueta.style.top = `${randomY}px`;
-        silueta.style.animationDelay = `${Math.random() * 0.3}s`;
+        silueta.style.width = `${sizeVariation}px`;
+        silueta.style.animationDelay = `${Math.random() * 0.2}s`;
         
-        // Ruta correcta: /siluetas/silueta1.png, /siluetas/silueta2.png, etc
-        silueta.innerHTML = `<img src="/siluetas/silueta${numImagen}.png" alt="" onerror="this.parentElement.remove()">`;
+        // Ruta: /siluetas/silueta1.png a silueta11.png
+        silueta.innerHTML = `<img src="/siluetas/silueta${numImagen}.png" alt="" onerror="console.log('❌ Error cargando silueta${numImagen}.png'); this.parentElement.remove()">`;
         
         siluetasContainer.appendChild(silueta);
+        
+        if (index === 0) {
+          console.log('✅ Primera silueta agregada');
+        }
+        if (index === total - 1) {
+          console.log(`✅ Todas las ${total} siluetas agregadas`);
+        }
       }
       
       function cerrarMemorial() {
@@ -864,17 +1016,48 @@
 
       // Iniciar escena AR para una baldosa específica
       async function iniciarAR(baldosa) {
+        console.log('🚀 ============================================');
+        console.log('🚀 INICIANDO AR');
+        console.log('🚀 ============================================');
+        console.log('📋 Baldosa:', JSON.stringify(baldosa, null, 2));
+        
         loadingText.textContent = 'Cargando experiencia AR...';
         loadingStatus.textContent = `Baldosa: ${baldosa.nombre}`;
         
+        console.log('📦 Cargando scripts AR...');
         await cargarScriptsAR();
+        console.log('✅ Scripts AR cargados');
+        console.log('   - AFRAME:', typeof window.AFRAME !== 'undefined' ? 'OK' : 'ERROR');
+        console.log('   - MINDAR:', typeof window.MINDAR !== 'undefined' ? 'OK' : 'ERROR');
         
         // Determinar URL del archivo .mind
         const mindUrl = baldosa.mindFileUrl || `/targets/baldosa-${baldosa.id}.mind`;
         
-        console.log('Cargando .mind desde:', mindUrl);
+        // URL del modelo 3D GLB (exportado de Blender)
+        const glbUrl = `/models/abuelas_baldosa.glb`;
         
-        // Crear escena AR
+        console.log('🎯 Archivo .mind:', mindUrl);
+        console.log('🎮 Modelo GLB:', glbUrl);
+        
+        // Verificar si el archivo .mind existe
+        try {
+          const mindCheck = await fetch(mindUrl, { method: 'HEAD' });
+          console.log(`📁 .mind existe: ${mindCheck.ok ? 'SÍ' : 'NO'} (status: ${mindCheck.status})`);
+        } catch (e) {
+          console.log('⚠️ No se pudo verificar .mind:', e.message);
+        }
+        
+        // Verificar si el modelo GLB existe
+        try {
+          const glbCheck = await fetch(glbUrl, { method: 'HEAD' });
+          console.log(`📁 .glb existe: ${glbCheck.ok ? 'SÍ' : 'NO'} (status: ${glbCheck.status})`);
+        } catch (e) {
+          console.log('⚠️ No se pudo verificar .glb:', e.message);
+        }
+        
+        console.log('🏗️ Creando escena A-Frame con modelo GLB...');
+        
+        // Crear escena AR solo con el modelo GLB
         arContainer.innerHTML = `
           <a-scene
             mindar-image="imageTargetSrc: ${mindUrl}; maxTrack: 1; filterMinCF: 0.0001; filterBeta: 0.001;"
@@ -884,9 +1067,32 @@
             device-orientation-permission-ui="enabled: false"
             style="width: 100%; height: 100%;">
             
+            <!-- Assets: precargar el modelo GLB -->
+            <a-assets>
+              <a-asset-item id="abuelas-model" src="${glbUrl}"></a-asset-item>
+            </a-assets>
+            
             <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
             
             <a-entity mindar-image-target="targetIndex: 0">
+              
+              <!-- ============================================ -->
+              <!-- MODELO 3D GLB - Abuelas levantando la baldosa -->
+              <!-- ============================================ -->
+              <a-entity 
+                gltf-model="#abuelas-model"
+                position="0 0 0"
+                rotation="-90 0 0"
+                scale="0.3 0.3 0.3"
+                animation-mixer="loop: repeat; timeScale: 1;">
+              </a-entity>
+              
+              <!-- ============================================ -->
+              <!-- CÓDIGO ANTERIOR COMENTADO (cartel + partículas)
+              ============================================
+              
+              <!-- Cartel principal -->
+              <!--
               <a-plane
                 position="0 0.15 0"
                 height="0.55"
@@ -895,7 +1101,10 @@
                 opacity="0.95"
                 material="shader: flat">
               </a-plane>
+              -->
               
+              <!-- Barra superior azul -->
+              <!--
               <a-plane
                 position="0 0.38 0.001"
                 height="0.08"
@@ -903,7 +1112,10 @@
                 color="#2563eb"
                 material="shader: flat">
               </a-plane>
+              -->
               
+              <!-- Nombre -->
+              <!--
               <a-text
                 value="${baldosa.nombre.toUpperCase()}"
                 position="0 0.25 0.01"
@@ -912,7 +1124,10 @@
                 width="1.4"
                 wrap-count="25">
               </a-text>
+              -->
               
+              <!-- Categoría -->
+              <!--
               <a-text
                 value="${(baldosa.categoria || 'HISTORICO').toUpperCase()}"
                 position="0 0.12 0.01"
@@ -920,7 +1135,10 @@
                 color="#2563eb"
                 width="0.8">
               </a-text>
+              -->
               
+              <!-- Mensaje -->
+              <!--
               <a-text
                 value="${(baldosa.mensajeAR || baldosa.descripcion || '').substring(0, 80)}"
                 position="0 -0.02 0.01"
@@ -929,17 +1147,98 @@
                 width="1.2"
                 wrap-count="30">
               </a-text>
+              -->
+              
+              <!-- PARTÍCULAS FLOTANTES - comentadas -->
+              <!--
+              <a-sphere 
+                position="-0.3 0.5 0" 
+                radius="0.015" 
+                color="#ffffff"
+                material="emissive: #ffffff; emissiveIntensity: 0.8"
+                animation="property: position; to: -0.25 0.7 0.1; dur: 3000; dir: alternate; loop: true; easing: easeInOutSine"
+                animation__opacity="property: material.opacity; from: 0.3; to: 1; dur: 1500; dir: alternate; loop: true">
+              </a-sphere>
+              
+              <a-sphere 
+                position="0.3 0.45 0" 
+                radius="0.012" 
+                color="#2563eb"
+                material="emissive: #2563eb; emissiveIntensity: 0.8"
+                animation="property: position; to: 0.35 0.65 -0.1; dur: 2500; dir: alternate; loop: true; easing: easeInOutSine"
+                animation__opacity="property: material.opacity; from: 0.4; to: 1; dur: 1200; dir: alternate; loop: true">
+              </a-sphere>
+              
+              <a-sphere 
+                position="0 0.6 0.1" 
+                radius="0.018" 
+                color="#ffffff"
+                material="emissive: #ffffff; emissiveIntensity: 0.9"
+                animation="property: position; to: 0.1 0.8 0; dur: 4000; dir: alternate; loop: true; easing: easeInOutSine"
+                animation__opacity="property: material.opacity; from: 0.5; to: 1; dur: 2000; dir: alternate; loop: true">
+              </a-sphere>
+              
+              <a-sphere 
+                position="-0.2 0.55 -0.05" 
+                radius="0.01" 
+                color="#0ea5e9"
+                material="emissive: #0ea5e9; emissiveIntensity: 0.7"
+                animation="property: position; to: -0.15 0.75 0.05; dur: 3500; dir: alternate; loop: true; easing: easeInOutSine"
+                animation__opacity="property: material.opacity; from: 0.3; to: 0.9; dur: 1800; dir: alternate; loop: true">
+              </a-sphere>
+              
+              <a-sphere 
+                position="0.2 0.5 0.05" 
+                radius="0.014" 
+                color="#ffffff"
+                material="emissive: #ffffff; emissiveIntensity: 0.8"
+                animation="property: position; to: 0.25 0.7 -0.05; dur: 2800; dir: alternate; loop: true; easing: easeInOutSine"
+                animation__opacity="property: material.opacity; from: 0.4; to: 1; dur: 1400; dir: alternate; loop: true">
+              </a-sphere>
+              
+              <a-sphere 
+                position="-0.35 0.4 0" 
+                radius="0.011" 
+                color="#2563eb"
+                material="emissive: #2563eb; emissiveIntensity: 0.7"
+                animation="property: position; to: -0.4 0.6 0.1; dur: 3200; dir: alternate; loop: true; easing: easeInOutSine"
+                animation__opacity="property: material.opacity; from: 0.3; to: 0.8; dur: 1600; dir: alternate; loop: true">
+              </a-sphere>
+              
+              <a-sphere 
+                position="0.35 0.35 0" 
+                radius="0.013" 
+                color="#ffffff"
+                material="emissive: #ffffff; emissiveIntensity: 0.9"
+                animation="property: position; to: 0.4 0.55 0.1; dur: 2600; dir: alternate; loop: true; easing: easeInOutSine"
+                animation__opacity="property: material.opacity; from: 0.5; to: 1; dur: 1300; dir: alternate; loop: true">
+              </a-sphere>
+              
+              <a-sphere 
+                position="0 0.7 0" 
+                radius="0.02" 
+                color="#ffffff"
+                material="emissive: #ffffff; emissiveIntensity: 1"
+                animation="property: position; to: 0 0.9 0; dur: 5000; dir: alternate; loop: true; easing: easeInOutSine"
+                animation__scale="property: scale; from: 1 1 1; to: 1.3 1.3 1.3; dur: 2000; dir: alternate; loop: true">
+              </a-sphere>
+              -->
+              <!-- FIN CÓDIGO COMENTADO -->
+              
             </a-entity>
           </a-scene>
         `;
         
         arContainer.style.display = 'block';
+        console.log('✅ Contenedor AR visible');
         
         // Esperar a que la escena cargue
         const scene = arContainer.querySelector('a-scene');
         
         scene.addEventListener('loaded', () => {
-          console.log('✅ Escena AR cargada');
+          console.log('🎬 ============================================');
+          console.log('🎬 ESCENA AR CARGADA COMPLETAMENTE');
+          console.log('🎬 ============================================');
           loadingEl.style.display = 'none';
           
           // Mostrar botón de mapa
@@ -967,27 +1266,47 @@
         // Eventos de detección
         setTimeout(() => {
           const target = arContainer.querySelector('[mindar-image-target]');
+          console.log('🔍 Buscando target element:', target ? 'ENCONTRADO' : 'NO ENCONTRADO');
+          
           if (target) {
+            console.log('👂 Registrando listeners de detección...');
+            
             target.addEventListener('targetFound', () => {
-              console.log('🎯 Baldosa detectada:', baldosa.nombre);
+              console.log('🎯 ============================================');
+              console.log('🎯 ¡BALDOSA DETECTADA!');
+              console.log('🎯 ============================================');
+              console.log('🎯 Nombre:', baldosa.nombre);
+              console.log('🎯 ID:', baldosa.id);
+              
+              // Guardar baldosa actual para el botón "Más info"
+              currentBaldosa = baldosa;
+              
               instructionsEl.style.display = 'none';
               document.getElementById('info-nombre').textContent = baldosa.nombre;
               document.getElementById('info-categoria').textContent = baldosa.categoria || 'Histórico';
               document.getElementById('info-descripcion').textContent = baldosa.descripcion || '';
               infoPanelEl.style.display = 'block';
               
+              console.log('🎭 Iniciando animación memorial...');
               // Mostrar animación de memorial
               mostrarMemorial();
             });
             
             target.addEventListener('targetLost', () => {
-              console.log('👋 Baldosa perdida');
+              console.log('👋 ============================================');
+              console.log('👋 BALDOSA PERDIDA');
+              console.log('👋 ============================================');
               infoPanelEl.style.display = 'none';
               // Cerrar memorial si está abierto
-              if (memorialOverlay.style.display === 'flex') {
+              if (memorialOverlay.style.display === 'block') {
+                console.log('🎭 Cerrando memorial...');
                 cerrarMemorial();
               }
             });
+            
+            console.log('✅ Listeners registrados correctamente');
+          } else {
+            console.log('❌ ERROR: No se encontró el elemento target');
           }
         }, 1000);
       }
