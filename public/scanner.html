@@ -1040,8 +1040,11 @@
         // Determinar URL del archivo .mind
         const mindUrl = baldosa.mindFileUrl || `/targets/baldosa-${baldosa.id}.mind`;
         
-        // URL del modelo 3D GLB (exportado de Blender)
-        const glbUrl = `/models/abuelas_baldosa.glb`;
+        // URL del modelo 3D GLB - CAMBIAR AQUÍ PARA PROBAR
+        // Opción 1: Cubo de prueba
+        const glbUrl = `/models/test_cubo.glb`;
+        // Opción 2: Abuelas (descomentar cuando funcione el cubo)
+        // const glbUrl = `/models/abuelas_baldosa.glb`;
         
         console.log('🎯 Archivo .mind:', mindUrl);
         console.log('🎮 Modelo GLB:', glbUrl);
@@ -1063,9 +1066,6 @@
         }
         
         console.log('🏗️ Creando escena A-Frame con modelo GLB...');
-        
-        // URL del modelo - cambiar a test_cubo.glb para probar
-        const glbUrl = `/models/test_cubo.glb`;
         
         // Crear escena AR solo con el modelo GLB
         arContainer.innerHTML = `
