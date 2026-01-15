@@ -733,7 +733,7 @@
     <div id="ar-container"></div>
 
     <script>
-      const RADIO_MAXIMO = 1000;
+      const RADIO_MAXIMO = 100;
       
       let baldosaCercana = null;
       let currentBaldosa = null;
@@ -886,11 +886,11 @@
         
         const mindUrl = baldosa.mindFileUrl || `/targets/baldosa-${baldosa.id}.mind`;
         
-        // MODELO MEJORADO - NUEVA RUTA
-        const glbUrl = `/models/abuelas_baldosa_mejorada.glb`;
+        // MODELO GLB
+        const glbUrl = `/models/abuelas_baldosa.glb`;
         
         console.log('🎯 Archivo .mind:', mindUrl);
-        console.log('🎮 Modelo GLB MEJORADO:', glbUrl);
+        console.log('🎮 Modelo GLB:', glbUrl);
         
         try {
           const mindCheck = await fetch(mindUrl, { method: 'HEAD' });
