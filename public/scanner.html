@@ -926,14 +926,14 @@
             
             <a-entity mindar-image-target="targetIndex: 0">
               
-              <!-- MODELO 3D GLB - ESCALA 1.0 (MÁS GRANDE) -->
+              <!-- MODELO 3D GLB - ESCALA 1.0, SIN LOOP -->
               <a-entity 
                 id="modelo-principal"
                 gltf-model="#modelo-3d"
                 position="0 0.2 0"
                 rotation="0 0 0"
                 scale="1.0 1.0 1.0"
-                animation-mixer="loop: repeat; timeScale: 1.0; clampWhenFinished: false;">
+                animation-mixer="loop: once; timeScale: 1.0; clampWhenFinished: true;">
               </a-entity>
               
               <!-- Cubo de referencia (opcional - para debug) -->
