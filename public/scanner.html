@@ -733,7 +733,8 @@
     <div id="ar-container"></div>
 
     <script>
-      const RADIO_MAXIMO = 1000;
+      // Configuración
+      const RADIO_MAXIMO = 1000; // metros - distancia máxima para activar AR
       
       let baldosaCercana = null;
       let currentBaldosa = null;
@@ -925,13 +926,13 @@
             
             <a-entity mindar-image-target="targetIndex: 0">
               
-              <!-- MODELO 3D GLB MEJORADO - ESCALA 0.5 (DOBLE DEL ANTERIOR) -->
+              <!-- MODELO 3D GLB - ESCALA 1.0 (MÁS GRANDE) -->
               <a-entity 
                 id="modelo-principal"
                 gltf-model="#modelo-3d"
                 position="0 0.2 0"
                 rotation="0 0 0"
-                scale="0.5 0.5 0.5"
+                scale="1.0 1.0 1.0"
                 animation-mixer="loop: repeat; timeScale: 1.0; clampWhenFinished: false;">
               </a-entity>
               
