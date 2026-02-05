@@ -1,90 +1,61 @@
 import { SignJWT, jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
+import { NextRequest } from 'next/server';
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'tu-secret-super-seguro-cambialo-en-produccion'
+  process.env.JWT_SECRET || 'baldosas-memoria-secret-key-change-in-production'
 );
 
-const COOKIE_NAME = 'baldosas-auth-token';
-const TOKEN_EXPIRY = '7d'; // 7 días
-
-export interface JWTPayload {
+// Renombrar el tipo para evitar conflicto con jose
+export interface AuthJWTPayload {
   userId: string;
   email: string;
   nombre: string;
+  rol?: string;
 }
 
-/**
- * Crear un JWT token
- */
-export async function createToken(payload: JWTPayload): Promise<string> {
-  const token = await new SignJWT({ ...payload })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .setExpirationTime(TOKEN_EXPIRY)
-    .sign(JWT_SECRET);
-
-  return token;
+export async function generarToken(payload: AuthJWTPayload): Promise<string> {
+  try {
+    const token = await new SignJWT(payload as any)
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt()
+      .setExpirationTime('7d')
+      .sign(JWT_SECRET);
+    
+    return token;
+  } catch (error) {
+    console.error('Error generando token:', error);
+    throw new Error('Error al generar token de autenticación');
+  }
 }
 
-/**
- * Verificar y decodificar un JWT token
- */
-export async function verifyToken(token: string): Promise<JWTPayload | null> {
+export async function verificarToken(token: string): Promise<AuthJWTPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
-    return payload as JWTPayload;
+    
+    // Convertir a través de unknown para evitar el error de tipo
+    return payload as unknown as AuthJWTPayload;
   } catch (error) {
     console.error('Error verificando token:', error);
     return null;
   }
 }
 
-/**
- * Guardar token en cookie httpOnly
- */
-export async function setAuthCookie(token: string) {
-  const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7, // 7 días en segundos
-    path: '/',
-  });
+export async function obtenerUsuarioActual(request: NextRequest): Promise<AuthJWTPayload | null> {
+  try {
+    const authHeader = request.headers.get('authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return null;
+    }
+    
+    const token = authHeader.substring(7);
+    return await verificarToken(token);
+  } catch (error) {
+    console.error('Error obteniendo usuario actual:', error);
+    return null;
+  }
 }
 
-/**
- * Obtener token de la cookie
- */
-export async function getAuthToken(): Promise<string | null> {
-  const cookieStore = await cookies();
-  const cookie = cookieStore.get(COOKIE_NAME);
-  return cookie?.value || null;
-}
-
-/**
- * Eliminar cookie de auth
- */
-export async function clearAuthCookie() {
-  const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
-}
-
-/**
- * Obtener usuario actual desde la cookie
- */
-export async function getCurrentUser(): Promise<JWTPayload | null> {
-  const token = await getAuthToken();
-  if (!token) return null;
-
-  return await verifyToken(token);
-}
-
-/**
- * Verificar si hay un usuario autenticado
- */
-export async function isAuthenticated(): Promise<boolean> {
-  const user = await getCurrentUser();
-  return user !== null;
+export function esAdmin(usuario: AuthJWTPayload | null): boolean {
+  return usuario?.rol === 'admin';
 }
