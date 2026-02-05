@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify } from 'jose';
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'baldosas-memoria-secret-key-change-in-production'
@@ -26,6 +26,19 @@ export async function generarToken(payload: AuthJWTPayload): Promise<string> {
     console.error('Error generando token:', error);
     throw new Error('Error al generar token de autenticación');
   }
+}
+
+// Alias para compatibilidad con código existente
+export const createToken = generarToken;
+
+export function setAuthCookie(response: NextResponse, token: string): void {
+  response.cookies.set('auth_token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60, // 7 días
+    path: '/'
+  });
 }
 
 export async function verificarToken(token: string): Promise<AuthJWTPayload | null> {
