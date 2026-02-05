@@ -69,6 +69,9 @@ export async function obtenerUsuarioActual(request: NextRequest): Promise<AuthJW
   }
 }
 
+// Alias para compatibilidad con código existente
+export const getCurrentUser = obtenerUsuarioActual;
+
 export function esAdmin(usuario: AuthJWTPayload | null): boolean {
   return usuario?.rol === 'admin';
 }

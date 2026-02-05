@@ -6,78 +6,76 @@ import { createToken, setAuthCookie } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    await connectDB();
+    
     const body = await request.json();
-    const { email, password, nombre } = body;
+    const { nombre, email, password } = body;
 
     // Validaciones
-    if (!email || !email.includes('@')) {
+    if (!nombre || !email || !password) {
       return NextResponse.json(
-        { error: 'Email inválido' },
+        { success: false, error: 'Todos los campos son requeridos' },
         { status: 400 }
       );
     }
 
-    if (!password || password.length < 6) {
+    if (password.length < 6) {
       return NextResponse.json(
-        { error: 'La contraseña debe tener al menos 6 caracteres' },
+        { success: false, error: 'La contraseña debe tener al menos 6 caracteres' },
         { status: 400 }
       );
     }
-
-    if (!nombre || nombre.trim().length < 2) {
-      return NextResponse.json(
-        { error: 'El nombre debe tener al menos 2 caracteres' },
-        { status: 400 }
-      );
-    }
-
-    await connectDB();
 
     // Verificar si el usuario ya existe
-    const existingUser = await Usuario.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
+    const usuarioExistente = await Usuario.findOne({ email: email.toLowerCase() });
+    
+    if (usuarioExistente) {
       return NextResponse.json(
-        { error: 'El email ya está registrado' },
+        { success: false, error: 'El email ya está registrado' },
         { status: 400 }
       );
     }
 
-    // Hash de la contraseña
-    const passwordHash = await bcrypt.hash(password, 10);
+    // Hashear contraseña
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Crear usuario
-    const nuevoUsuario = new Usuario({
+    const nuevoUsuario = await Usuario.create({
+      nombre,
       email: email.toLowerCase(),
-      password: passwordHash,
-      nombre: nombre.trim(),
+      password: hashedPassword,
+      rol: 'usuario' // rol por defecto
     });
 
-    await nuevoUsuario.save();
-
-    // Crear token JWT
+    // Generar token
     const token = await createToken({
       userId: nuevoUsuario._id.toString(),
       email: nuevoUsuario.email,
       nombre: nuevoUsuario.nombre,
+      rol: nuevoUsuario.rol
     });
 
-    // Guardar en cookie
-    await setAuthCookie(token);
-
-    return NextResponse.json({
+    // Crear respuesta y agregar cookie
+    const response = NextResponse.json({
       success: true,
-      message: 'Usuario registrado exitosamente',
-      user: {
+      usuario: {
         id: nuevoUsuario._id.toString(),
         email: nuevoUsuario.email,
         nombre: nuevoUsuario.nombre,
+        rol: nuevoUsuario.rol
       },
-    });
+      token
+    }, { status: 201 });
+
+    // IMPORTANTE: setAuthCookie recibe la response y el token
+    setAuthCookie(response, token);
+
+    return response;
 
   } catch (error) {
-    console.error('Error en /api/auth/registro:', error);
+    console.error('Error en registro:', error);
     return NextResponse.json(
-      { error: 'Error al registrar usuario' },
+      { success: false, error: 'Error al crear el usuario' },
       { status: 500 }
     );
   }

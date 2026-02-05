@@ -6,61 +6,68 @@ import { createToken, setAuthCookie } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    await connectDB();
+    
     const body = await request.json();
     const { email, password } = body;
 
     // Validaciones
     if (!email || !password) {
       return NextResponse.json(
-        { error: 'Email y contraseña son requeridos' },
+        { success: false, error: 'Email y contraseña son requeridos' },
         { status: 400 }
       );
     }
 
-    await connectDB();
-
     // Buscar usuario
     const usuario = await Usuario.findOne({ email: email.toLowerCase() });
+    
     if (!usuario) {
       return NextResponse.json(
-        { error: 'Credenciales inválidas' },
+        { success: false, error: 'Credenciales inválidas' },
         { status: 401 }
       );
     }
 
     // Verificar contraseña
-    const passwordMatch = await bcrypt.compare(password, usuario.password);
-    if (!passwordMatch) {
+    const passwordValido = await bcrypt.compare(password, usuario.password);
+    
+    if (!passwordValido) {
       return NextResponse.json(
-        { error: 'Credenciales inválidas' },
+        { success: false, error: 'Credenciales inválidas' },
         { status: 401 }
       );
     }
 
-    // Crear token JWT
+    // Generar token
     const token = await createToken({
       userId: usuario._id.toString(),
       email: usuario.email,
       nombre: usuario.nombre,
+      rol: usuario.rol
     });
 
-    // Guardar en cookie
-    await setAuthCookie(token);
-
-    return NextResponse.json({
+    // Crear respuesta y agregar cookie
+    const response = NextResponse.json({
       success: true,
-      message: 'Login exitoso',
-      user: {
+      usuario: {
         id: usuario._id.toString(),
         email: usuario.email,
         nombre: usuario.nombre,
+        rol: usuario.rol
       },
+      token
     });
 
+    // IMPORTANTE: setAuthCookie recibe la response y el token
+    setAuthCookie(response, token);
+
+    return response;
+
   } catch (error) {
-    console.error('Error en /api/auth/login:', error);
+    console.error('Error en login:', error);
     return NextResponse.json(
-      { error: 'Error al iniciar sesión' },
+      { success: false, error: 'Error al procesar el login' },
       { status: 500 }
     );
   }
