@@ -46,8 +46,8 @@ export default function RootLayout({
               <a href="/scanner" className="navbar-link">
                 Encontrar
               </a>
-              <a href="/colaborar" className="navbar-link navbar-link-highlight">
-                Colaborar
+              <a href="/coleccion" className="navbar-link navbar-link-highlight">
+                Colección
               </a>
             </div>
           </div>
