@@ -448,23 +448,23 @@
       #info-panel .content {
         position: relative;
         z-index: 1;
-        padding: 25px;
+        padding: 15px 18px;
         display: flex;
         align-items: flex-start;
-        gap: 15px;
-        max-width: 600px;
+        gap: 10px;
+        max-width: 480px;
         margin: 0 auto;
       }
       
       #info-panel .checkmark {
-        width: 50px;
-        height: 50px;
+        width: 36px;
+        height: 36px;
         background: #2563eb;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 24px;
+        font-size: 18px;
         flex-shrink: 0;
       }
       
@@ -473,41 +473,37 @@
       }
       
       #info-panel h3 {
-        font-size: 1.3rem;
-        margin-bottom: 5px;
+        font-size: 1.1rem;
+        margin-bottom: 3px;
         text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        line-height: 1.2;
       }
       
       #info-panel .categoria {
-        font-size: 0.85rem;
+        font-size: 0.7rem;
         text-transform: uppercase;
-        letter-spacing: 0.1em;
+        letter-spacing: 0.08em;
         color: #0ea5e9;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
       }
       
       #info-panel .descripcion {
-        font-size: 0.9rem;
-        opacity: 0.9;
-        line-height: 1.4;
-        max-height: 60px;
-        overflow: hidden;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        display: none; /* Ocultar descripción para panel compacto */
       }
       
       #info-panel .btn-mas-info {
-        margin-top: 15px;
-        padding: 10px 20px;
+        margin-top: 8px;
+        padding: 7px 14px;
         background: #2563eb;
         color: white;
         border: none;
-        border-radius: 8px;
-        font-size: 14px;
+        border-radius: 6px;
+        font-size: 12px;
         font-weight: 500;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 5px;
         transition: all 0.3s;
         width: 100%;
         justify-content: center;
@@ -520,18 +516,18 @@
       
       /* NUEVO: Botón guardar en colección */
       #info-panel .btn-guardar-coleccion {
-        margin-top: 10px;
-        padding: 12px 20px;
+        margin-top: 6px;
+        padding: 7px 14px;
         background: #10b981;
         color: white;
         border: none;
-        border-radius: 8px;
-        font-size: 14px;
+        border-radius: 6px;
+        font-size: 12px;
         font-weight: 600;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 5px;
         width: 100%;
         justify-content: center;
         transition: all 0.3s;
@@ -698,23 +694,23 @@
       /* Info adicional en panel */
       #info-panel .info-extra {
         display: flex;
-        gap: 15px;
-        margin-top: 12px;
-        padding-top: 12px;
-        border-top: 1px solid rgba(255,255,255,0.2);
+        gap: 10px;
+        margin-top: 6px;
+        padding-top: 6px;
+        border-top: 1px solid rgba(255,255,255,0.15);
         flex-wrap: wrap;
       }
       
       #info-panel .info-item {
         display: flex;
         align-items: center;
-        gap: 6px;
-        font-size: 0.85rem;
-        opacity: 0.9;
+        gap: 4px;
+        font-size: 0.7rem;
+        opacity: 0.85;
       }
       
       #info-panel .info-item-icon {
-        font-size: 1rem;
+        font-size: 0.85rem;
       }
     </style>
   </head>
@@ -867,48 +863,69 @@
         return hoy.toLocaleDateString('es-AR', opciones);
       }
       
-      function capturarYMostrarPreview() {
+      async function capturarYMostrarPreview() {
         console.log('📸 Capturando desde botón flotante...');
         
-        const foto = capturarScreenshot();
+        const foto = await capturarScreenshot();
         if (!foto) {
           mostrarToast('Error capturando foto', 'error');
           return;
         }
         
-        mostrarToast('¡Foto capturada! Guardá en tu colección desde el panel', 'success');
-        
-        // Opcional: guardar la última foto capturada temporalmente
+        // Guardar temporalmente
         window.ultimaFotoCapturada = foto;
+        console.log('✅ Foto guardada temporalmente, tamaño:', Math.round(foto.length / 1024), 'KB');
+        
+        mostrarToast('¡Foto capturada! 📸', 'success');
       }
       
       function capturarScreenshot() {
         console.log('📸 Capturando screenshot...');
         
-        try {
-          const scene = document.querySelector('a-scene');
-          if (!scene) {
-            console.error('No se encontró la escena A-Frame');
-            return null;
-          }
-          
-          const canvas = scene.querySelector('canvas');
-          if (!canvas) {
-            console.error('No se encontró el canvas');
-            return null;
-          }
-          
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-          console.log('✅ Screenshot capturado');
-          return dataUrl;
-          
-        } catch (error) {
-          console.error('Error capturando screenshot:', error);
-          return null;
-        }
+        return new Promise((resolve) => {
+          // Esperar un frame para asegurar que el canvas está renderizado
+          requestAnimationFrame(() => {
+            try {
+              const scene = document.querySelector('a-scene');
+              if (!scene) {
+                console.error('❌ No se encontró la escena A-Frame');
+                resolve(null);
+                return;
+              }
+              
+              const canvas = scene.querySelector('canvas');
+              if (!canvas) {
+                console.error('❌ No se encontró el canvas');
+                resolve(null);
+                return;
+              }
+              
+              // Capturar con calidad media para balance tamaño/calidad
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+              
+              // Verificar que el dataUrl es válido
+              if (!dataUrl || dataUrl.length < 100) {
+                console.error('❌ Screenshot inválido o vacío');
+                resolve(null);
+                return;
+              }
+              
+              const sizeKB = Math.round(dataUrl.length / 1024);
+              console.log('✅ Screenshot capturado exitosamente');
+              console.log('📏 Tamaño:', sizeKB, 'KB');
+              console.log('🔍 Preview:', dataUrl.substring(0, 50) + '...');
+              
+              resolve(dataUrl);
+              
+            } catch (error) {
+              console.error('❌ Error capturando screenshot:', error);
+              resolve(null);
+            }
+          });
+        });
       }
       
-      function guardarEnColeccion() {
+      async function guardarEnColeccion() {
         if (!currentBaldosa) {
           mostrarToast('No hay baldosa detectada', 'error');
           return;
@@ -917,11 +934,18 @@
         console.log('💾 Guardando en colección:', currentBaldosa.nombre);
         
         // Usar la última foto capturada o capturar una nueva
-        const foto = window.ultimaFotoCapturada || capturarScreenshot();
+        let foto = window.ultimaFotoCapturada;
+        if (!foto) {
+          console.log('📸 No hay foto capturada, capturando nueva...');
+          foto = await capturarScreenshot();
+        }
+        
         if (!foto) {
           mostrarToast('Error capturando foto', 'error');
           return;
         }
+        
+        console.log('✅ Foto lista para guardar, tamaño:', Math.round(foto.length / 1024), 'KB');
         
         const coleccionStr = localStorage.getItem('baldosas_coleccion');
         let coleccion = { items: [], totalEscaneos: 0 };
@@ -949,12 +973,17 @@
           nombreVictima: currentBaldosa.nombre,
           fechaDesaparicion: currentBaldosa.fechaDesaparicion || '',
           fechaEscaneo: new Date().toISOString(),
-          fotoUrl: foto,
+          fotoUrl: foto,  // Base64 string
           ubicacion: currentBaldosa.direccion || currentBaldosa.barrio || 'Buenos Aires',
           lat: currentBaldosa.lat,
           lng: currentBaldosa.lng,
           notas: ''
         };
+        
+        console.log('📦 Nuevo item a guardar:', {
+          ...nuevoItem,
+          fotoUrl: nuevoItem.fotoUrl.substring(0, 50) + '...'
+        });
         
         coleccion.items.unshift(nuevoItem);
         coleccion.totalEscaneos = coleccion.items.length;
@@ -1140,10 +1169,14 @@
         await cargarScriptsAR();
         
         const mindUrl = baldosa.mindFileUrl || `/targets/baldosa-${baldosa.id}.mind`;
-        const glbUrl = `/models/abuelas_baldosa.glb`;
+        
+        // NUEVO: Usar portaretrato genérico + foto dinámica
+        const glbUrl = `/models/portaretrato_generico.glb`;
+        const fotoUrl = baldosa.fotoVictima || baldosa.imagenUrl || '/images/placeholder.jpg';
         
         console.log('🎯 Archivo .mind:', mindUrl);
         console.log('🎮 Modelo GLB:', glbUrl);
+        console.log('📸 Foto víctima:', fotoUrl);
         
         arContainer.innerHTML = `
           <a-scene
@@ -1155,20 +1188,36 @@
             style="width: 100%; height: 100%;">
             
             <a-assets timeout="10000">
-              <a-asset-item id="modelo-3d" src="${glbUrl}"></a-asset-item>
+              <a-asset-item id="modelo-portaretrato" src="${glbUrl}"></a-asset-item>
+              <img id="foto-victima" src="${fotoUrl}" crossorigin="anonymous">
             </a-assets>
             
             <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
             
             <a-entity mindar-image-target="targetIndex: 0">
+              
+              <!-- Portaretrato con animación -->
               <a-entity 
-                id="modelo-principal"
-                gltf-model="#modelo-3d"
-                position="0 0.2 0"
+                id="portaretrato"
+                gltf-model="#modelo-portaretrato"
+                position="0 0 0"
                 rotation="0 0 0"
                 scale="1.0 1.0 1.0"
                 animation-mixer="loop: once; timeScale: 1.0; clampWhenFinished: true;">
               </a-entity>
+              
+              <!-- Foto dinámica encima del portaretrato -->
+              <a-plane
+                id="foto-dinamica"
+                src="#foto-victima"
+                position="0 0 0.06"
+                rotation="0 0 0"
+                width="0.73"
+                height="0.92"
+                material="shader: flat; transparent: false"
+                visible="false">
+              </a-plane>
+              
             </a-entity>
           </a-scene>
         `;
@@ -1179,6 +1228,32 @@
         
         scene.addEventListener('loaded', () => {
           console.log('🎬 ESCENA AR CARGADA');
+          
+          // Sincronizar foto con animación del portaretrato
+          const portaretrato = document.getElementById('portaretrato');
+          const fotoDinamica = document.getElementById('foto-dinamica');
+          
+          if (portaretrato && fotoDinamica) {
+            // La foto sigue al portaretrato
+            portaretrato.addEventListener('model-loaded', () => {
+              console.log('✅ Portaretrato cargado');
+              
+              // Hacer visible la foto
+              setTimeout(() => {
+                fotoDinamica.setAttribute('visible', 'true');
+                console.log('📸 Foto aplicada al portaretrato');
+              }, 100);
+            });
+            
+            // Sincronizar transformación (copiar posición/rotación del portaretrato)
+            setInterval(() => {
+              const pos = portaretrato.object3D.position;
+              const rot = portaretrato.object3D.rotation;
+              
+              fotoDinamica.object3D.position.set(pos.x, pos.y, pos.z + 0.022);
+              fotoDinamica.object3D.rotation.copy(rot);
+            }, 16); // ~60fps
+          }
           
           loadingEl.style.display = 'none';
           document.getElementById('btn-mapa').style.display = 'flex';
@@ -1211,9 +1286,8 @@
               // Actualizar info panel
               document.getElementById('info-nombre').textContent = baldosa.nombre;
               document.getElementById('info-categoria').textContent = baldosa.categoria || 'Histórico';
-              document.getElementById('info-descripcion').textContent = baldosa.descripcion || '';
               
-              // NUEVO: Mostrar ubicación y fecha
+              // Mostrar ubicación y fecha
               const ubicacionTexto = baldosa.barrio 
                 ? `${baldosa.barrio}, Buenos Aires` 
                 : baldosa.direccion || 'Buenos Aires';
