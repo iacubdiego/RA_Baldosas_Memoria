@@ -18,6 +18,8 @@
         background: #1a2a3a;
       }
       
+      /* ========== LOADING ========== */
+      
       #loading {
         position: fixed;
         top: 0;
@@ -54,12 +56,6 @@
         padding: 0 20px;
       }
       
-      #loading .hint {
-        font-size: 13px;
-        opacity: 0.6;
-        margin-top: 10px;
-      }
-      
       #loading .status {
         margin-top: 20px;
         padding: 10px 20px;
@@ -68,7 +64,9 @@
         font-size: 14px;
       }
       
-      #permission-request {
+      /* ========== PERMISSION SCREENS ========== */
+      
+      #permission-request, #permission-denied {
         position: fixed;
         top: 0;
         left: 0;
@@ -85,10 +83,10 @@
         text-align: center;
       }
       
-      #permission-request .icon {
+      #permission-request .icon,
+      #permission-denied .icon {
         font-size: 72px;
         margin-bottom: 25px;
-        animation: pulse 2s ease-in-out infinite;
       }
       
       @keyframes pulse {
@@ -96,109 +94,27 @@
         50% { transform: scale(1.1); opacity: 0.8; }
       }
       
-      #permission-request h2 {
+      #permission-request .icon {
+        animation: pulse 2s ease-in-out infinite;
+      }
+      
+      #permission-request h2,
+      #permission-denied h2 {
         font-size: 1.8rem;
         margin-bottom: 15px;
         font-weight: 600;
       }
       
-      #permission-request p {
-        font-size: 1rem;
-        opacity: 0.85;
-        line-height: 1.6;
-        margin-bottom: 12px;
-        max-width: 400px;
-      }
-      
-      #permission-request .why {
-        font-size: 0.9rem;
-        opacity: 0.7;
-        margin-top: 20px;
-      }
-      
-      #permission-request button {
-        margin-top: 25px;
-        padding: 15px 35px;
-        background: #2563eb;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 16px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: background 0.2s;
-      }
-      
-      #permission-request button:hover {
-        background: #1d4ed8;
-      }
-      
-      #permission-request .skip-btn {
-        background: transparent;
-        border: 2px solid rgba(255,255,255,0.3);
-        margin-top: 10px;
-      }
-      
-      #permission-request .skip-btn:hover {
-        background: rgba(255,255,255,0.1);
-        border-color: rgba(255,255,255,0.5);
-      }
-      
-      #permission-denied {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: #1a2a3a;
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        color: white;
-        padding: 30px;
-        text-align: center;
-      }
-      
-      #permission-denied .icon {
-        font-size: 72px;
-        margin-bottom: 20px;
-      }
-      
-      #permission-denied h2 {
-        font-size: 1.6rem;
-        margin-bottom: 15px;
-      }
-      
+      #permission-request p,
       #permission-denied p {
         font-size: 1rem;
         opacity: 0.85;
         line-height: 1.6;
-        margin-bottom: 15px;
-        max-width: 400px;
+        margin-bottom: 25px;
+        max-width: 450px;
       }
       
-      #permission-denied .instructions {
-        background: rgba(255,255,255,0.1);
-        padding: 20px;
-        border-radius: 12px;
-        margin: 25px 0;
-        max-width: 400px;
-      }
-      
-      #permission-denied .instructions h3 {
-        font-size: 1.1rem;
-        margin-bottom: 15px;
-        color: #0ea5e9;
-      }
-      
-      #permission-denied .instructions ol {
-        text-align: left;
-        line-height: 1.8;
-        padding-left: 20px;
-      }
-      
+      #permission-request button,
       #permission-denied button {
         padding: 12px 30px;
         background: #2563eb;
@@ -211,72 +127,12 @@
         transition: background 0.2s;
       }
       
+      #permission-request button:hover,
       #permission-denied button:hover {
         background: #1d4ed8;
       }
       
-      #no-baldosa {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: #1a2a3a;
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        color: white;
-        padding: 30px;
-        text-align: center;
-      }
-      
-      #no-baldosa .icon {
-        font-size: 72px;
-        margin-bottom: 20px;
-      }
-      
-      #no-baldosa h2 {
-        font-size: 1.6rem;
-        margin-bottom: 15px;
-      }
-      
-      #no-baldosa p {
-        font-size: 1rem;
-        opacity: 0.85;
-        line-height: 1.6;
-        margin-bottom: 25px;
-        max-width: 400px;
-      }
-      
-      #no-baldosa button {
-        padding: 12px 30px;
-        background: #2563eb;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 15px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: background 0.2s;
-      }
-      
-      #no-baldosa button:hover {
-        background: #1d4ed8;
-      }
-      
-      #no-baldosa .distance {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #0ea5e9;
-        margin: 10px 0;
-      }
-      
-      #no-baldosa .baldosa-name {
-        font-size: 1.1rem;
-        opacity: 0.8;
-      }
+      /* ========== NAVIGATION BUTTONS ========== */
       
       #btn-volver {
         position: fixed;
@@ -314,14 +170,14 @@
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255,255,255,0.1);
         display: none;
-        align-items: center;
-        gap: 8px;
         transition: background 0.2s;
       }
       
       #btn-mapa:hover {
         background: rgba(37, 99, 235, 1);
       }
+      
+      /* ========== TOAST ========== */
       
       .toast {
         position: fixed;
@@ -342,6 +198,14 @@
         background: #dc2626;
       }
       
+      .toast.success {
+        background: #10b981;
+      }
+      
+      .toast.info {
+        background: #0ea5e9;
+      }
+      
       @keyframes fadeInUp {
         from {
           opacity: 0;
@@ -352,6 +216,19 @@
           transform: translateX(-50%) translateY(0);
         }
       }
+      
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateX(-50%) translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+      }
+      
+      /* ========== INSTRUCTIONS ========== */
       
       #instructions {
         position: fixed;
@@ -388,7 +265,6 @@
         font-size: 0.95rem;
         opacity: 0.85;
         line-height: 1.5;
-        margin-bottom: 15px;
       }
       
       #instructions .baldosa-info {
@@ -398,38 +274,20 @@
         margin-top: 15px;
       }
       
-      #instructions .baldosa-info .name {
-        font-weight: 600;
-        font-size: 1.1rem;
-        color: #0ea5e9;
-      }
-      
-      #instructions .baldosa-info .address {
-        font-size: 0.85rem;
-        opacity: 0.7;
-        margin-top: 5px;
-      }
+      /* ========== INFO PANEL ========== */
       
       #info-panel {
         position: fixed;
         bottom: 0;
         left: 0;
         right: 0;
+        background: linear-gradient(to top, rgba(26, 42, 58, 0.98), rgba(26, 42, 58, 0.9));
         color: white;
         padding: 0;
         z-index: 1000;
         display: none;
-        animation: slideUp 0.3s ease-out;
-        overflow: hidden;
-      }
-      
-      @keyframes slideUp {
-        from {
-          transform: translateY(100%);
-        }
-        to {
-          transform: translateY(0);
-        }
+        backdrop-filter: blur(10px);
+        border-top: 2px solid rgba(37, 99, 235, 0.5);
       }
       
       #info-panel .baldosa-bg {
@@ -438,10 +296,8 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background-image: url('/baldoson.jpg');
-        background-size: cover;
-        background-position: center;
-        filter: brightness(0.3);
+        background: linear-gradient(135deg, #1a2a3a 0%, #2563eb 100%);
+        opacity: 0.1;
         z-index: 0;
       }
       
@@ -487,8 +343,25 @@
         margin-bottom: 6px;
       }
       
-      #info-panel .descripcion {
-        display: none; /* Ocultar descripción para panel compacto */
+      #info-panel .info-extra {
+        display: flex;
+        gap: 10px;
+        margin-top: 6px;
+        padding-top: 6px;
+        border-top: 1px solid rgba(255,255,255,0.15);
+        flex-wrap: wrap;
+      }
+      
+      #info-panel .info-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.7rem;
+        opacity: 0.85;
+      }
+      
+      #info-panel .info-item-icon {
+        font-size: 0.85rem;
       }
       
       #info-panel .btn-mas-info {
@@ -514,7 +387,10 @@
         transform: scale(1.02);
       }
       
-      /* NUEVO: Botón guardar en colección */
+      #info-panel .btn-mas-info:active {
+        transform: scale(0.98);
+      }
+      
       #info-panel .btn-guardar-coleccion {
         margin-top: 6px;
         padding: 7px 14px;
@@ -542,113 +418,8 @@
         transform: scale(0.98);
       }
       
-      #memorial-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 100;
-        display: none;
-        pointer-events: none;
-      }
+      /* ========== FLOATING CAPTURE BUTTON ========== */
       
-      #siluetas-container {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        top: 0;
-        overflow: hidden;
-        pointer-events: none;
-        z-index: 100;
-      }
-      
-      .silueta {
-        position: absolute;
-        width: 50px;
-        height: auto;
-        opacity: 0;
-        animation: aparecerSilueta 0.8s ease-out forwards;
-      }
-      
-      .silueta img {
-        width: 100%;
-        height: auto;
-        opacity: 0.25;
-        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
-      }
-      
-      @keyframes aparecerSilueta {
-        0% {
-          opacity: 0;
-          transform: scale(0.5);
-        }
-        100% {
-          opacity: 1;
-          transform: scale(1);
-        }
-      }
-      
-      #memorial-gif {
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 200px;
-        height: auto;
-        z-index: 101;
-        opacity: 0;
-        animation: aparecer 1s ease-out 1.5s forwards;
-      }
-      
-      @keyframes aparecer {
-        to {
-          opacity: 1;
-        }
-      }
-      
-      #cerrar-memorial {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: rgba(220, 38, 38, 0.9);
-        color: white;
-        border: none;
-        padding: 12px 24px;
-        border-radius: 8px;
-        font-size: 16px;
-        font-weight: 600;
-        cursor: pointer;
-        z-index: 102;
-        pointer-events: all;
-        backdrop-filter: blur(10px);
-        transition: background 0.2s;
-      }
-      
-      #cerrar-memorial:hover {
-        background: rgba(220, 38, 38, 1);
-      }
-      
-      #ar-container {
-        display: none;
-        width: 100%;
-        height: 100%;
-      }
-      
-      /* NUEVO: Animación slideDown para toast */
-      @keyframes slideDown {
-        from {
-          opacity: 0;
-          transform: translateX(-50%) translateY(-20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateX(-50%) translateY(0);
-        }
-      }
-      
-      /* Botón flotante de captura */
       #btn-capturar {
         position: fixed;
         bottom: 40px;
@@ -691,103 +462,65 @@
         }
       }
       
-      /* Info adicional en panel */
-      #info-panel .info-extra {
-        display: flex;
-        gap: 10px;
-        margin-top: 6px;
-        padding-top: 6px;
-        border-top: 1px solid rgba(255,255,255,0.15);
-        flex-wrap: wrap;
-      }
+      /* ========== AR CONTAINER ========== */
       
-      #info-panel .info-item {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 0.7rem;
-        opacity: 0.85;
-      }
-      
-      #info-panel .info-item-icon {
-        font-size: 0.85rem;
+      #ar-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: none;
       }
     </style>
   </head>
-
+  
   <body>
-    <div id="permission-request">
-      <div class="icon">📍</div>
-      <h2>Necesitamos tu ubicación</h2>
-      <p>Para encontrar las baldosas de la memoria cercanas, necesitamos acceder a tu ubicación.</p>
-      <p class="why">Tu ubicación solo se usa para mostrar baldosas cercanas y no se guarda ni comparte.</p>
-      <button onclick="solicitarPermiso()">Permitir ubicación</button>
-      <button class="skip-btn" onclick="window.location.href='/mapa'">Ver mapa sin ubicación</button>
-    </div>
-    
-    <div id="permission-denied">
-      <div class="icon">🚫</div>
-      <h2>Ubicación no disponible</h2>
-      <p>No pudimos acceder a tu ubicación. Para usar el escáner, necesitás habilitar el permiso de ubicación.</p>
-      <div class="instructions">
-        <h3>¿Cómo habilitarlo?</h3>
-        <ol>
-          <li>Tocá el ícono de candado 🔒 en la barra de direcciones</li>
-          <li>Buscá "Ubicación" o "Location"</li>
-          <li>Cambiá a "Permitir"</li>
-          <li>Recargá la página</li>
-        </ol>
-      </div>
-      <button onclick="window.location.reload()">🔄 Reintentar</button>
-      <br>
-      <a href="/mapa" style="display: inline-block; margin-top: 15px; color: #0ea5e9; text-decoration: none;">Ver mapa sin ubicación →</a>
-    </div>
-    
-    <div id="loading" style="display: none;">
+    <!-- Loading -->
+    <div id="loading">
       <div class="spinner"></div>
-      <p id="loading-text">Obteniendo tu ubicación...</p>
-      <p class="hint">Esto puede tardar unos segundos</p>
-      <div class="status" id="loading-status"></div>
+      <p id="loading-text">Cargando...</p>
+      <p class="status" id="loading-status"></p>
     </div>
     
-    <div id="no-baldosa">
-      <div class="icon">📍</div>
-      <h2>No hay baldosas cerca</h2>
-      <p>Para escanear una baldosa, necesitás estar físicamente cerca de ella.</p>
-      <div id="nearest-info" style="display: none;">
-        <p>La baldosa más cercana está a:</p>
-        <div class="distance" id="nearest-distance">--</div>
-        <div class="baldosa-name" id="nearest-name">--</div>
-      </div>
-      <div>
-        <button onclick="reintentar()">🔄 Actualizar ubicación</button>
-        <a href="/mapa" class="btn-secondary" style="display: inline-block; padding: 12px 30px; color: white; text-decoration: none; border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; margin-left: 10px;">Ver mapa</a>
-      </div>
+    <!-- Permission Request -->
+    <div id="permission-request">
+      <div class="icon">📍📷</div>
+      <h2>Permisos Necesarios</h2>
+      <p>Para escanear baldosas necesitamos acceso a tu ubicación y cámara.</p>
+      <button onclick="solicitarPermisos()">Permitir Acceso</button>
     </div>
     
-    <a href="/" id="btn-volver">
-      ← Volver
-    </a>
+    <!-- Permission Denied -->
+    <div id="permission-denied">
+      <div class="icon">⚠️</div>
+      <h2>Permisos Denegados</h2>
+      <p>No podemos continuar sin acceso a la ubicación y cámara. Por favor, habilitalos en la configuración de tu navegador.</p>
+      <button onclick="window.location.reload()">Reintentar</button>
+      <button onclick="window.location.href='/'" style="margin-top: 10px; background: transparent; border: 1px solid white;">Volver al Inicio</button>
+    </div>
     
-    <a href="/mapa" id="btn-mapa">
-      🗺️ Ver mapa
-    </a>
+    <!-- Navigation -->
+    <a href="/" id="btn-volver">← Volver</a>
+    <a href="/mapa" id="btn-mapa">🗺️ Ver mapa</a>
     
-    <!-- NUEVO: Botón flotante de captura -->
-    <button id="btn-capturar" onclick="capturarYMostrarPreview()">
+    <!-- Floating Capture Button -->
+    <button id="btn-capturar" onclick="capturarYGuardar()">
       <span class="camera-icon">📷</span>
     </button>
     
+    <!-- Instructions -->
     <div id="instructions">
-      <div class="icon">📷</div>
-      <h2>Apuntá tu cámara a la baldosa</h2>
-      <p>Estás cerca de una baldosa de la memoria. Enfocala con tu cámara para ver su historia.</p>
+      <div class="icon">🎯</div>
+      <h2>Apuntá a la baldosa</h2>
+      <p>Enfocá la cámara hacia la baldosa para ver la experiencia AR</p>
       <div class="baldosa-info">
-        <div class="name" id="instruction-baldosa-name">--</div>
-        <div class="address" id="instruction-baldosa-address">--</div>
+        <p style="margin: 0; font-weight: 600;" id="instruction-baldosa-name"></p>
+        <p style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.8;" id="instruction-baldosa-address"></p>
       </div>
     </div>
     
+    <!-- Info Panel -->
     <div id="info-panel">
       <div class="baldosa-bg"></div>
       <div class="content">
@@ -795,9 +528,7 @@
         <div class="info-text">
           <h3 id="info-nombre">Nombre</h3>
           <div class="categoria" id="info-categoria">Categoría</div>
-          <p class="descripcion" id="info-descripcion">Descripción</p>
           
-          <!-- NUEVO: Info adicional -->
           <div class="info-extra">
             <div class="info-item">
               <span class="info-item-icon">📍</span>
@@ -809,48 +540,36 @@
             </div>
           </div>
           
-          <button class="btn-mas-info" onclick="mostrarMasInfo()">
+          <button class="btn-mas-info" onclick="window.location.href='/baldosas/' + currentBaldosa?.codigo">
             📖 Más información
-          </button>
-          <!-- NUEVO: Botón guardar en colección -->
-          <button class="btn-guardar-coleccion" onclick="guardarEnColeccion()">
-            📸 Guardar en mi colección
           </button>
         </div>
       </div>
     </div>
     
-    <div id="memorial-overlay">
-      <div id="siluetas-container"></div>
-      <img id="memorial-gif" src="/memorial.gif" alt="Memorial" onerror="this.style.display='none'">
-      <button id="cerrar-memorial" onclick="cerrarMemorial()">✕ Cerrar</button>
-    </div>
-
+    <!-- AR Container -->
     <div id="ar-container"></div>
-
+    
     <script>
-      // Configuración
-      const RADIO_MAXIMO = 1000; // metros
+      // =============== GLOBAL STATE ===============
       
-      let baldosaCercana = null;
+      let scriptsLoaded = false;
       let currentBaldosa = null;
       let userLocation = null;
-      let arScene = null;
+      
+      // =============== ELEMENT REFERENCES ===============
       
       const loadingEl = document.getElementById('loading');
       const loadingText = document.getElementById('loading-text');
       const loadingStatus = document.getElementById('loading-status');
-      const noBaldosaEl = document.getElementById('no-baldosa');
+      const arContainer = document.getElementById('ar-container');
       const instructionsEl = document.getElementById('instructions');
       const infoPanelEl = document.getElementById('info-panel');
-      const arContainer = document.getElementById('ar-container');
-      const memorialOverlay = document.getElementById('memorial-overlay');
-      const siluetasContainer = document.getElementById('siluetas-container');
       const permissionRequestEl = document.getElementById('permission-request');
       const permissionDeniedEl = document.getElementById('permission-denied');
       const btnCapturar = document.getElementById('btn-capturar');
       
-      // =============== FUNCIONES DE COLECCIÓN (NUEVO) ===============
+      // =============== UTILITY FUNCTIONS ===============
       
       function obtenerFechaHoy() {
         const hoy = new Date();
@@ -863,85 +582,24 @@
         return hoy.toLocaleDateString('es-AR', opciones);
       }
       
-      async function capturarYMostrarPreview() {
-        console.log('📸 Capturando desde botón flotante...');
+      function mostrarToast(mensaje, tipo = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${tipo}`;
+        toast.textContent = mensaje;
+        document.body.appendChild(toast);
         
-        const foto = await capturarScreenshot();
-        if (!foto) {
-          mostrarToast('Error capturando foto', 'error');
-          return;
-        }
-        
-        console.log('✅ Foto capturada exitosamente');
-        
-        // Guardar directamente en colección
-        if (!currentBaldosa) {
-          mostrarToast('Error: baldosa no detectada', 'error');
-          return;
-        }
-        
-        const coleccionStr = localStorage.getItem('baldosas_coleccion');
-        let coleccion = { items: [], totalEscaneos: 0 };
-        
-        if (coleccionStr) {
-          try {
-            coleccion = JSON.parse(coleccionStr);
-          } catch (e) {
-            console.error('Error parseando colección:', e);
-          }
-        }
-        
-        // Verificar duplicado
-        const yaExiste = coleccion.items.some(item => 
-          item.baldosaId === (currentBaldosa.codigo || currentBaldosa.id)
-        );
-        
-        if (yaExiste) {
-          mostrarToast('Ya tenés esta baldosa en tu colección', 'info');
-          setTimeout(() => {
-            window.location.href = '/coleccion';
-          }, 1500);
-          return;
-        }
-        
-        // Crear item
-        const nuevoItem = {
-          id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          baldosaId: currentBaldosa.codigo || currentBaldosa.id,
-          nombreVictima: currentBaldosa.nombre,
-          fechaDesaparicion: currentBaldosa.fechaDesaparicion || '',
-          fechaEscaneo: new Date().toISOString(),
-          fotoUrl: foto,
-          ubicacion: currentBaldosa.direccion || currentBaldosa.barrio || 'Buenos Aires',
-          lat: currentBaldosa.lat,
-          lng: currentBaldosa.lng,
-          notas: ''
-        };
-        
-        console.log('💾 Guardando en colección...');
-        console.log('📸 Foto tamaño:', Math.round(foto.length / 1024), 'KB');
-        
-        coleccion.items.unshift(nuevoItem);
-        coleccion.totalEscaneos = coleccion.items.length;
-        coleccion.ultimoEscaneo = nuevoItem.fechaEscaneo;
-        
-        localStorage.setItem('baldosas_coleccion', JSON.stringify(coleccion));
-        
-        console.log('✅ Guardado exitosamente');
-        
-        mostrarToast('¡Foto guardada! 📸', 'success');
-        
-        // Redirigir a colección después de 1 segundo
         setTimeout(() => {
-          window.location.href = '/coleccion';
-        }, 1000);
+          toast.style.opacity = '0';
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
       }
       
-      function capturarScreenshot() {
+      // =============== SCREENSHOT FUNCTIONS ===============
+      
+      async function capturarScreenshot() {
         console.log('📸 Capturando screenshot...');
         
         return new Promise((resolve) => {
-          // Esperar un frame para asegurar que el canvas está renderizado
           requestAnimationFrame(() => {
             try {
               const scene = document.querySelector('a-scene');
@@ -958,20 +616,16 @@
                 return;
               }
               
-              // Capturar con calidad media para balance tamaño/calidad
               const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
               
-              // Verificar que el dataUrl es válido
               if (!dataUrl || dataUrl.length < 100) {
-                console.error('❌ Screenshot inválido o vacío');
+                console.error('❌ Screenshot inválido');
                 resolve(null);
                 return;
               }
               
               const sizeKB = Math.round(dataUrl.length / 1024);
-              console.log('✅ Screenshot capturado exitosamente');
-              console.log('📏 Tamaño:', sizeKB, 'KB');
-              console.log('🔍 Preview:', dataUrl.substring(0, 50) + '...');
+              console.log('✅ Screenshot capturado:', sizeKB, 'KB');
               
               resolve(dataUrl);
               
@@ -983,28 +637,23 @@
         });
       }
       
-      async function guardarEnColeccion() {
+      async function capturarYGuardar() {
+        console.log('📸 Capturando y guardando...');
+        
         if (!currentBaldosa) {
-          mostrarToast('No hay baldosa detectada', 'error');
+          mostrarToast('Error: baldosa no detectada', 'error');
           return;
         }
         
-        console.log('💾 Guardando en colección:', currentBaldosa.nombre);
-        
-        // Usar la última foto capturada o capturar una nueva
-        let foto = window.ultimaFotoCapturada;
-        if (!foto) {
-          console.log('📸 No hay foto capturada, capturando nueva...');
-          foto = await capturarScreenshot();
-        }
-        
+        const foto = await capturarScreenshot();
         if (!foto) {
           mostrarToast('Error capturando foto', 'error');
           return;
         }
         
-        console.log('✅ Foto lista para guardar, tamaño:', Math.round(foto.length / 1024), 'KB');
+        console.log('✅ Foto capturada');
         
+        // Get collection
         const coleccionStr = localStorage.getItem('baldosas_coleccion');
         let coleccion = { items: [], totalEscaneos: 0 };
         
@@ -1016,32 +665,34 @@
           }
         }
         
+        // Check duplicate
         const yaExiste = coleccion.items.some(item => 
           item.baldosaId === (currentBaldosa.codigo || currentBaldosa.id)
         );
         
         if (yaExiste) {
           mostrarToast('Ya tenés esta baldosa en tu colección', 'info');
+          setTimeout(() => {
+            window.location.href = '/coleccion';
+          }, 1500);
           return;
         }
         
+        // Create item
         const nuevoItem = {
           id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           baldosaId: currentBaldosa.codigo || currentBaldosa.id,
           nombreVictima: currentBaldosa.nombre,
           fechaDesaparicion: currentBaldosa.fechaDesaparicion || '',
           fechaEscaneo: new Date().toISOString(),
-          fotoUrl: foto,  // Base64 string
+          fotoUrl: foto,
           ubicacion: currentBaldosa.direccion || currentBaldosa.barrio || 'Buenos Aires',
           lat: currentBaldosa.lat,
           lng: currentBaldosa.lng,
           notas: ''
         };
         
-        console.log('📦 Nuevo item a guardar:', {
-          ...nuevoItem,
-          fotoUrl: nuevoItem.fotoUrl.substring(0, 50) + '...'
-        });
+        console.log('💾 Guardando en colección...');
         
         coleccion.items.unshift(nuevoItem);
         coleccion.totalEscaneos = coleccion.items.length;
@@ -1049,177 +700,121 @@
         
         localStorage.setItem('baldosas_coleccion', JSON.stringify(coleccion));
         
-        console.log('✅ Guardado en colección!');
-        console.log('📊 Total en colección:', coleccion.totalEscaneos);
+        console.log('✅ Guardado exitosamente');
         
-        // Limpiar foto temporal
-        window.ultimaFotoCapturada = null;
-        
-        mostrarToast('¡Guardado en tu colección! 🎉', 'success');
+        mostrarToast('¡Foto guardada! 📸', 'success');
         
         setTimeout(() => {
           window.location.href = '/coleccion';
-        }, 1500);
+        }, 1000);
       }
       
-      // =============== FIN FUNCIONES DE COLECCIÓN ===============
+      // =============== PERMISSIONS ===============
       
-      function mostrarToast(mensaje, tipo = 'info', duracion = 3000) {
-        const toastAnterior = document.querySelector('.toast');
-        if (toastAnterior) {
-          toastAnterior.remove();
-        }
-        
-        const toast = document.createElement('div');
-        toast.className = `toast ${tipo}`;
-        toast.textContent = mensaje;
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-          toast.style.opacity = '0';
-          setTimeout(() => toast.remove(), 300);
-        }, duracion);
-      }
-      
-      function mostrarMasInfo() {
-        if (currentBaldosa) {
-          console.log('📖 Mostrando más info de:', currentBaldosa.nombre);
-          if (currentBaldosa.id) {
-            window.open(`/baldosa/${currentBaldosa.id}`, '_blank');
-          } else {
-            alert(`${currentBaldosa.nombre}\n\n${currentBaldosa.descripcion || 'Sin descripción adicional'}\n\nCategoría: ${currentBaldosa.categoria || 'Histórico'}\nDirección: ${currentBaldosa.direccion || 'Sin dirección'}`);
-          }
-        }
-      }
-      
-      function cerrarMemorial() {
-        memorialOverlay.style.display = 'none';
-        siluetasContainer.innerHTML = '';
-      }
-      
-      function reintentar() {
-        window.location.reload();
-      }
-      
-      function calcularDistancia(lat1, lon1, lat2, lon2) {
-        const R = 6371e3;
-        const φ1 = lat1 * Math.PI / 180;
-        const φ2 = lat2 * Math.PI / 180;
-        const Δφ = (lat2 - lat1) * Math.PI / 180;
-        const Δλ = (lon2 - lon1) * Math.PI / 180;
-        
-        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-                  Math.cos(φ1) * Math.cos(φ2) *
-                  Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        
-        return R * c;
-      }
-      
-      async function verificarPermisoUbicacion() {
-        if (!navigator.permissions) {
-          return 'prompt';
-        }
+      async function solicitarPermisos() {
+        console.log('📍 Solicitando permisos...');
         
         try {
-          const result = await navigator.permissions.query({ name: 'geolocation' });
-          return result.state;
+          // Location permission
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject);
+          });
+          
+          userLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          
+          console.log('✅ Ubicación obtenida:', userLocation);
+          
+          // Camera permission (will be requested by A-Frame)
+          permissionRequestEl.style.display = 'none';
+          cargarBaldosa();
+          
         } catch (error) {
-          console.log('Error verificando permiso:', error);
-          return 'prompt';
+          console.error('❌ Error permisos:', error);
+          permissionRequestEl.style.display = 'none';
+          permissionDeniedEl.style.display = 'flex';
         }
       }
       
-      function solicitarPermiso() {
-        permissionRequestEl.style.display = 'none';
-        loadingEl.style.display = 'flex';
+      // =============== LOAD BALDOSA ===============
+      
+      async function cargarBaldosa() {
+        console.log('🔄 Cargando baldosa desde URL...');
         
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            userLocation = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude
-            };
-            await continuarConUbicacion();
-          },
-          (error) => {
-            loadingEl.style.display = 'none';
-            permissionDeniedEl.style.display = 'flex';
-          },
-          { enableHighAccuracy: true, timeout: 15000 }
-        );
+        const params = new URLSearchParams(window.location.search);
+        const baldosaId = params.get('id');
+        
+        if (!baldosaId) {
+          mostrarToast('No se especificó baldosa', 'error');
+          setTimeout(() => window.location.href = '/', 2000);
+          return;
+        }
+        
+        loadingText.textContent = 'Cargando información de la baldosa...';
+        
+        try {
+          const response = await fetch(`/api/baldosas/${baldosaId}`);
+          const data = await response.json();
+          
+          if (!data.baldosa) {
+            throw new Error('Baldosa no encontrada');
+          }
+          
+          console.log('✅ Baldosa cargada:', data.baldosa.nombre);
+          console.log('📸 Foto víctima:', data.baldosa.fotoVictima);
+          
+          iniciarAR(data.baldosa);
+          
+        } catch (error) {
+          console.error('❌ Error cargando baldosa:', error);
+          mostrarToast('Error cargando baldosa', 'error');
+          setTimeout(() => window.location.href = '/', 2000);
+        }
       }
       
-      async function obtenerUbicacion() {
-        return new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              resolve({
-                lat: position.coords.latitude,
-                lng: position.coords.longitude
-              });
-            },
-            (error) => {
-              let msg = 'Error obteniendo ubicación';
-              if (error.code === error.PERMISSION_DENIED) {
-                msg = 'Permiso de ubicación denegado';
-              } else if (error.code === error.POSITION_UNAVAILABLE) {
-                msg = 'Ubicación no disponible';
-              } else if (error.code === error.TIMEOUT) {
-                msg = 'Tiempo de espera agotado';
-              }
-              reject(new Error(msg));
-            },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-          );
-        });
-      }
-
-      async function buscarBaldosasCercanas(lat, lng) {
-        const response = await fetch(`/api/baldosas`);
-        const data = await response.json();
-        return data.baldosas || [];
-      }
-
+      // =============== LOAD AR SCRIPTS ===============
+      
       async function cargarScriptsAR() {
-        if (!window.AFRAME) {
-          await new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://aframe.io/releases/1.4.2/aframe.min.js';
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-          });
-        }
+        if (scriptsLoaded) return;
         
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js';
-          script.onload = () => {
-            console.log('✅ aframe-extras cargado');
+        console.log('📦 Cargando librerías AR...');
+        loadingText.textContent = 'Cargando librerías AR...';
+        
+        return new Promise((resolve, reject) => {
+          const aframe = document.createElement('script');
+          aframe.src = 'https://cdn.jsdelivr.net/npm/aframe@1.6.0/dist/aframe-master.min.js';
+          
+          const mindar = document.createElement('script');
+          mindar.src = 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js';
+          
+          aframe.onload = () => {
+            console.log('✅ A-Frame cargado');
+            document.head.appendChild(mindar);
+          };
+          
+          mindar.onload = () => {
+            console.log('✅ MindAR cargado');
+            scriptsLoaded = true;
             resolve();
           };
-          script.onerror = () => {
-            console.warn('⚠️ aframe-extras no cargó');
-            resolve();
+          
+          mindar.onerror = () => {
+            console.error('❌ Error cargando MindAR');
+            reject(new Error('Error cargando MindAR'));
           };
-          document.head.appendChild(script);
+          
+          document.head.appendChild(aframe);
         });
-        
-        if (!window.MINDAR) {
-          await new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js';
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-          });
-        }
       }
-
+      
+      // =============== INIT AR ===============
+      
       async function iniciarAR(baldosa) {
         console.log('🚀 INICIANDO AR');
         console.log('📋 Baldosa:', baldosa.nombre);
+        console.log('📸 Foto:', baldosa.fotoVictima);
         
         loadingText.textContent = 'Cargando experiencia AR...';
         loadingStatus.textContent = `Baldosa: ${baldosa.nombre}`;
@@ -1227,14 +822,12 @@
         await cargarScriptsAR();
         
         const mindUrl = baldosa.mindFileUrl || `/targets/baldosa-${baldosa.id}.mind`;
-        
-        // Usar portaretrato genérico + foto dinámica
         const glbUrl = `/models/portaretrato_generico.glb`;
         const fotoUrl = baldosa.fotoVictima || baldosa.imagenUrl || '/images/placeholder.jpg';
         
-        console.log('🎯 Archivo .mind:', mindUrl);
-        console.log('🎮 Modelo GLB:', glbUrl);
-        console.log('📸 Foto víctima:', fotoUrl);
+        console.log('🎯 Target:', mindUrl);
+        console.log('🎮 Modelo:', glbUrl);
+        console.log('📸 Foto:', fotoUrl);
         
         arContainer.innerHTML = `
           <a-scene
@@ -1253,11 +846,7 @@
             <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
             
             <a-entity mindar-image-target="targetIndex: 0">
-              
-              <!-- Grupo contenedor para mantener foto y marco juntos -->
               <a-entity id="portaretrato-grupo" position="0 0 0" rotation="0 0 0">
-                
-                <!-- Portaretrato con animación -->
                 <a-entity 
                   id="portaretrato"
                   gltf-model="#modelo-portaretrato"
@@ -1267,7 +856,6 @@
                   animation-mixer="loop: once; timeScale: 1.0; clampWhenFinished: true;">
                 </a-entity>
                 
-                <!-- Foto dinámica DENTRO del portaretrato -->
                 <a-plane
                   id="foto-dinamica"
                   src="#foto-victima"
@@ -1278,9 +866,7 @@
                   material="shader: flat; side: double; transparent: false; alphaTest: 0.1"
                   visible="true">
                 </a-plane>
-                
               </a-entity>
-              
             </a-entity>
           </a-scene>
         `;
@@ -1292,7 +878,7 @@
         scene.addEventListener('loaded', () => {
           console.log('🎬 ESCENA AR CARGADA');
           
-          // Verificar que la foto se cargó
+          // Check image loaded
           const fotoImg = document.getElementById('foto-victima');
           if (fotoImg) {
             fotoImg.onload = () => {
@@ -1325,17 +911,12 @@
               console.log('🎯 ¡BALDOSA DETECTADA!');
               
               currentBaldosa = baldosa;
-              
               instructionsEl.style.display = 'none';
-              
-              // Mostrar botón flotante de captura
               btnCapturar.style.display = 'flex';
               
-              // Actualizar info panel
               document.getElementById('info-nombre').textContent = baldosa.nombre;
               document.getElementById('info-categoria').textContent = baldosa.categoria || 'Histórico';
               
-              // Mostrar ubicación y fecha
               const ubicacionTexto = baldosa.barrio 
                 ? `${baldosa.barrio}, Buenos Aires` 
                 : baldosa.direccion || 'Buenos Aires';
@@ -1347,104 +928,19 @@
             
             target.addEventListener('targetLost', () => {
               console.log('👋 BALDOSA PERDIDA');
-              
-              // Ocultar botón flotante
               btnCapturar.style.display = 'none';
-              
               infoPanelEl.style.display = 'none';
-              if (memorialOverlay.style.display === 'block') {
-                cerrarMemorial();
-              }
             });
           }
         }, 1000);
       }
-
-      function mostrarNoBaldosa(baldosas, userLat, userLng) {
-        loadingEl.style.display = 'none';
-        noBaldosaEl.style.display = 'flex';
-        
-        if (baldosas.length > 0) {
-          let cercana = baldosas[0];
-          let distanciaMinima = calcularDistancia(userLat, userLng, cercana.lat, cercana.lng);
-          
-          baldosas.forEach(b => {
-            const d = calcularDistancia(userLat, userLng, b.lat, b.lng);
-            if (d < distanciaMinima) {
-              distanciaMinima = d;
-              cercana = b;
-            }
-          });
-          
-          document.getElementById('nearest-info').style.display = 'block';
-          document.getElementById('nearest-distance').textContent = 
-            distanciaMinima < 1000 ?
-              `${Math.round(distanciaMinima)} m` :
-              `${(distanciaMinima / 1000).toFixed(1)} km`;
-          document.getElementById('nearest-name').textContent = cercana.nombre;
-        }
-      }
-
-      async function continuarConUbicacion() {
-        try {
-          loadingText.textContent = 'Buscando baldosas cercanas...';
-          
-          const baldosas = await buscarBaldosasCercanas(userLocation.lat, userLocation.lng);
-          
-          console.log(`📍 Encontradas ${baldosas.length} baldosas`);
-          
-          if (baldosas.length === 0) {
-            mostrarToast('No hay baldosas en el sistema aún', 'error', 5000);
-            mostrarNoBaldosa([], userLocation.lat, userLocation.lng);
-            return;
-          }
-          
-          const baldosasConDistancia = baldosas.map(b => ({
-            ...b,
-            distancia: calcularDistancia(userLocation.lat, userLocation.lng, b.lat, b.lng)
-          }));
-          
-          baldosaCercana = baldosasConDistancia.sort((a, b) => a.distancia - b.distancia)[0];
-          
-          console.log(`🎯 Baldosa más cercana: ${baldosaCercana.nombre} a ${Math.round(baldosaCercana.distancia)}m`);
-          
-          if (baldosaCercana.distancia <= RADIO_MAXIMO) {
-            loadingStatus.textContent = `${baldosaCercana.nombre} a ${Math.round(baldosaCercana.distancia)}m`;
-            await iniciarAR(baldosaCercana);
-          } else {
-            console.log(`❌ No hay baldosas dentro del radio de ${RADIO_MAXIMO}m`);
-            mostrarNoBaldosa(baldosas, userLocation.lat, userLocation.lng);
-          }
-          
-        } catch (error) {
-          console.error('Error:', error);
-          loadingText.textContent = 'Error';
-          loadingStatus.textContent = error.message;
-          mostrarToast(error.message, 'error', 5000);
-        }
-      }
-
-      async function iniciar() {
-        const estadoPermiso = await verificarPermisoUbicacion();
-        console.log('🔐 Estado del permiso:', estadoPermiso);
-        
-        if (estadoPermiso === 'granted') {
-          loadingEl.style.display = 'flex';
-          try {
-            userLocation = await obtenerUbicacion();
-            await continuarConUbicacion();
-          } catch (error) {
-            loadingEl.style.display = 'none';
-            permissionDeniedEl.style.display = 'flex';
-          }
-        } else if (estadoPermiso === 'denied') {
-          permissionDeniedEl.style.display = 'flex';
-        } else {
-          permissionRequestEl.style.display = 'flex';
-        }
-      }
-
-      iniciar();
+      
+      // =============== INIT APP ===============
+      
+      window.addEventListener('DOMContentLoaded', () => {
+        console.log('🚀 App iniciada');
+        permissionRequestEl.style.display = 'flex';
+      });
     </script>
   </body>
 </html>
