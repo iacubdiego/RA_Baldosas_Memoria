@@ -225,6 +225,13 @@ export default function ColeccionPage() {
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'scale(1)';
                   }}
+                  onError={(e) => {
+                    console.error('Error cargando imagen:', item.fotoUrl?.substring(0, 50));
+                    e.currentTarget.src = '/panuelo-bg-sin-fondo.png';
+                  }}
+                  onLoad={() => {
+                    console.log('✅ Imagen cargada correctamente');
+                  }}
                 />
               </div>
 

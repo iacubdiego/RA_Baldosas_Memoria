@@ -872,11 +872,69 @@
           return;
         }
         
-        // Guardar temporalmente
-        window.ultimaFotoCapturada = foto;
-        console.log('✅ Foto guardada temporalmente, tamaño:', Math.round(foto.length / 1024), 'KB');
+        console.log('✅ Foto capturada exitosamente');
         
-        mostrarToast('¡Foto capturada! 📸', 'success');
+        // Guardar directamente en colección
+        if (!currentBaldosa) {
+          mostrarToast('Error: baldosa no detectada', 'error');
+          return;
+        }
+        
+        const coleccionStr = localStorage.getItem('baldosas_coleccion');
+        let coleccion = { items: [], totalEscaneos: 0 };
+        
+        if (coleccionStr) {
+          try {
+            coleccion = JSON.parse(coleccionStr);
+          } catch (e) {
+            console.error('Error parseando colección:', e);
+          }
+        }
+        
+        // Verificar duplicado
+        const yaExiste = coleccion.items.some(item => 
+          item.baldosaId === (currentBaldosa.codigo || currentBaldosa.id)
+        );
+        
+        if (yaExiste) {
+          mostrarToast('Ya tenés esta baldosa en tu colección', 'info');
+          setTimeout(() => {
+            window.location.href = '/coleccion';
+          }, 1500);
+          return;
+        }
+        
+        // Crear item
+        const nuevoItem = {
+          id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          baldosaId: currentBaldosa.codigo || currentBaldosa.id,
+          nombreVictima: currentBaldosa.nombre,
+          fechaDesaparicion: currentBaldosa.fechaDesaparicion || '',
+          fechaEscaneo: new Date().toISOString(),
+          fotoUrl: foto,
+          ubicacion: currentBaldosa.direccion || currentBaldosa.barrio || 'Buenos Aires',
+          lat: currentBaldosa.lat,
+          lng: currentBaldosa.lng,
+          notas: ''
+        };
+        
+        console.log('💾 Guardando en colección...');
+        console.log('📸 Foto tamaño:', Math.round(foto.length / 1024), 'KB');
+        
+        coleccion.items.unshift(nuevoItem);
+        coleccion.totalEscaneos = coleccion.items.length;
+        coleccion.ultimoEscaneo = nuevoItem.fechaEscaneo;
+        
+        localStorage.setItem('baldosas_coleccion', JSON.stringify(coleccion));
+        
+        console.log('✅ Guardado exitosamente');
+        
+        mostrarToast('¡Foto guardada! 📸', 'success');
+        
+        // Redirigir a colección después de 1 segundo
+        setTimeout(() => {
+          window.location.href = '/coleccion';
+        }, 1000);
       }
       
       function capturarScreenshot() {
@@ -1170,7 +1228,7 @@
         
         const mindUrl = baldosa.mindFileUrl || `/targets/baldosa-${baldosa.id}.mind`;
         
-        // NUEVO: Usar portaretrato genérico + foto dinámica
+        // Usar portaretrato genérico + foto dinámica
         const glbUrl = `/models/portaretrato_generico.glb`;
         const fotoUrl = baldosa.fotoVictima || baldosa.imagenUrl || '/images/placeholder.jpg';
         
@@ -1196,27 +1254,32 @@
             
             <a-entity mindar-image-target="targetIndex: 0">
               
-              <!-- Portaretrato con animación -->
-              <a-entity 
-                id="portaretrato"
-                gltf-model="#modelo-portaretrato"
-                position="0 0 0"
-                rotation="0 0 0"
-                scale="1.0 1.0 1.0"
-                animation-mixer="loop: once; timeScale: 1.0; clampWhenFinished: true;">
+              <!-- Grupo contenedor para mantener foto y marco juntos -->
+              <a-entity id="portaretrato-grupo" position="0 0 0" rotation="0 0 0">
+                
+                <!-- Portaretrato con animación -->
+                <a-entity 
+                  id="portaretrato"
+                  gltf-model="#modelo-portaretrato"
+                  position="0 0 0"
+                  rotation="0 0 0"
+                  scale="1.0 1.0 1.0"
+                  animation-mixer="loop: once; timeScale: 1.0; clampWhenFinished: true;">
+                </a-entity>
+                
+                <!-- Foto dinámica DENTRO del portaretrato -->
+                <a-plane
+                  id="foto-dinamica"
+                  src="#foto-victima"
+                  position="0 0 0.025"
+                  rotation="0 0 0"
+                  width="0.73"
+                  height="0.92"
+                  material="shader: flat; side: double; transparent: false; alphaTest: 0.1"
+                  visible="true">
+                </a-plane>
+                
               </a-entity>
-              
-              <!-- Foto dinámica encima del portaretrato -->
-              <a-plane
-                id="foto-dinamica"
-                src="#foto-victima"
-                position="0 0 0.06"
-                rotation="0 0 0"
-                width="0.73"
-                height="0.92"
-                material="shader: flat; transparent: false"
-                visible="false">
-              </a-plane>
               
             </a-entity>
           </a-scene>
@@ -1229,30 +1292,15 @@
         scene.addEventListener('loaded', () => {
           console.log('🎬 ESCENA AR CARGADA');
           
-          // Sincronizar foto con animación del portaretrato
-          const portaretrato = document.getElementById('portaretrato');
-          const fotoDinamica = document.getElementById('foto-dinamica');
-          
-          if (portaretrato && fotoDinamica) {
-            // La foto sigue al portaretrato
-            portaretrato.addEventListener('model-loaded', () => {
-              console.log('✅ Portaretrato cargado');
-              
-              // Hacer visible la foto
-              setTimeout(() => {
-                fotoDinamica.setAttribute('visible', 'true');
-                console.log('📸 Foto aplicada al portaretrato');
-              }, 100);
-            });
-            
-            // Sincronizar transformación (copiar posición/rotación del portaretrato)
-            setInterval(() => {
-              const pos = portaretrato.object3D.position;
-              const rot = portaretrato.object3D.rotation;
-              
-              fotoDinamica.object3D.position.set(pos.x, pos.y, pos.z + 0.022);
-              fotoDinamica.object3D.rotation.copy(rot);
-            }, 16); // ~60fps
+          // Verificar que la foto se cargó
+          const fotoImg = document.getElementById('foto-victima');
+          if (fotoImg) {
+            fotoImg.onload = () => {
+              console.log('✅ Imagen cargada:', fotoImg.width, 'x', fotoImg.height);
+            };
+            fotoImg.onerror = () => {
+              console.error('❌ Error cargando imagen:', fotoUrl);
+            };
           }
           
           loadingEl.style.display = 'none';
