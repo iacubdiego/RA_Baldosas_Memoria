@@ -11,11 +11,20 @@ export async function GET(
 
     await connectDB();
 
-    // Buscar por _id o por codigo
-    let baldosa = await Baldosa.findById(id);
+    let baldosa = null;
     
+    // Intentar buscar por _id si parece un ObjectId
+    if (id.match(/^[0-9a-fA-F]{24}$/)) {
+      try {
+        baldosa = await Baldosa.findById(id);
+      } catch (error) {
+        // Si falla, intentar por codigo
+        console.log('No es un ObjectId válido, buscando por codigo');
+      }
+    }
+    
+    // Si no se encontró por _id, buscar por codigo
     if (!baldosa) {
-      // Intentar buscar por codigo
       baldosa = await Baldosa.findOne({ codigo: id });
     }
 
@@ -28,6 +37,7 @@ export async function GET(
 
     const [lng, lat] = baldosa.ubicacion.coordinates;
 
+    // IMPORTANTE: Envolver en objeto "baldosa"
     return NextResponse.json({
       baldosa: {
         id: baldosa._id.toString(),
@@ -40,7 +50,7 @@ export async function GET(
         direccion: baldosa.direccion,
         barrio: baldosa.barrio,
         imagenUrl: baldosa.imagenUrl,
-        fotoUrl: baldosa.fotoUrl,        // NUEVO
+        fotoUrl: baldosa.fotoUrl,        // ✅ NUEVO
         audioUrl: baldosa.audioUrl,
         mensajeAR: baldosa.mensajeAR,
         infoExtendida: baldosa.infoExtendida,
