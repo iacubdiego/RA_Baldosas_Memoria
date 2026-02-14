@@ -12,10 +12,10 @@ export interface IBaldosa {
   };
   direccion?: string;
   barrio?: string;
-  imagenUrl?: string;
+  imagenUrl?: string;      // Imagen para cards/listados
+  fotoUrl?: string;         // NUEVO: Foto para el portaretrato AR
   audioUrl?: string;
-  mindFileUrl?: string;  // URL del archivo .mind individual
-  fotoUrl?: string;
+  mindFileUrl?: string;
   clusterId?: string;
   targetIndex?: number;
   mensajeAR: string;
@@ -56,10 +56,10 @@ const baldosaSchema = new mongoose.Schema<IBaldosa>({
   },
   direccion: String,
   barrio: String,
-  imagenUrl: String,
+  imagenUrl: String,       // Imagen para cards/listados
+  fotoUrl: String,         // NUEVO: Foto para portaretrato AR
   audioUrl: String,
-  mindFileUrl: String,  // URL del archivo .mind individual
-  fotoUrl: String,
+  mindFileUrl: String,
   clusterId: String,
   targetIndex: Number,
   mensajeAR: { 

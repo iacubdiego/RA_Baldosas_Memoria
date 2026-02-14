@@ -865,7 +865,7 @@
       async function iniciarAR(baldosa) {
         console.log('🚀 INICIANDO AR');
         console.log('📋 Baldosa:', baldosa.nombre);
-        console.log('📸 Foto:', baldosa.fotoVictima);
+        console.log('📸 fotoUrl:', baldosa.fotoUrl);
         
         loadingText.textContent = 'Cargando experiencia AR...';
         loadingStatus.textContent = `Baldosa: ${baldosa.nombre}`;
@@ -874,11 +874,11 @@
         
         const mindUrl = baldosa.mindFileUrl || `/targets/baldosa-${baldosa.id}.mind`;
         const glbUrl = `/models/portaretrato_generico.glb`;
-        const fotoUrl = baldosa.fotoVictima || baldosa.imagenUrl || '/images/placeholder.jpg';
+        const fotoUrl = baldosa.fotoUrl || baldosa.imagenUrl || '/images/placeholder.jpg';
         
         console.log('🎯 Target:', mindUrl);
         console.log('🎮 Modelo:', glbUrl);
-        console.log('📸 Foto:', fotoUrl);
+        console.log('📸 Foto final:', fotoUrl);
         
         arContainer.innerHTML = `
           <a-scene

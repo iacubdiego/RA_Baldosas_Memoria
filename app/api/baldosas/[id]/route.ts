@@ -11,7 +11,13 @@ export async function GET(
 
     await connectDB();
 
-    const baldosa = await Baldosa.findById(id);
+    // Buscar por _id o por codigo
+    let baldosa = await Baldosa.findById(id);
+    
+    if (!baldosa) {
+      // Intentar buscar por codigo
+      baldosa = await Baldosa.findOne({ codigo: id });
+    }
 
     if (!baldosa || !baldosa.activo) {
       return NextResponse.json(
@@ -23,22 +29,26 @@ export async function GET(
     const [lng, lat] = baldosa.ubicacion.coordinates;
 
     return NextResponse.json({
-      id: baldosa._id.toString(),
-      codigo: baldosa.codigo,
-      nombre: baldosa.nombre,
-      descripcion: baldosa.descripcion,
-      categoria: baldosa.categoria,
-      lat,
-      lng,
-      direccion: baldosa.direccion,
-      barrio: baldosa.barrio,
-      imagenUrl: baldosa.imagenUrl,
-      audioUrl: baldosa.audioUrl,
-      mensajeAR: baldosa.mensajeAR,
-      infoExtendida: baldosa.infoExtendida,
-      vecesEscaneada: baldosa.vecesEscaneada,
-      clusterId: baldosa.clusterId,
-      targetIndex: baldosa.targetIndex,
+      baldosa: {
+        id: baldosa._id.toString(),
+        codigo: baldosa.codigo,
+        nombre: baldosa.nombre,
+        descripcion: baldosa.descripcion,
+        categoria: baldosa.categoria,
+        lat,
+        lng,
+        direccion: baldosa.direccion,
+        barrio: baldosa.barrio,
+        imagenUrl: baldosa.imagenUrl,
+        fotoUrl: baldosa.fotoUrl,        // NUEVO
+        audioUrl: baldosa.audioUrl,
+        mensajeAR: baldosa.mensajeAR,
+        infoExtendida: baldosa.infoExtendida,
+        vecesEscaneada: baldosa.vecesEscaneada,
+        clusterId: baldosa.clusterId,
+        targetIndex: baldosa.targetIndex,
+        mindFileUrl: baldosa.mindFileUrl,
+      }
     });
   } catch (error) {
     console.error('Error en /api/baldosas/[id]:', error);
