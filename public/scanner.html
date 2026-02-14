@@ -757,6 +757,8 @@
             const response = await fetch(`/api/baldosas/${baldosaId}`);
             const data = await response.json();
             
+            console.log('📦 Respuesta API completa:', data);
+            
             if (!data.baldosa) {
               throw new Error('Baldosa no encontrada');
             }
@@ -802,7 +804,11 @@
           }
           
           console.log('✅ Baldosa cargada:', baldosa.nombre);
-          console.log('📸 Foto víctima:', baldosa.fotoVictima);
+          console.log('🔍 Campos de baldosa:', {
+            fotoUrl: baldosa.fotoUrl,
+            imagenUrl: baldosa.imagenUrl,
+            mindFileUrl: baldosa.mindFileUrl
+          });
           
           iniciarAR(baldosa);
           
@@ -891,7 +897,7 @@
             
             <a-assets timeout="10000">
               <a-asset-item id="modelo-portaretrato" src="${glbUrl}"></a-asset-item>
-              <img id="foto-victima" src="${fotoUrl}" crossorigin="anonymous">
+              <img id="foto-ar" src="${fotoUrl}" crossorigin="anonymous">
             </a-assets>
             
             <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
@@ -909,7 +915,7 @@
                 
                 <a-plane
                   id="foto-dinamica"
-                  src="#foto-victima"
+                  src="#foto-ar"
                   position="0 0 0.025"
                   rotation="0 0 0"
                   width="0.73"
@@ -930,14 +936,18 @@
           console.log('🎬 ESCENA AR CARGADA');
           
           // Check image loaded
-          const fotoImg = document.getElementById('foto-victima');
+          const fotoImg = document.getElementById('foto-ar');
           if (fotoImg) {
+            console.log('🖼️ Elemento foto encontrado, src:', fotoImg.src);
             fotoImg.onload = () => {
               console.log('✅ Imagen cargada:', fotoImg.width, 'x', fotoImg.height);
             };
-            fotoImg.onerror = () => {
+            fotoImg.onerror = (e) => {
               console.error('❌ Error cargando imagen:', fotoUrl);
+              console.error('Error details:', e);
             };
+          } else {
+            console.error('❌ No se encontró elemento foto-ar');
           }
           
           loadingEl.style.display = 'none';
