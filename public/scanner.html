@@ -989,15 +989,18 @@
             
             <a-entity mindar-image-target="targetIndex: 0">
               <a-entity id="portaretrato-grupo" position="0 0 0" rotation="0 0 0">
+                
+                <!-- Portaretrato con animación que se activa al detectar -->
                 <a-entity 
                   id="portaretrato"
                   gltf-model="#modelo-portaretrato"
                   position="0 0 0"
                   rotation="0 0 0"
                   scale="1.0 1.0 1.0"
-                  animation-mixer="loop: once; timeScale: 1.0; clampWhenFinished: true;">
+                  animation-mixer="clip: *; loop: once; clampWhenFinished: true">
                 </a-entity>
                 
+                <!-- Foto dinámica DENTRO del portaretrato -->
                 <a-plane
                   id="foto-dinamica"
                   src="#foto-ar"
@@ -1008,6 +1011,7 @@
                   material="shader: flat; side: double; transparent: false; alphaTest: 0.1"
                   visible="true">
                 </a-plane>
+                
               </a-entity>
             </a-entity>
           </a-scene>
@@ -1064,6 +1068,25 @@
               currentBaldosa = baldosa;
               instructionsEl.style.display = 'none';
               btnCapturar.style.display = 'flex';
+              
+              // REINICIAR ANIMACIÓN del portaretrato
+              const portaretrato = document.getElementById('portaretrato');
+              if (portaretrato) {
+                const mixer = portaretrato.components['animation-mixer'];
+                if (mixer && mixer.mixer) {
+                  console.log('🎬 Reiniciando animación');
+                  // Detener todas las acciones
+                  mixer.mixer.stopAllAction();
+                  
+                  // Reiniciar desde el frame 0
+                  setTimeout(() => {
+                    const actions = mixer.mixer._actions;
+                    if (actions && actions.length > 0) {
+                      actions[0].reset().play();
+                    }
+                  }, 50);
+                }
+              }
               
               document.getElementById('info-nombre').textContent = baldosa.nombre;
               document.getElementById('info-categoria').textContent = baldosa.categoria || 'Histórico';
