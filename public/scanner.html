@@ -859,15 +859,15 @@
                 const currentDist = calcularDistancia(
                   userLocation.lat, 
                   userLocation.lng,
-                  current.ubicacion.coordinates[1],
-                  current.ubicacion.coordinates[0]
+                  current.lat,
+                  current.lng
                 );
                 
                 const closestDist = calcularDistancia(
                   userLocation.lat,
                   userLocation.lng,
-                  closest.ubicacion.coordinates[1],
-                  closest.ubicacion.coordinates[0]
+                  closest.lat,
+                  closest.lng
                 );
                 
                 return currentDist < closestDist ? current : closest;
