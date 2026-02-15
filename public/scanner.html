@@ -597,61 +597,97 @@
       // =============== SCREENSHOT FUNCTIONS ===============
       
       async function capturarScreenshot() {
-        console.log('📸 Capturando screenshot...');
+        console.log('📸 Iniciando captura...');
         
         return new Promise((resolve) => {
+          // DOBLE requestAnimationFrame para asegurar render completo
           requestAnimationFrame(() => {
-            try {
-              const scene = document.querySelector('a-scene');
-              if (!scene) {
-                console.error('❌ No se encontró la escena A-Frame');
+            requestAnimationFrame(() => {
+              try {
+                const scene = document.querySelector('a-scene');
+                if (!scene) {
+                  console.error('❌ No se encontró la escena A-Frame');
+                  resolve(null);
+                  return;
+                }
+                
+                const canvas = scene.querySelector('canvas');
+                if (!canvas) {
+                  console.error('❌ No se encontró el canvas');
+                  resolve(null);
+                  return;
+                }
+                
+                console.log('🖼️ Canvas:', canvas.width, 'x', canvas.height);
+                
+                // Verificar píxeles no-negros
+                const ctx = canvas.getContext('2d');
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const pixels = imageData.data;
+                
+                let nonBlackPixels = 0;
+                for (let i = 0; i < pixels.length; i += 4) {
+                  if (pixels[i] > 0 || pixels[i+1] > 0 || pixels[i+2] > 0) {
+                    nonBlackPixels++;
+                  }
+                }
+                
+                const totalPixels = canvas.width * canvas.height;
+                const percentageNonBlack = (nonBlackPixels / totalPixels) * 100;
+                console.log('🎨 Píxeles activos:', percentageNonBlack.toFixed(1), '%');
+                
+                if (percentageNonBlack < 1) {
+                  console.warn('⚠️ Canvas mayormente negro!');
+                }
+                
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                
+                if (!dataUrl || dataUrl.length < 1000) {
+                  console.error('❌ Screenshot inválido');
+                  resolve(null);
+                  return;
+                }
+                
+                const sizeKB = Math.round(dataUrl.length / 1024);
+                console.log('✅ Screenshot:', sizeKB, 'KB');
+                
+                resolve(dataUrl);
+                
+              } catch (error) {
+                console.error('❌ Error:', error);
                 resolve(null);
-                return;
               }
-              
-              const canvas = scene.querySelector('canvas');
-              if (!canvas) {
-                console.error('❌ No se encontró el canvas');
-                resolve(null);
-                return;
-              }
-              
-              const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-              
-              if (!dataUrl || dataUrl.length < 100) {
-                console.error('❌ Screenshot inválido');
-                resolve(null);
-                return;
-              }
-              
-              const sizeKB = Math.round(dataUrl.length / 1024);
-              console.log('✅ Screenshot capturado:', sizeKB, 'KB');
-              
-              resolve(dataUrl);
-              
-            } catch (error) {
-              console.error('❌ Error capturando screenshot:', error);
-              resolve(null);
-            }
+            });
           });
         });
       }
       
       async function capturarYGuardar() {
-        console.log('📸 Capturando y guardando...');
+        console.log('📸 Proceso de captura...');
         
         if (!currentBaldosa) {
           mostrarToast('Error: baldosa no detectada', 'error');
           return;
         }
         
+        // ESPERAR 500ms para render completo
+        console.log('⏳ Esperando render...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         const foto = await capturarScreenshot();
+        
         if (!foto) {
           mostrarToast('Error capturando foto', 'error');
           return;
         }
         
-        console.log('✅ Foto capturada');
+        if (foto.length < 1000) {
+          console.error('❌ Foto muy pequeña');
+          mostrarToast('Error: foto inválida', 'error');
+          return;
+        }
+        
+        console.log('✅ Foto válida');
         
         // Get collection
         const coleccionStr = localStorage.getItem('baldosas_coleccion');
@@ -692,15 +728,24 @@
           notas: ''
         };
         
-        console.log('💾 Guardando en colección...');
+        console.log('💾 Guardando...');
         
         coleccion.items.unshift(nuevoItem);
         coleccion.totalEscaneos = coleccion.items.length;
         coleccion.ultimoEscaneo = nuevoItem.fechaEscaneo;
         
-        localStorage.setItem('baldosas_coleccion', JSON.stringify(coleccion));
-        
-        console.log('✅ Guardado exitosamente');
+        try {
+          localStorage.setItem('baldosas_coleccion', JSON.stringify(coleccion));
+          console.log('✅ Guardado en localStorage');
+        } catch (e) {
+          console.error('❌ Error guardando:', e);
+          if (e.name === 'QuotaExceededError') {
+            mostrarToast('Almacenamiento lleno', 'error');
+          } else {
+            mostrarToast('Error al guardar', 'error');
+          }
+          return;
+        }
         
         mostrarToast('¡Foto guardada! 📸', 'success');
         
