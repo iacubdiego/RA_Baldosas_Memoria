@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { obtenerColeccion, obtenerEstadisticas, ItemColeccion } from '@/lib/coleccion';
 
-export default function ColeccionPage() {
+export default function RecorridoPage() {
   const router = useRouter();
   const [items, setItems] = useState<ItemColeccion[]>([]);
   const [stats, setStats] = useState({
@@ -15,10 +15,10 @@ export default function ColeccionPage() {
   });
 
   useEffect(() => {
-    cargarColeccion();
+    cargarRecorrido();
   }, []);
 
-  const cargarColeccion = () => {
+  const cargarRecorrido = () => {
     const coleccion = obtenerColeccion();
     const estadisticas = obtenerEstadisticas();
     setItems(coleccion.items);
@@ -58,7 +58,7 @@ export default function ColeccionPage() {
             marginBottom: 'var(--space-md)',
             lineHeight: 1.2
           }}>
-            Tu Colección
+            Mi Recorrido
           </h1>
 
           <p style={{
@@ -111,7 +111,7 @@ export default function ColeccionPage() {
             color: 'var(--color-stone)',
             marginBottom: 'var(--space-sm)'
           }}>
-            Mi Colección
+            Mi Recorrido
           </h1>
           <p style={{
             fontSize: '1.1rem',

@@ -527,7 +527,6 @@
         <div class="checkmark">✓</div>
         <div class="info-text">
           <h3 id="info-nombre">Nombre</h3>
-          <div class="categoria" id="info-categoria">Categoría</div>
           
           <div class="info-extra">
             <div class="info-item">
@@ -720,7 +719,7 @@
           try {
             coleccion = JSON.parse(coleccionStr);
           } catch (e) {
-            console.error('Error parseando colección:', e);
+            console.error('Error parseando recorrido:', e);
           }
         }
         
@@ -730,7 +729,7 @@
         );
         
         if (yaExiste) {
-          mostrarToast('Ya tenés esta baldosa en tu colección', 'info');
+          mostrarToast('Ya tenés esta baldosa en tu recorrido', 'info');
           setTimeout(() => {
             window.location.href = '/coleccion';
           }, 1500);
@@ -1082,7 +1081,6 @@
               }
               
               document.getElementById('info-nombre').textContent = baldosa.nombre;
-              document.getElementById('info-categoria').textContent = baldosa.categoria || 'Histórico';
               
               const ubicacionTexto = baldosa.barrio 
                 ? `${baldosa.barrio}, Buenos Aires` 
