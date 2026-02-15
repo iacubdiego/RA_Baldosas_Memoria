@@ -988,16 +988,21 @@
             <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
             
             <a-entity mindar-image-target="targetIndex: 0">
-              <a-entity id="portaretrato-grupo" position="0 0 0" rotation="0 0 0">
+              
+              <!-- Grupo contenedor con animación de posición y rotación -->
+              <a-entity 
+                id="portaretrato-grupo" 
+                position="0 0 0.02" 
+                rotation="90 0 0"
+                animation__pos="property: position; to: 0 0 1.0; dur: 3000; easing: easeOutCubic; startEvents: targetFound"
+                animation__rot="property: rotation; to: 0 0 0; dur: 3000; easing: easeOutCubic; startEvents: targetFound">
                 
-                <!-- Portaretrato con animación que se activa al detectar -->
+                <!-- Portaretrato (modelo 3D sin animación propia) -->
                 <a-entity 
                   id="portaretrato"
                   gltf-model="#modelo-portaretrato"
                   position="0 0 0"
-                  rotation="0 0 0"
-                  scale="1.0 1.0 1.0"
-                  animation-mixer="clip: *; loop: once; clampWhenFinished: true">
+                  scale="1.0 1.0 1.0">
                 </a-entity>
                 
                 <!-- Foto dinámica DENTRO del portaretrato -->
@@ -1069,23 +1074,11 @@
               instructionsEl.style.display = 'none';
               btnCapturar.style.display = 'flex';
               
-              // REINICIAR ANIMACIÓN del portaretrato
-              const portaretrato = document.getElementById('portaretrato');
-              if (portaretrato) {
-                const mixer = portaretrato.components['animation-mixer'];
-                if (mixer && mixer.mixer) {
-                  console.log('🎬 Reiniciando animación');
-                  // Detener todas las acciones
-                  mixer.mixer.stopAllAction();
-                  
-                  // Reiniciar desde el frame 0
-                  setTimeout(() => {
-                    const actions = mixer.mixer._actions;
-                    if (actions && actions.length > 0) {
-                      actions[0].reset().play();
-                    }
-                  }, 50);
-                }
+              // Disparar evento para reiniciar animación
+              const grupo = document.getElementById('portaretrato-grupo');
+              if (grupo) {
+                console.log('🎬 Activando animación de levantamiento');
+                grupo.emit('targetFound');
               }
               
               document.getElementById('info-nombre').textContent = baldosa.nombre;
@@ -1104,6 +1097,13 @@
               console.log('👋 BALDOSA PERDIDA');
               btnCapturar.style.display = 'none';
               infoPanelEl.style.display = 'none';
+              
+              // Resetear posición para próxima detección
+              const grupo = document.getElementById('portaretrato-grupo');
+              if (grupo) {
+                grupo.setAttribute('position', '0 0 0.02');
+                grupo.setAttribute('rotation', '90 0 0');
+              }
             });
           }
         }, 1000);
