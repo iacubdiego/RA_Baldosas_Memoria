@@ -602,9 +602,13 @@
         return new Promise((resolve) => {
           // DOBLE requestAnimationFrame para asegurar render completo
           requestAnimationFrame(() => {
+            console.log('🔄 RAF 1');
             requestAnimationFrame(() => {
+              console.log('🔄 RAF 2');
               try {
                 const scene = document.querySelector('a-scene');
+                console.log('🎬 Scene:', scene ? 'encontrada' : 'NO encontrada');
+                
                 if (!scene) {
                   console.error('❌ No se encontró la escena A-Frame');
                   resolve(null);
@@ -612,49 +616,68 @@
                 }
                 
                 const canvas = scene.querySelector('canvas');
+                console.log('🖼️ Canvas:', canvas ? 'encontrado' : 'NO encontrado');
+                
                 if (!canvas) {
                   console.error('❌ No se encontró el canvas');
                   resolve(null);
                   return;
                 }
                 
-                console.log('🖼️ Canvas:', canvas.width, 'x', canvas.height);
+                console.log('📐 Canvas tamaño:', canvas.width, 'x', canvas.height);
                 
                 // Verificar píxeles no-negros
-                const ctx = canvas.getContext('2d');
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const pixels = imageData.data;
-                
-                let nonBlackPixels = 0;
-                for (let i = 0; i < pixels.length; i += 4) {
-                  if (pixels[i] > 0 || pixels[i+1] > 0 || pixels[i+2] > 0) {
-                    nonBlackPixels++;
+                try {
+                  const ctx = canvas.getContext('2d');
+                  console.log('🎨 Context 2D:', ctx ? 'OK' : 'ERROR');
+                  
+                  if (!ctx) {
+                    console.error('❌ No se pudo obtener contexto 2D');
+                    // Continuar sin validación de píxeles
+                  } else {
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const pixels = imageData.data;
+                    
+                    let nonBlackPixels = 0;
+                    for (let i = 0; i < pixels.length; i += 4) {
+                      if (pixels[i] > 0 || pixels[i+1] > 0 || pixels[i+2] > 0) {
+                        nonBlackPixels++;
+                      }
+                    }
+                    
+                    const totalPixels = canvas.width * canvas.height;
+                    const percentageNonBlack = (nonBlackPixels / totalPixels) * 100;
+                    console.log('🎨 Píxeles activos:', percentageNonBlack.toFixed(1), '%');
+                    
+                    if (percentageNonBlack < 1) {
+                      console.warn('⚠️ Canvas mayormente negro!');
+                    }
                   }
+                } catch (pixelError) {
+                  console.warn('⚠️ No se pudo validar píxeles:', pixelError.message);
+                  // Continuar de todos modos
                 }
                 
-                const totalPixels = canvas.width * canvas.height;
-                const percentageNonBlack = (nonBlackPixels / totalPixels) * 100;
-                console.log('🎨 Píxeles activos:', percentageNonBlack.toFixed(1), '%');
-                
-                if (percentageNonBlack < 1) {
-                  console.warn('⚠️ Canvas mayormente negro!');
-                }
-                
+                console.log('🔄 Convirtiendo canvas a DataURL...');
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                console.log('📦 DataURL generado, tamaño:', dataUrl ? dataUrl.length : 'NULL');
                 
                 if (!dataUrl || dataUrl.length < 1000) {
-                  console.error('❌ Screenshot inválido');
+                  console.error('❌ Screenshot inválido, length:', dataUrl?.length);
                   resolve(null);
                   return;
                 }
                 
                 const sizeKB = Math.round(dataUrl.length / 1024);
-                console.log('✅ Screenshot:', sizeKB, 'KB');
+                console.log('✅ Screenshot OK:', sizeKB, 'KB');
                 
                 resolve(dataUrl);
                 
               } catch (error) {
-                console.error('❌ Error:', error);
+                console.error('❌ Error en captura:', error);
+                console.error('Error tipo:', error.name);
+                console.error('Error mensaje:', error.message);
+                console.error('Error stack:', error.stack);
                 resolve(null);
               }
             });
