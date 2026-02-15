@@ -755,13 +755,24 @@
             // Cargar baldosa específica
             console.log('📋 Cargando baldosa ID:', baldosaId);
             const response = await fetch(`/api/baldosas/${baldosaId}`);
+            
+            console.log('📡 Response status:', response.status);
+            console.log('📡 Response ok:', response.ok);
+            
             const data = await response.json();
             
             console.log('📦 Respuesta API completa:', data);
+            console.log('📦 Tipo de data:', typeof data);
+            console.log('📦 Keys de data:', Object.keys(data));
             
             if (!data.baldosa) {
+              console.error('❌ data.baldosa no existe!');
+              console.error('❌ data completo:', JSON.stringify(data, null, 2));
               throw new Error('Baldosa no encontrada');
             }
+            
+            console.log('📦 data.baldosa:', data.baldosa);
+            console.log('📦 Keys de data.baldosa:', Object.keys(data.baldosa));
             
             baldosa = data.baldosa;
             
@@ -880,11 +891,23 @@
         
         const mindUrl = baldosa.mindFileUrl || `/targets/baldosa-${baldosa.id}.mind`;
         const glbUrl = `/models/portaretrato_generico.glb`;
+        
+        // TEMPORAL: Imagen de prueba fija para debuggear
+        const fotoUrlTest = '/images/fotos/FOTO-001.jpg';
+        
+        // Intentar usar fotoUrl de la baldosa
         const fotoUrl = baldosa.fotoUrl || baldosa.imagenUrl || '/images/placeholder.jpg';
         
         console.log('🎯 Target:', mindUrl);
         console.log('🎮 Modelo:', glbUrl);
-        console.log('📸 Foto final:', fotoUrl);
+        console.log('📸 fotoUrl de baldosa:', baldosa.fotoUrl);
+        console.log('📸 imagenUrl de baldosa:', baldosa.imagenUrl);
+        console.log('📸 Foto final calculada:', fotoUrl);
+        console.log('🧪 Foto TEST (hardcoded):', fotoUrlTest);
+        console.log('');
+        console.log('🔍 USANDO FOTO TEST PARA DEBUG');
+        
+        const fotoUrlFinal = fotoUrlTest; // ← USAR FOTO FIJA TEMPORAL
         
         arContainer.innerHTML = `
           <a-scene
@@ -897,7 +920,7 @@
             
             <a-assets timeout="10000">
               <a-asset-item id="modelo-portaretrato" src="${glbUrl}"></a-asset-item>
-              <img id="foto-ar" src="${fotoUrl}" crossorigin="anonymous">
+              <img id="foto-ar" src="${fotoUrlFinal}" crossorigin="anonymous">
             </a-assets>
             
             <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
@@ -938,13 +961,18 @@
           // Check image loaded
           const fotoImg = document.getElementById('foto-ar');
           if (fotoImg) {
-            console.log('🖼️ Elemento foto encontrado, src:', fotoImg.src);
+            console.log('🖼️ Elemento foto encontrado');
+            console.log('   src configurado:', fotoImg.src);
+            console.log('   src esperado:', fotoUrlFinal);
+            
             fotoImg.onload = () => {
-              console.log('✅ Imagen cargada:', fotoImg.width, 'x', fotoImg.height);
+              console.log('✅ Imagen cargada exitosamente!');
+              console.log('   Dimensiones:', fotoImg.naturalWidth, 'x', fotoImg.naturalHeight);
             };
             fotoImg.onerror = (e) => {
-              console.error('❌ Error cargando imagen:', fotoUrl);
-              console.error('Error details:', e);
+              console.error('❌ Error cargando imagen');
+              console.error('   URL que falló:', fotoUrlFinal);
+              console.error('   Error:', e);
             };
           } else {
             console.error('❌ No se encontró elemento foto-ar');
