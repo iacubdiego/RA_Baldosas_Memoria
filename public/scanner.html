@@ -892,22 +892,16 @@
         const mindUrl = baldosa.mindFileUrl || `/targets/baldosa-${baldosa.id}.mind`;
         const glbUrl = `/models/portaretrato_generico.glb`;
         
-        // TEMPORAL: Imagen de prueba fija para debuggear
-        const fotoUrlTest = '/images/fotos/FOTO-001.jpg';
-        
-        // Intentar usar fotoUrl de la baldosa
+        // Usar fotoUrl de la baldosa, con fallback a imagenUrl
         const fotoUrl = baldosa.fotoUrl || baldosa.imagenUrl || '/images/placeholder.jpg';
         
         console.log('🎯 Target:', mindUrl);
         console.log('🎮 Modelo:', glbUrl);
         console.log('📸 fotoUrl de baldosa:', baldosa.fotoUrl);
         console.log('📸 imagenUrl de baldosa:', baldosa.imagenUrl);
-        console.log('📸 Foto final calculada:', fotoUrl);
-        console.log('🧪 Foto TEST (hardcoded):', fotoUrlTest);
-        console.log('');
-        console.log('🔍 USANDO FOTO TEST PARA DEBUG');
+        console.log('📸 Foto final a usar:', fotoUrl);
         
-        const fotoUrlFinal = fotoUrlTest; // ← USAR FOTO FIJA TEMPORAL
+        const fotoUrlFinal = fotoUrl;
         
         arContainer.innerHTML = `
           <a-scene

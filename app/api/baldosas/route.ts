@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     await connectDB();
 
-    const baldosas = await Baldosa.find({}).limit(50);
+    const baldosas = await Baldosa.find({ activo: true }).limit(50);
 
     const result = baldosas.map(baldosa => {
       const [lng, lat] = baldosa.ubicacion.coordinates;
@@ -20,8 +20,9 @@ export async function GET(request: NextRequest) {
         lng,
         direccion: baldosa.direccion,
         barrio: baldosa.barrio,
-        mensajeAR: baldosa.mensajeAR,
         imagenUrl: baldosa.imagenUrl,
+        fotoUrl: baldosa.fotoUrl,        // ✅ AGREGAR
+        mensajeAR: baldosa.mensajeAR,
         mindFileUrl: baldosa.mindFileUrl,
         targetIndex: baldosa.targetIndex,
       };

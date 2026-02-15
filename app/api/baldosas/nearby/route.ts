@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Baldosa from '@/models/Baldosa';
 import Cluster from '@/models/Cluster';
-import { isValidCoordinates } from '@/lib/geo';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +10,7 @@ export async function GET(request: NextRequest) {
     const lng = parseFloat(searchParams.get('lng') || '');
     const radius = parseInt(searchParams.get('radius') || '500');
 
-    if (!lat || !lng || !isValidCoordinates(lat, lng)) {
+    if (!lat || !lng) {
       return NextResponse.json(
         { error: 'Coordenadas inválidas' },
         { status: 400 }
@@ -77,8 +76,10 @@ export async function GET(request: NextRequest) {
         barrio: baldosa.barrio,
         mensajeAR: baldosa.mensajeAR,
         imagenUrl: baldosa.imagenUrl,
+        fotoUrl: baldosa.fotoUrl,        // ✅ AGREGAR
         clusterId: baldosa.clusterId,
         targetIndex: baldosa.targetIndex,
+        mindFileUrl: baldosa.mindFileUrl,
         distancia: Math.round(distance),
       };
     });
