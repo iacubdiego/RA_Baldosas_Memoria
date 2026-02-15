@@ -11,93 +11,93 @@ if (!MONGODB_URI) {
 // Lista de baldosas para cargar
 const baldosasEjemplo = [
   {
-    codigo: 'BALD-003',
-    nombre: 'Núñez, María del Carmen',
-    descripcion: 'La CHINA. Asesinada desaparecida durante la "Semana del Café de los Angelitos.',
+    codigo: 'BALD-0001',
+    nombre: 'Azucena Villaflor',
+    descripcion: 'Fundadora de Madres de Plaza de Mayo. Secuestrada y desaparecida el 10 de diciembre de 1977.',
+    categoria: 'historico',
     ubicacion: {
       type: 'Point',
       coordinates: [-58.4731, -34.5757]  // [lng, lat] - Plaza de Mayo
     },
     direccion: 'Plaza de Mayo',
-    barrio: 'Balvanera',
+    barrio: 'Monserrat',
     imagenUrl: 'https://via.placeholder.com/400x300?text=Azucena+Villaflor',
-    fotoUrl: '/images/fotos/BALD-003.jpg',
-    mindFileUrl: '/targets/BALD-003.mind',
+    fotoUrl: '/images/fotos/BALD-0001.jpg',
+    mindFileUrl: '/targets/BALD-0001.mind',
     targetIndex: 0,
-    mensajeAR: 'Núñez, María del Carmen - Presente',
-    infoExtendida: 'La CHINA. Asesinada desaparecida durante la "Semana del Café de los Angelitos.',
+    mensajeAR: 'AZUCENA VILLAFLOR - Presente',
+    infoExtendida: 'Azucena Villaflor de De Vincenti fue una de las fundadoras de la Asociación Madres de Plaza de Mayo. Sus restos fueron identificados en 2005.',
+    vecesEscaneada: 0,
+    activo: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    codigo: 'BALD-0002',
+    nombre: 'Rodolfo Walsh',
+    descripcion: 'Escritor y periodista. Autor de "Carta Abierta de un Escritor a la Junta Militar". Desaparecido el 25 de marzo de 1977.',
+    categoria: 'historico',
+    ubicacion: {
+      type: 'Point',
+      coordinates: [-58.4621, -34.5667]  // [lng, lat]
+    },
+    direccion: 'Av. Entre Ríos y San Juan',
+    barrio: 'San Cristóbal',
+    imagenUrl: 'https://via.placeholder.com/400x300?text=Rodolfo+Walsh',
+    fotoUrl: '/images/fotos/BALD-0002.jpg',
+    mindFileUrl: '/targets/BALD-0002.mind',
+    targetIndex: 0,
+    mensajeAR: 'RODOLFO WALSH - Presente',
+    infoExtendida: 'Rodolfo Jorge Walsh fue un escritor, periodista y traductor argentino. Un día después de enviar su "Carta Abierta" fue emboscado y desaparecido.',
+    vecesEscaneada: 0,
+    activo: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    codigo: 'BALD-0003',
+    nombre: 'Nora Cortiñas',
+    descripcion: 'Madre de Plaza de Mayo - Línea Fundadora. Su hijo Gustavo fue secuestrado el 15 de abril de 1977.',
+    categoria: 'historico',
+    ubicacion: {
+      type: 'Point',
+      coordinates: [-58.480708, -34.581091]  // [lng, lat]
+    },
+    direccion: 'Diagonal Norte 600',
+    barrio: 'San Nicolás',
+    imagenUrl: 'https://via.placeholder.com/400x300?text=Nora+Cortiñas',
+    fotoUrl: '/images/fotos/BALD-0003.jpg',
+    mindFileUrl: '/targets/BALD-0003.mind',
+    targetIndex: 0,
+    mensajeAR: 'NORA CORTIÑAS - Presente',
+    infoExtendida: 'Nora Cortiñas fue una activista argentina de derechos humanos. Su hijo Gustavo fue secuestrado y desaparecido el 15 de abril de 1977.',
+    vecesEscaneada: 0,
+    activo: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    codigo: 'BALD-0004',
+    nombre: 'Hernán Abriata',
+    descripcion: 'Estudiante de arquitectura. Militaba en la JUP de la Facultad de Arquitectura. Fue secuestrado en su vivienda de Elcano 3265.',
+    categoria: 'historico',
+    ubicacion: {
+      type: 'Point',
+      coordinates: [-58.4597, -34.5732]  // [lng, lat]
+    },
+    direccion: 'Av. Elcano 3235',
+    barrio: 'Colegiales',
+    imagenUrl: 'https://via.placeholder.com/400x300?text=Hernán+Abriata',
+    fotoUrl: '/images/fotos/BALD-0004.jpg',
+    mindFileUrl: '/targets/BALD-0004.mind',
+    targetIndex: 0,
+    mensajeAR: 'HERNÁN ABRIATA - Presente',
+    infoExtendida: 'Hernán era estudiante de arquitectura, se había casado hacía pocos meses con Mónica. Militaba en la JUP de la Facultad de Arquitectura. Tenía 4 hermanas menores.',
     vecesEscaneada: 0,
     activo: true,
     createdAt: new Date(),
     updatedAt: new Date()
   }
-  //,
-  // {
-  //   codigo: 'BALD-002',
-  //   nombre: 'Rodolfo Walsh',
-  //   descripcion: 'Escritor y periodista. Autor de "Carta Abierta de un Escritor a la Junta Militar". Desaparecido el 25 de marzo de 1977.',
-  //   categoria: 'historico',
-  //   ubicacion: {
-  //     type: 'Point',
-  //     coordinates: [-58.4621, -34.5667]  // [lng, lat]
-  //   },
-  //   direccion: 'Av. Entre Ríos y San Juan',
-  //   barrio: 'San Cristóbal',
-  //   imagenUrl: 'https://via.placeholder.com/400x300?text=Rodolfo+Walsh',
-  //   fotoUrl: '/images/fotos/BALD-002.jpg',  // ✅ NUEVO
-  //   mindFileUrl: '/targets/bald-002.mind',
-  //   targetIndex: 0,
-  //   mensajeAR: 'RODOLFO WALSH - Presente',
-  //   infoExtendida: 'Rodolfo Jorge Walsh fue un escritor, periodista y traductor argentino. Un día después de enviar su "Carta Abierta" fue emboscado y desaparecido.',
-  //   vecesEscaneada: 0,
-  //   activo: true,
-  //   createdAt: new Date(),
-  //   updatedAt: new Date()
-  // },
-  // {
-  //   codigo: 'BALD-003',
-  //   nombre: 'Nora Cortiñas',
-  //   descripcion: 'Madre de Plaza de Mayo - Línea Fundadora. Su hijo Gustavo fue secuestrado el 15 de abril de 1977.',
-  //   categoria: 'historico',
-  //   ubicacion: {
-  //     type: 'Point',
-  //     coordinates: [-58.480708, -34.581091]  // [lng, lat]
-  //   },
-  //   direccion: 'Diagonal Norte 600',
-  //   barrio: 'San Nicolás',
-  //   imagenUrl: 'https://via.placeholder.com/400x300?text=Nora+Cortiñas',
-  //   fotoUrl: '/images/fotos/BALD-003.jpg',  // ✅ NUEVO
-  //   mindFileUrl: '/targets/bald-003.mind',
-  //   targetIndex: 0,
-  //   mensajeAR: 'NORA CORTIÑAS - Presente',
-  //   infoExtendida: 'Nora Cortiñas fue una activista argentina de derechos humanos. Su hijo Gustavo fue secuestrado y desaparecido el 15 de abril de 1977.',
-  //   vecesEscaneada: 0,
-  //   activo: true,
-  //   createdAt: new Date(),
-  //   updatedAt: new Date()
-  // },
-  // {
-  //   codigo: 'BALD-004',
-  //   nombre: 'Hernán Abriata',
-  //   descripcion: 'Estudiante de arquitectura. Militaba en la JUP de la Facultad de Arquitectura. Fue secuestrado en su vivienda de Elcano 3265.',
-  //   categoria: 'historico',
-  //   ubicacion: {
-  //     type: 'Point',
-  //     coordinates: [-58.4597, -34.5732]  // [lng, lat]
-  //   },
-  //   direccion: 'Av. Elcano 3235',
-  //   barrio: 'Colegiales',
-  //   imagenUrl: 'https://via.placeholder.com/400x300?text=Hernán+Abriata',
-  //   fotoUrl: '/images/fotos/BALD-004.jpg',  // ✅ NUEVO
-  //   mindFileUrl: '/targets/bald-004.mind',
-  //   targetIndex: 0,
-  //   mensajeAR: 'HERNÁN ABRIATA - Presente',
-  //   infoExtendida: 'Hernán era estudiante de arquitectura, se había casado hacía pocos meses con Mónica. Militaba en la JUP de la Facultad de Arquitectura. Tenía 4 hermanas menores.',
-  //   vecesEscaneada: 0,
-  //   activo: true,
-  //   createdAt: new Date(),
-  //   updatedAt: new Date()
-  // }
 ];
 
 async function seed() {
@@ -113,7 +113,7 @@ async function seed() {
     const baldosasCollection = db.collection('baldosas');
     
     // Opción: Limpiar colección (comentar si querés mantener datos existentes)
-    const limpiar = false;  // Cambiar a false para no borrar baldosas existentes
+    const limpiar = true;  // Cambiar a false para no borrar baldosas existentes
     
     if (limpiar) {
       console.log('🗑️  Limpiando colección de baldosas...');

@@ -66,8 +66,10 @@ async function main() {
     console.log('  • public/targets/');
     console.log('  • public/images/fotos/');
     console.log('');
+    console.log('Formato: BALD-0001.mind y BALD-0001.jpg (4 dígitos)');
+    console.log('');
     
-    const mindFileName = await pregunta('Nombre del archivo .mind (ej: bald-002.mind): ');
+    const mindFileName = await pregunta('Nombre del archivo .mind (ej: BALD-0005.mind): ');
     const mindFilePath = path.join(targetsDir, mindFileName);
     
     if (!fs.existsSync(mindFilePath)) {
@@ -76,7 +78,7 @@ async function main() {
     
     console.log(`   ✅ .mind encontrado: ${mindFileName}`);
     
-    const fotoFileName = await pregunta('Nombre del archivo de foto (ej: azucena.jpg): ');
+    const fotoFileName = await pregunta('Nombre del archivo de foto (ej: BALD-0005.jpg): ');
     const fotoFilePath = path.join(fotosDir, fotoFileName);
     
     if (!fs.existsSync(fotoFilePath)) {
@@ -98,9 +100,9 @@ async function main() {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('');
     
-    const codigo = await pregunta('Código (ej: BALD-002): ');
-    if (!codigo || codigo.length < 4) {
-      throw new Error('Código inválido');
+    const codigo = await pregunta('Código (ej: BALD-0005): ');
+    if (!codigo || codigo.length < 9) {
+      throw new Error('Código inválido. Formato: BALD-0001 (4 dígitos)');
     }
     
     const nombre = await pregunta('Nombre completo: ');
