@@ -112,7 +112,7 @@ export default function RecorridoPage() {
         }} />
         
         <div className="container" style={{ position: 'relative', zIndex: 1 }}>
-          {/* User info y logout */}
+          {/* User info, logout y perfil */}
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -129,30 +129,56 @@ export default function RecorridoPage() {
                 {user?.nombre} {user?.apellido}
               </p>
             </div>
-            <button
-              onClick={logout}
-              style={{
-                padding: 'var(--space-sm) var(--space-md)',
-                background: 'rgba(255,255,255,0.1)',
-                border: '1px solid rgba(255,255,255,0.3)',
-                color: 'white',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: 500,
-                fontSize: '0.9rem',
-                transition: 'all var(--transition-fast)',
-                textTransform: 'none',
-                letterSpacing: 'normal'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-              }}
-            >
-              Cerrar Sesión
-            </button>
+            <div style={{ display: 'flex', gap: 'var(--space-xs)' }}>
+              <button
+                onClick={() => router.push('/profile')}
+                style={{
+                  padding: 'var(--space-sm) var(--space-md)',
+                  background: 'rgba(255,255,255,0.1)',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  color: 'white',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                  fontSize: '0.9rem',
+                  transition: 'all var(--transition-fast)',
+                  textTransform: 'none',
+                  letterSpacing: 'normal'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                }}
+              >
+                Mi Perfil
+              </button>
+              <button
+                onClick={logout}
+                style={{
+                  padding: 'var(--space-sm) var(--space-md)',
+                  background: 'rgba(255,255,255,0.1)',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  color: 'white',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                  fontSize: '0.9rem',
+                  transition: 'all var(--transition-fast)',
+                  textTransform: 'none',
+                  letterSpacing: 'normal'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                }}
+              >
+                Cerrar Sesión
+              </button>
+            </div>
           </div>
 
           <h1 style={{
