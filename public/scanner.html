@@ -1044,14 +1044,23 @@
                 animation__pos="property: position; to: 0 0.8 1.2; dur: 5000; easing: easeOutQuad; startEvents: targetFound"
                 animation__rot="property: rotation; to: 0 -15 0; dur: 5000; easing: easeOutQuad; startEvents: targetFound">
                 
-                <!-- Plano con la foto cargada dinámicamente -->
+                <!-- Portaretrato (modelo 3D) -->
+                <a-entity 
+                  id="portaretrato"
+                  gltf-model="#modelo-portaretrato"
+                  position="0 0 0"
+                  scale="1.0 1.0 1.0">
+                </a-entity>
+                
+                <!-- Foto dinámica DENTRO del portaretrato -->
                 <a-plane
                   id="foto-dinamica"
-                  position="0 0 0"
+                  src="#foto-ar"
+                  position="0 0 0.025"
                   rotation="0 0 0"
-                  width="0.8"
-                  height="1.0"
-                  material="shader: standard; side: double; src: ${fotoUrl}"
+                  width="0.73"
+                  height="0.92"
+                  material="shader: flat; side: double"
                   visible="true">
                 </a-plane>
                 
@@ -1061,6 +1070,21 @@
         `;
         
         arContainer.style.display = 'block';
+        
+        // Setear src de la foto por DOM DESPUÉS de insertar HTML
+        setTimeout(() => {
+          const fotoImg = document.getElementById('foto-ar');
+          if (fotoImg) {
+            fotoImg.src = fotoUrl;
+            console.log('✅ foto-ar src seteado:', fotoImg.src.substring(0, 60));
+            fotoImg.onerror = () => {
+              console.warn('⚠️ Error cargando foto, usando placeholder');
+              fotoImg.src = '/images/placeholder.jpg';
+            };
+          } else {
+            console.error('❌ No se encontró foto-ar');
+          }
+        }, 100);
         
         const scene = arContainer.querySelector('a-scene');
         
