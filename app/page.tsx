@@ -195,13 +195,13 @@ export default function Home() {
                 Encontrar Baldosa
               </Link>
 
-              <Link href="/colaborar" className="btn hover-lift" style={{
+              <Link href="/coleccion" className="btn hover-lift" style={{
                 padding: 'var(--space-md) var(--space-lg)',
                 fontSize: '1rem',
-                borderColor: 'var(--color-accent)',
-                color: 'var(--color-accent)',
+                borderColor: 'var(--color-primary)',
+                color: 'var(--color-primary)',
               }}>
-                Colaborar
+                Mi Recorrido
               </Link>
             </div>
           </div>
