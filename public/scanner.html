@@ -596,94 +596,102 @@
       // =============== SCREENSHOT FUNCTIONS ===============
       
       async function capturarScreenshot() {
-        console.log('📸 Iniciando captura...');
-        
+        console.log('📸 Iniciando captura compuesta...');
+
         return new Promise((resolve) => {
-          // DOBLE requestAnimationFrame para asegurar render completo
           requestAnimationFrame(() => {
-            console.log('🔄 RAF 1');
-            requestAnimationFrame(() => {
-              console.log('🔄 RAF 2');
+            requestAnimationFrame(async () => {
               try {
+                // ── 1. Encontrar el canvas WebGL de A-Frame ───────────────
                 const scene = document.querySelector('a-scene');
-                console.log('🎬 Scene:', scene ? 'encontrada' : 'NO encontrada');
-                
                 if (!scene) {
                   console.error('❌ No se encontró la escena A-Frame');
                   resolve(null);
                   return;
                 }
-                
-                const canvas = scene.querySelector('canvas');
-                console.log('🖼️ Canvas:', canvas ? 'encontrado' : 'NO encontrado');
-                
-                if (!canvas) {
-                  console.error('❌ No se encontró el canvas');
+
+                const glCanvas = scene.querySelector('canvas');
+                if (!glCanvas) {
+                  console.error('❌ No se encontró el canvas WebGL');
                   resolve(null);
                   return;
                 }
-                
-                console.log('📐 Canvas tamaño:', canvas.width, 'x', canvas.height);
-                
-                // Verificar píxeles no-negros
+
+                const w = glCanvas.width;
+                const h = glCanvas.height;
+                console.log('📐 Canvas WebGL:', w, 'x', h);
+
+                // ── 2. Encontrar el <video> del feed de cámara ────────────
+                // MindAR crea un <video> dentro del ar-container o del scene
+                const video = document.querySelector('#ar-container video')
+                           || document.querySelector('a-scene video')
+                           || document.querySelector('video');
+
+                if (!video) {
+                  console.warn('⚠️ No se encontró el video de cámara, capturando solo WebGL');
+                  const dataUrl = glCanvas.toDataURL('image/jpeg', 0.85);
+                  resolve(dataUrl && dataUrl.length > 1000 ? dataUrl : null);
+                  return;
+                }
+
+                console.log('📹 Video encontrado:', video.videoWidth, 'x', video.videoHeight,
+                            '| readyState:', video.readyState);
+
+                // ── 3. Crear canvas compuesto ─────────────────────────────
+                const composite = document.createElement('canvas');
+                composite.width  = w;
+                composite.height = h;
+                const ctx = composite.getContext('2d');
+
+                if (!ctx) {
+                  console.error('❌ No se pudo obtener contexto 2D del canvas compuesto');
+                  resolve(null);
+                  return;
+                }
+
+                // ── 4. Dibujar el video como fondo ────────────────────────
+                // El video puede tener distinta proporción; lo estiramos para
+                // cubrir exactamente el mismo viewport que el canvas WebGL
                 try {
-                  const ctx = canvas.getContext('2d');
-                  console.log('🎨 Context 2D:', ctx ? 'OK' : 'ERROR');
-                  
-                  if (!ctx) {
-                    console.error('❌ No se pudo obtener contexto 2D');
-                    // Continuar sin validación de píxeles
-                  } else {
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const pixels = imageData.data;
-                    
-                    let nonBlackPixels = 0;
-                    for (let i = 0; i < pixels.length; i += 4) {
-                      if (pixels[i] > 0 || pixels[i+1] > 0 || pixels[i+2] > 0) {
-                        nonBlackPixels++;
-                      }
-                    }
-                    
-                    const totalPixels = canvas.width * canvas.height;
-                    const percentageNonBlack = (nonBlackPixels / totalPixels) * 100;
-                    console.log('🎨 Píxeles activos:', percentageNonBlack.toFixed(1), '%');
-                    
-                    if (percentageNonBlack < 1) {
-                      console.warn('⚠️ Canvas mayormente negro!');
-                    }
-                  }
-                } catch (pixelError) {
-                  console.warn('⚠️ No se pudo validar píxeles:', pixelError.message);
-                  // Continuar de todos modos
+                  ctx.drawImage(video, 0, 0, w, h);
+                  console.log('✅ Video dibujado en canvas compuesto');
+                } catch (videoErr) {
+                  console.warn('⚠️ No se pudo dibujar el video:', videoErr.message);
+                  // Continuar de todos modos — al menos se verá el overlay 3D
                 }
-                
-                console.log('🔄 Convirtiendo canvas a DataURL...');
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                console.log('📦 DataURL generado, tamaño:', dataUrl ? dataUrl.length : 'NULL');
-                
-                if (!dataUrl || dataUrl.length < 1000) {
-                  console.error('❌ Screenshot inválido, length:', dataUrl?.length);
+
+                // ── 5. Dibujar el canvas WebGL encima ────────────────────
+                try {
+                  ctx.drawImage(glCanvas, 0, 0, w, h);
+                  console.log('✅ Canvas WebGL superpuesto');
+                } catch (glErr) {
+                  console.error('❌ No se pudo dibujar el canvas WebGL:', glErr.message);
                   resolve(null);
                   return;
                 }
-                
-                const sizeKB = Math.round(dataUrl.length / 1024);
-                console.log('✅ Screenshot OK:', sizeKB, 'KB');
-                
+
+                // ── 6. Exportar la imagen compuesta ───────────────────────
+                const dataUrl = composite.toDataURL('image/jpeg', 0.85);
+                const sizeKB  = Math.round(dataUrl.length / 1024);
+                console.log('✅ Screenshot compuesto OK:', sizeKB, 'KB');
+
+                if (!dataUrl || dataUrl.length < 1000) {
+                  console.error('❌ Screenshot inválido, tamaño:', dataUrl?.length);
+                  resolve(null);
+                  return;
+                }
+
                 resolve(dataUrl);
-                
+
               } catch (error) {
-                console.error('❌ Error en captura:', error);
-                console.error('Error tipo:', error.name);
-                console.error('Error mensaje:', error.message);
-                console.error('Error stack:', error.stack);
+                console.error('❌ Error en captura compuesta:', error);
                 resolve(null);
               }
             });
           });
         });
       }
-      
+            
       async function capturarYGuardar() {
         console.log('📸 Proceso de captura...');
         
