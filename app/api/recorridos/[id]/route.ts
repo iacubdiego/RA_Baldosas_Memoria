@@ -3,135 +3,56 @@ import connectDB from '@/lib/mongodb';
 import Recorrido from '@/models/Recorrido';
 import { requireAuth } from '@/lib/auth-middleware';
 
-export async function GET(request: NextRequest) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    // Verificar autenticación
     const user = await requireAuth(request);
+    const { id } = params;
 
-    await connectDB();
-
-    // Obtener recorridos del usuario ordenados por fecha
-    const recorridos = await Recorrido.find({ userId: user.id })
-      .sort({ fechaEscaneo: -1 });
-
-    return NextResponse.json({
-      recorridos: recorridos.map(r => ({
-        id: r._id.toString(),
-        baldosaId: r.baldosaId,
-        nombreVictima: r.nombreVictima,
-        fechaDesaparicion: r.fechaDesaparicion,
-        fechaEscaneo: r.fechaEscaneo,
-        fotoBase64: r.fotoBase64,
-        ubicacion: r.ubicacion,
-        lat: r.lat,
-        lng: r.lng,
-        notas: r.notas
-      })),
-      total: recorridos.length
-    });
-
-  } catch (error: any) {
-    console.error('Error en GET /api/recorridos:', error);
-    
-    if (error.message === 'No autenticado') {
+    if (!id) {
       return NextResponse.json(
-        { error: 'Debes iniciar sesión para ver tu recorrido' },
-        { status: 401 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: 'Error al obtener recorridos' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    // Verificar autenticación
-    const user = await requireAuth(request);
-
-    const body = await request.json();
-    const {
-      baldosaId,
-      nombreVictima,
-      fechaDesaparicion,
-      fotoBase64,
-      ubicacion,
-      lat,
-      lng,
-      notas
-    } = body;
-
-    // Validaciones
-    if (!baldosaId || !nombreVictima || !fotoBase64 || !ubicacion || lat === undefined || lng === undefined) {
-      return NextResponse.json(
-        { error: 'Faltan campos requeridos' },
+        { error: 'ID de recorrido requerido' },
         { status: 400 }
       );
     }
 
     await connectDB();
 
-    // Verificar si ya escaneó esta baldosa
-    const existente = await Recorrido.findOne({
+    // Buscar el recorrido asegurándonos que pertenece al usuario autenticado
+    // Esto garantiza que NUNCA se toque el modelo Baldosa ni datos de otros usuarios
+    const recorrido = await Recorrido.findOne({
+      _id: id,
       userId: user.id,
-      baldosaId
     });
 
-    if (existente) {
+    if (!recorrido) {
       return NextResponse.json(
-        { error: 'Ya has escaneado esta baldosa' },
-        { status: 400 }
+        { error: 'Registro no encontrado o no tienes permiso para eliminarlo' },
+        { status: 404 }
       );
     }
 
-    // Crear recorrido
-    const recorrido = await Recorrido.create({
-      userId: user.id,
-      baldosaId,
-      nombreVictima,
-      fechaDesaparicion: fechaDesaparicion || '',
-      fotoBase64,
-      ubicacion,
-      lat,
-      lng,
-      notas: notas || ''
-    });
+    await Recorrido.deleteOne({ _id: id, userId: user.id });
 
     return NextResponse.json({
       success: true,
-      message: 'Baldosa agregada a tu recorrido',
-      recorrido: {
-        id: recorrido._id.toString(),
-        baldosaId: recorrido.baldosaId,
-        nombreVictima: recorrido.nombreVictima,
-        fechaEscaneo: recorrido.fechaEscaneo,
-        ubicacion: recorrido.ubicacion
-      }
-    }, { status: 201 });
+      message: 'Baldosa eliminada de tu recorrido',
+    });
 
   } catch (error: any) {
-    console.error('Error en POST /api/recorridos:', error);
+    console.error('Error en DELETE /api/recorridos/[id]:', error);
 
     if (error.message === 'No autenticado') {
       return NextResponse.json(
-        { error: 'Debes iniciar sesión para guardar baldosas' },
+        { error: 'Debes iniciar sesión para realizar esta acción' },
         { status: 401 }
       );
     }
 
-    // Error de duplicado
-    if (error.code === 11000) {
-      return NextResponse.json(
-        { error: 'Ya has escaneado esta baldosa' },
-        { status: 400 }
-      );
-    }
-
     return NextResponse.json(
-      { error: 'Error al guardar baldosa' },
+      { error: 'Error al eliminar el registro' },
       { status: 500 }
     );
   }
