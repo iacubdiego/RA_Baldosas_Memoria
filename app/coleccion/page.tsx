@@ -332,36 +332,11 @@ export default function RecorridoPage() {
                   flexShrink: 0,
                 }}>
                   {item.fotoBase64 ? (
-                    <>
-                      <img
-                        src={item.fotoBase64}
-                        alt={item.nombreVictima}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                      {/* Botón ampliar foto */}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setFotoModal(item.fotoBase64); }}
-                        style={{
-                          position: 'absolute',
-                          top: '10px',
-                          right: '10px',
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '50%',
-                          background: 'rgba(0,0,0,0.55)',
-                          color: 'white',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontSize: '14px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                        title="Ampliar foto"
-                      >
-                        🔍
-                      </button>
-                    </>
+                    <img
+                      src={item.fotoBase64}
+                      alt={item.nombreVictima}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
                   ) : (
                     <div style={{
                       width: '100%',
@@ -430,49 +405,80 @@ export default function RecorridoPage() {
                     paddingTop: 'var(--space-sm)',
                     borderTop: '1px solid var(--color-parchment)',
                     display: 'flex',
-                    gap: 'var(--space-xs)',
+                    gap: 'var(--space-sm)',
                   }}>
-                    {/* Botón Ver detalle */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); router.push(`/baldosas/${item.baldosaId}`); }}
-                      style={{
-                        flex: 1,
-                        padding: '8px 12px',
-                        background: 'var(--color-primary)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '5px',
-                        transition: 'background 0.2s',
-                      }}
-                    >
-                      Ver detalle →
-                    </button>
+                    {/* Botón Ampliar foto */}
+                    {item.fotoBase64 && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setFotoModal(item.fotoBase64); }}
+                        style={{
+                          flex: 1,
+                          padding: '12px',
+                          background: '#f0f4ff',
+                          color: 'var(--color-primary)',
+                          border: '1.5px solid #c7d7ff',
+                          borderRadius: '10px',
+                          cursor: 'pointer',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '4px',
+                          transition: 'all 0.2s',
+                          lineHeight: 1,
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#dce8ff';
+                          e.currentTarget.style.borderColor = 'var(--color-primary)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = '#f0f4ff';
+                          e.currentTarget.style.borderColor = '#c7d7ff';
+                        }}
+                        title="Ampliar foto"
+                      >
+                        <span style={{ fontSize: '1.4rem' }}>🔍</span>
+                        <span>Ver foto</span>
+                      </button>
+                    )}
 
                     {/* Botón Eliminar */}
                     <button
                       onClick={(e) => eliminarItem(e, item.id)}
                       disabled={eliminandoId === item.id}
                       style={{
-                        padding: '8px 12px',
-                        background: 'transparent',
+                        flex: 1,
+                        padding: '12px',
+                        background: '#fff5f5',
                         color: '#dc2626',
-                        border: '1px solid #fecaca',
-                        borderRadius: '8px',
+                        border: '1.5px solid #fecaca',
+                        borderRadius: '10px',
                         cursor: eliminandoId === item.id ? 'not-allowed' : 'pointer',
-                        fontSize: '0.85rem',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '4px',
                         opacity: eliminandoId === item.id ? 0.5 : 1,
                         transition: 'all 0.2s',
+                        lineHeight: 1,
+                      }}
+                      onMouseEnter={(e) => {
+                        if (eliminandoId !== item.id) {
+                          e.currentTarget.style.background = '#ffe4e4';
+                          e.currentTarget.style.borderColor = '#dc2626';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#fff5f5';
+                        e.currentTarget.style.borderColor = '#fecaca';
                       }}
                       title="Eliminar del recorrido"
                     >
-                      🗑️
+                      <span style={{ fontSize: '1.4rem' }}>🗑️</span>
+                      <span>Eliminar</span>
                     </button>
                   </div>
                 </div>
