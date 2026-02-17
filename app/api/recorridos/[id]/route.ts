@@ -3,70 +3,135 @@ import connectDB from '@/lib/mongodb';
 import Recorrido from '@/models/Recorrido';
 import { requireAuth } from '@/lib/auth-middleware';
 
-/**
- * DELETE /api/recorridos/[id]
- * Elimina una baldosa del recorrido del usuario
- */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest) {
   try {
-    // Verificar autenticación (lanza error si no está autenticado)
+    // Verificar autenticación
     const user = await requireAuth(request);
-    const userId = user.id;
-    const recorridoId = params.id;
 
-    if (!recorridoId) {
+    await connectDB();
+
+    // Obtener recorridos del usuario ordenados por fecha
+    const recorridos = await Recorrido.find({ userId: user.id })
+      .sort({ fechaEscaneo: -1 });
+
+    return NextResponse.json({
+      recorridos: recorridos.map(r => ({
+        id: r._id.toString(),
+        baldosaId: r.baldosaId,
+        nombreVictima: r.nombreVictima,
+        fechaDesaparicion: r.fechaDesaparicion,
+        fechaEscaneo: r.fechaEscaneo,
+        fotoBase64: r.fotoBase64,
+        ubicacion: r.ubicacion,
+        lat: r.lat,
+        lng: r.lng,
+        notas: r.notas
+      })),
+      total: recorridos.length
+    });
+
+  } catch (error: any) {
+    console.error('Error en GET /api/recorridos:', error);
+    
+    if (error.message === 'No autenticado') {
       return NextResponse.json(
-        { error: 'ID de recorrido requerido' },
+        { error: 'Debes iniciar sesión para ver tu recorrido' },
+        { status: 401 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: 'Error al obtener recorridos' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    // Verificar autenticación
+    const user = await requireAuth(request);
+
+    const body = await request.json();
+    const {
+      baldosaId,
+      nombreVictima,
+      fechaDesaparicion,
+      fotoBase64,
+      ubicacion,
+      lat,
+      lng,
+      notas
+    } = body;
+
+    // Validaciones
+    if (!baldosaId || !nombreVictima || !fotoBase64 || !ubicacion || lat === undefined || lng === undefined) {
+      return NextResponse.json(
+        { error: 'Faltan campos requeridos' },
         { status: 400 }
       );
     }
 
     await connectDB();
 
-    // Buscar el recorrido
-    const recorrido = await Recorrido.findById(recorridoId);
+    // Verificar si ya escaneó esta baldosa
+    const existente = await Recorrido.findOne({
+      userId: user.id,
+      baldosaId
+    });
 
-    if (!recorrido) {
+    if (existente) {
       return NextResponse.json(
-        { error: 'Baldosa no encontrada en tu recorrido' },
-        { status: 404 }
+        { error: 'Ya has escaneado esta baldosa' },
+        { status: 400 }
       );
     }
 
-    // Verificar que el recorrido pertenece al usuario
-    if (recorrido.userId.toString() !== userId) {
-      return NextResponse.json(
-        { error: 'No tenés permiso para eliminar esta baldosa' },
-        { status: 403 }
-      );
-    }
-
-    // Eliminar
-    await Recorrido.findByIdAndDelete(recorridoId);
-
-    console.log(`✅ Baldosa eliminada: ${recorridoId} por usuario ${userId}`);
+    // Crear recorrido
+    const recorrido = await Recorrido.create({
+      userId: user.id,
+      baldosaId,
+      nombreVictima,
+      fechaDesaparicion: fechaDesaparicion || '',
+      fotoBase64,
+      ubicacion,
+      lat,
+      lng,
+      notas: notas || ''
+    });
 
     return NextResponse.json({
       success: true,
-      message: 'Baldosa eliminada de tu recorrido',
-      baldosaId: recorrido.baldosaId
-    });
+      message: 'Baldosa agregada a tu recorrido',
+      recorrido: {
+        id: recorrido._id.toString(),
+        baldosaId: recorrido.baldosaId,
+        nombreVictima: recorrido.nombreVictima,
+        fechaEscaneo: recorrido.fechaEscaneo,
+        ubicacion: recorrido.ubicacion
+      }
+    }, { status: 201 });
 
   } catch (error: any) {
-    // requireAuth lanza 'No autenticado' si no hay sesión
-    if (error?.message === 'No autenticado') {
+    console.error('Error en POST /api/recorridos:', error);
+
+    if (error.message === 'No autenticado') {
       return NextResponse.json(
-        { error: 'No autenticado' },
+        { error: 'Debes iniciar sesión para guardar baldosas' },
         { status: 401 }
       );
     }
 
-    console.error('❌ Error eliminando baldosa:', error);
+    // Error de duplicado
+    if (error.code === 11000) {
+      return NextResponse.json(
+        { error: 'Ya has escaneado esta baldosa' },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Error al eliminar la baldosa' },
+      { error: 'Error al guardar baldosa' },
       { status: 500 }
     );
   }
