@@ -1,27 +1,20 @@
-import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import { NextRequest, NextResponse } from 'next/server';
+import connectDB from '@/lib/mongodb';
 import Recorrido from '@/models/Recorrido';
-import { requireAuth } from '@/lib/authMiddleware';
+import { requireAuth } from '@/lib/auth-middleware';
 
 /**
  * DELETE /api/recorridos/[id]
  * Elimina una baldosa del recorrido del usuario
  */
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Verificar autenticación
-    const authResult = await requireAuth(request);
-    if (authResult.error) {
-      return NextResponse.json(
-        { error: authResult.error },
-        { status: 401 }
-      );
-    }
-
-    const userId = authResult.userId;
+    // Verificar autenticación (lanza error si no está autenticado)
+    const user = await requireAuth(request);
+    const userId = user.id;
     const recorridoId = params.id;
 
     if (!recorridoId) {
@@ -62,7 +55,15 @@ export async function DELETE(
       baldosaId: recorrido.baldosaId
     });
 
-  } catch (error) {
+  } catch (error: any) {
+    // requireAuth lanza 'No autenticado' si no hay sesión
+    if (error?.message === 'No autenticado') {
+      return NextResponse.json(
+        { error: 'No autenticado' },
+        { status: 401 }
+      );
+    }
+
     console.error('❌ Error eliminando baldosa:', error);
     return NextResponse.json(
       { error: 'Error al eliminar la baldosa' },
