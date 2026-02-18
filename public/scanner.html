@@ -1031,6 +1031,126 @@
         
         const fotoUrlFinal = fotoUrl;
         
+
+        // ================================================================
+        // SISTEMA DE COORDENADAS EN MINDAR (leer antes de tocar valores)
+        // ================================================================
+        //
+        //   La imagen de la baldosa define el PLANO DEL TARGET.
+        //   El origin (0, 0, 0) está en el CENTRO GEOMÉTRICO de la imagen.
+        //   1 unidad 3D = el ANCHO real de la imagen target.
+        //
+        //   Ejes locales del target:
+        //
+        //       Y ▲  (apunta hacia arriba a lo largo de la imagen)
+        //         │
+        //         │
+        //         └────► X  (apunta hacia la derecha de la imagen)
+        //        /
+        //       ▼ Z  (apunta hacia la CÁMARA, sale de la imagen)
+        //
+        //   Posición:
+        //     x > 0  → derecha de la baldosa
+        //     x < 0  → izquierda de la baldosa
+        //     y > 0  → ARRIBA de la baldosa  ← necesario para "salir por encima"
+        //     y < 0  → debajo de la baldosa
+        //     z > 0  → hacia la cámara (flotando sobre la superficie)
+        //     z < 0  → detrás de la baldosa (invisible)
+        //
+        //   Rotación (en grados, eje X es el que más importa):
+        //     rotation="0   0 0" → cara del portaretrato mira directamente a la cámara
+        //                          (como una foto pegada verticalmente en la baldosa)
+        //     rotation="-90 0 0" → cara mira hacia ARRIBA
+        //                          (portaretrato acostado en el suelo, boca arriba) ← INICIO
+        //     rotation="-12 0 0" → casi vertical, levemente inclinado hacia atrás  ← FIN
+        //
+        //   La animación de "levantarse del piso" es:
+        //     -90° en X  →  -12° en X  (recorrido de ~78°, un cuarto de vuelta)
+        // ================================================================
+
+        // ================================================================
+        // ⚙️  TUNING — modificá estos valores para ajustar la escena
+        // ================================================================
+        const TUNING = {
+
+          // ── Baldosa ────────────────────────────────────────────────────
+          // Relación de aspecto de la imagen de la baldosa (alto / ancho).
+          // Una baldosa cuadrada = 1.0. Si es más alta que ancha, > 1.0.
+          // Esto determina dónde está el borde superior de la imagen.
+          // Borde superior = 0.5 * BALDOSA_ASPECT  (en unidades 3D)
+          BALDOSA_ASPECT: 1.0,
+
+          // Margen adicional sobre el borde superior de la baldosa (en unidades).
+          // 0.0 = aparece justo en el borde. 0.15 = un poco más arriba.
+          MARGEN_SOBRE_BALDOSA: 0.10,
+
+          // ── Rotación inicial (portaretrato ACOSTADO) ───────────────────
+          // -90° = cara mira arriba (boca arriba en el piso) ← recomendado
+          //  90° = cara mira abajo (boca abajo)
+          //   0° = cara mira a la cámara (ya levantado, no tiene gracia)
+          ROT_INICIO_X: -90,
+          ROT_INICIO_Y:   0,
+          ROT_INICIO_Z:   0,
+
+          // ── Rotación final (posición de reposo levantado) ──────────────
+          // Valores negativos en X = inclina la parte superior HACIA la cámara.
+          // Valores positivos en X = inclina la parte superior LEJOS de la cámara.
+          // -12° X + leve Y/Z = look dramático, semi-apoyado hacia atrás.
+          ROT_FIN_X:  -12,
+          ROT_FIN_Y:   -8,   // giro lateral: negativo = hacia la izquierda
+          ROT_FIN_Z:    2,   // cabeceo: positivo = leve inclinación lateral derecha
+
+          // ── Posición inicial (aparece sobre el borde superior) ─────────
+          // Se calcula automáticamente a partir de BALDOSA_ASPECT + MARGEN.
+          // Podés pisar el Y inicial aquí si querés ajuste fino:
+          //   POS_INICIO_Y: null → usa el cálculo automático
+          //   POS_INICIO_Y: 0.7  → fuerza ese valor
+          POS_INICIO_Y: null,   // null = automático
+
+          POS_INICIO_X: 0.0,    // centrado horizontalmente
+          POS_INICIO_Z: 0.05,   // levemente sobre la superficie de la baldosa
+
+          // ── Posición final (portaretrato levantado, flotando) ──────────
+          // Y positivo = flota más alto sobre la baldosa
+          // Z positivo = más cerca de la cámara
+          POS_FIN_X: 0.0,
+          POS_FIN_Y: 0.55,   // altura final sobre el centro de la baldosa
+          POS_FIN_Z: 0.80,   // distancia hacia la cámara al terminar
+
+          // ── Escala del portaretrato ────────────────────────────────────
+          // Escala uniforme del grupo entero (portaretrato + foto se escalan juntos).
+          // 1.0 = tamaño original. 1.4 = 40% más grande.
+          ESCALA: 1.4,
+
+          // ── Animación ─────────────────────────────────────────────────
+          // Duración en milisegundos. 2500–3500 suele sentirse natural.
+          DURACION_MS: 2800,
+          // Curva de easing. Opciones: easeOutCubic | easeOutQuart | easeOutBack | linear
+          EASING: 'easeOutCubic',
+
+          // ── Foto dentro del portaretrato ───────────────────────────────
+          // Ajustá si la foto no encaja bien en el marco del modelo 3D.
+          // width / height en unidades locales (antes de aplicar ESCALA).
+          FOTO_WIDTH:  0.77,
+          FOTO_HEIGHT: 0.97,
+          FOTO_Z:      0.022,  // separación de la superficie del marco (< 0.03)
+        };
+
+        // ── Cálculo de posición inicial sobre la baldosa ─────────────────
+        const topEdge    = 0.5 * TUNING.BALDOSA_ASPECT;   // borde superior en unidades 3D
+        const posInicioY = TUNING.POS_INICIO_Y !== null
+                           ? TUNING.POS_INICIO_Y
+                           : topEdge + TUNING.MARGEN_SOBRE_BALDOSA;
+
+        console.log(`📐 Borde superior baldosa: ${topEdge.toFixed(3)} u → posición inicio Y: ${posInicioY.toFixed(3)} u`);
+
+        // ── Strings para A-Frame ─────────────────────────────────────────
+        const posInicio = `${TUNING.POS_INICIO_X} ${posInicioY.toFixed(3)} ${TUNING.POS_INICIO_Z}`;
+        const posFin    = `${TUNING.POS_FIN_X} ${TUNING.POS_FIN_Y} ${TUNING.POS_FIN_Z}`;
+        const rotInicio = `${TUNING.ROT_INICIO_X} ${TUNING.ROT_INICIO_Y} ${TUNING.ROT_INICIO_Z}`;
+        const rotFin    = `${TUNING.ROT_FIN_X} ${TUNING.ROT_FIN_Y} ${TUNING.ROT_FIN_Z}`;
+        const escala    = `${TUNING.ESCALA} ${TUNING.ESCALA} ${TUNING.ESCALA}`;
+
         arContainer.innerHTML = `
           <a-scene
             mindar-image="imageTargetSrc: ${mindUrl}; maxTrack: 1; filterMinCF: 0.0001; filterBeta: 0.001;"
@@ -1047,48 +1167,55 @@
 
             <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-            <!-- ── ILUMINACIÓN CÁLIDA ─────────────────────────────────── -->
+            <!-- ── ILUMINACIÓN CÁLIDA ──────────────────────────────────────
+                 Tres fuentes para envolver el modelo con luz dorada de tarde.
+                 Ajustá "intensity" para más/menos brillo.
+                 Ajustá "color" en formato hex para cambiar temperatura. -->
 
-            <!-- Luz ambiente dorada — base cálida general -->
+            <!-- Base cálida general (sin dirección) -->
             <a-light type="ambient"     color="#FFD4A0" intensity="0.55"></a-light>
 
-            <!-- Luz principal — cálida desde arriba-izquierda -->
+            <!-- Luz principal desde arriba-izquierda -->
             <a-light type="directional" color="#FFB347" intensity="1.4"
                      position="-1.5 2.5 1.5"></a-light>
 
-            <!-- Contraluz tenue anaranjado — da volumen al modelo -->
+            <!-- Contraluz tenue desde abajo-derecha para dar volumen -->
             <a-light type="point"       color="#FF9060" intensity="0.35"
                      position="1.2 -0.5 -0.8"></a-light>
 
-            <!-- ── OBJETO AR ──────────────────────────────────────────── -->
+            <!-- ── OBJETO AR ────────────────────────────────────────────── -->
 
             <a-entity mindar-image-target="targetIndex: 0">
 
               <!--
-                ANIMACIÓN DE ENTRADA
-                ─────────────────────
-                Inicio:  rotation="-90 0 0"  →  portaretrato mirando hacia ARRIBA
-                         (como si estuviera boca arriba en el suelo)
-                
-                Fin:     rotation="-12 -8 2" →  leve ángulo dramático:
-                           -12 X = inclinado hacia atrás (semi-vertical, apoyado)
-                            -8 Y = girado levemente hacia la izquierda del viewer
-                             2 Z = cabeceo lateral casi imperceptible
-                
-                Recorrido: ~78° en X + ajustes Y/Z ≈ rotación de ~90° perceptual
-                
-                Escala del grupo = 1.4 → todo escala junto (modelo + foto),
-                manteniendo la alineación interna perfecta.
+                GRUPO PRINCIPAL — contiene portaretrato + foto.
+                Todos los valores vienen del objeto TUNING de arriba.
+
+                position inicial = justo sobre el borde superior de la baldosa
+                rotation inicial = acostado boca arriba en el piso (-90° en X)
+                scale            = tamaño uniforme del conjunto
+
+                Las dos animaciones arrancan simultáneamente cuando MindAR
+                dispara el evento "targetFound".
               -->
               <a-entity
                 id="portaretrato-grupo"
-                position="0 0 0.02"
-                rotation="-90 0 0"
-                scale="1.4 1.4 1.4"
-                animation__pos="property: position; to: 0 0.05 0.95; dur: 2800; easing: easeOutCubic; startEvents: targetFound"
-                animation__rot="property: rotation; to: -12 -8 2; dur: 2800; easing: easeOutCubic; startEvents: targetFound">
+                position="${posInicio}"
+                rotation="${rotInicio}"
+                scale="${escala}"
+                animation__pos="property: position;
+                                to: ${posFin};
+                                dur: ${TUNING.DURACION_MS};
+                                easing: ${TUNING.EASING};
+                                startEvents: targetFound"
+                animation__rot="property: rotation;
+                                to: ${rotFin};
+                                dur: ${TUNING.DURACION_MS};
+                                easing: ${TUNING.EASING};
+                                startEvents: targetFound">
 
-                <!-- Portaretrato 3D -->
+                <!-- Modelo 3D del portaretrato (no tocar escala aquí,
+                     se controla desde el grupo padre con TUNING.ESCALA) -->
                 <a-entity
                   id="portaretrato"
                   gltf-model="#modelo-portaretrato"
@@ -1096,19 +1223,16 @@
                   scale="1.0 1.0 1.0">
                 </a-entity>
 
-                <!--
-                  Foto dentro del portaretrato.
-                  width/height levemente aumentados respecto al modelo para
-                  cubrir el interior del marco sin dejar borde/gap visible.
-                  z=0.022 — justo sobre la superficie del marco.
-                -->
+                <!-- Foto dentro del portaretrato.
+                     TUNING.FOTO_WIDTH / FOTO_HEIGHT controlan que cubra el marco
+                     sin dejar gap. TUNING.FOTO_Z controla separación del marco. -->
                 <a-plane
                   id="foto-dinamica"
                   src="#foto-ar"
-                  position="0 0 0.022"
+                  position="0 0 ${TUNING.FOTO_Z}"
                   rotation="0 0 0"
-                  width="0.77"
-                  height="0.97"
+                  width="${TUNING.FOTO_WIDTH}"
+                  height="${TUNING.FOTO_HEIGHT}"
                   material="shader: flat; side: double; transparent: false; alphaTest: 0.1"
                   visible="true">
                 </a-plane>
@@ -1117,7 +1241,7 @@
             </a-entity>
           </a-scene>
         `;
-        
+
         arContainer.style.display = 'block';
         
         const scene = arContainer.querySelector('a-scene');
@@ -1196,8 +1320,8 @@
               // Resetear posición para próxima detección
               const grupo = document.getElementById('portaretrato-grupo');
               if (grupo) {
-                grupo.setAttribute('position', '0 0 0.02');
-                grupo.setAttribute('rotation', '-90 0 0');
+                grupo.setAttribute('position', posInicio);   // calculado dinámicamente
+                grupo.setAttribute('rotation', rotInicio);   // = "-90 0 0" por defecto
               }
             });
           }
