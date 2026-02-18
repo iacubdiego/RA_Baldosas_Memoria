@@ -1047,49 +1047,46 @@
 
             <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-            <!-- ── ILUMINACIÓN CÁLIDA ───────────────────────────────────── -->
+            <!-- ── ILUMINACIÓN CÁLIDA ─────────────────────────────────── -->
 
-            <!-- Luz ambiente dorada suave — base cálida general -->
-            <a-light
-              type="ambient"
-              color="#FFD4A0"
-              intensity="0.55">
-            </a-light>
+            <!-- Luz ambiente dorada — base cálida general -->
+            <a-light type="ambient"     color="#FFD4A0" intensity="0.55"></a-light>
 
-            <!-- Luz direccional principal — cálida, desde arriba-izquierda -->
-            <a-light
-              type="directional"
-              color="#FFB347"
-              intensity="1.4"
-              position="-1.5 2.5 1.5">
-            </a-light>
+            <!-- Luz principal — cálida desde arriba-izquierda -->
+            <a-light type="directional" color="#FFB347" intensity="1.4"
+                     position="-1.5 2.5 1.5"></a-light>
 
-            <!-- Contraluz tenue — tono más frío para separar el modelo del fondo -->
-            <a-light
-              type="point"
-              color="#FF9060"
-              intensity="0.35"
-              position="1.2 -0.5 -0.8">
-            </a-light>
+            <!-- Contraluz tenue anaranjado — da volumen al modelo -->
+            <a-light type="point"       color="#FF9060" intensity="0.35"
+                     position="1.2 -0.5 -0.8"></a-light>
 
-            <!-- ── OBJETO AR ───────────────────────────────────────────── -->
+            <!-- ── OBJETO AR ──────────────────────────────────────────── -->
 
             <a-entity mindar-image-target="targetIndex: 0">
 
               <!--
-                Animación de entrada:
-                  · Posición: sale desde la baldosa (z=0.02) y flota hacia la cámara (z=0.95)
-                  · Rotación: empieza acostado (90 0 0), termina con un leve ángulo dramático
-                              (-12 en X = leve inclinación hacia atrás,
-                               -8 en Y = girado levemente hacia la izquierda del viewer,
-                                2 en Z = muy leve cabeceo lateral)
+                ANIMACIÓN DE ENTRADA
+                ─────────────────────
+                Inicio:  rotation="-90 0 0"  →  portaretrato mirando hacia ARRIBA
+                         (como si estuviera boca arriba en el suelo)
+                
+                Fin:     rotation="-12 -8 2" →  leve ángulo dramático:
+                           -12 X = inclinado hacia atrás (semi-vertical, apoyado)
+                            -8 Y = girado levemente hacia la izquierda del viewer
+                             2 Z = cabeceo lateral casi imperceptible
+                
+                Recorrido: ~78° en X + ajustes Y/Z ≈ rotación de ~90° perceptual
+                
+                Escala del grupo = 1.4 → todo escala junto (modelo + foto),
+                manteniendo la alineación interna perfecta.
               -->
               <a-entity
                 id="portaretrato-grupo"
                 position="0 0 0.02"
-                rotation="90 0 0"
-                animation__pos="property: position; to: 0 0.05 0.95; dur: 2600; easing: easeOutCubic; startEvents: targetFound"
-                animation__rot="property: rotation; to: -12 -8 2; dur: 2600; easing: easeOutCubic; startEvents: targetFound">
+                rotation="-90 0 0"
+                scale="1.4 1.4 1.4"
+                animation__pos="property: position; to: 0 0.05 0.95; dur: 2800; easing: easeOutCubic; startEvents: targetFound"
+                animation__rot="property: rotation; to: -12 -8 2; dur: 2800; easing: easeOutCubic; startEvents: targetFound">
 
                 <!-- Portaretrato 3D -->
                 <a-entity
@@ -1099,14 +1096,19 @@
                   scale="1.0 1.0 1.0">
                 </a-entity>
 
-                <!-- Foto dentro del portaretrato -->
+                <!--
+                  Foto dentro del portaretrato.
+                  width/height levemente aumentados respecto al modelo para
+                  cubrir el interior del marco sin dejar borde/gap visible.
+                  z=0.022 — justo sobre la superficie del marco.
+                -->
                 <a-plane
                   id="foto-dinamica"
                   src="#foto-ar"
-                  position="0 0 0.025"
+                  position="0 0 0.022"
                   rotation="0 0 0"
-                  width="0.73"
-                  height="0.92"
+                  width="0.77"
+                  height="0.97"
                   material="shader: flat; side: double; transparent: false; alphaTest: 0.1"
                   visible="true">
                 </a-plane>
@@ -1195,7 +1197,7 @@
               const grupo = document.getElementById('portaretrato-grupo');
               if (grupo) {
                 grupo.setAttribute('position', '0 0 0.02');
-                grupo.setAttribute('rotation', '90 0 0');
+                grupo.setAttribute('rotation', '-90 0 0');
               }
             });
           }
