@@ -286,7 +286,7 @@ async function seed() {
     const baldosasCollection = db.collection('baldosas');
     
     // Opción: Limpiar colección (comentar si querés mantener datos existentes)
-    const limpiar = true;  // Cambiar a false para no borrar baldosas existentes
+    const limpiar = false;  // false para no borrar baldosas existentes
     
     if (limpiar) {
       console.log('🗑️  Limpiando colección de baldosas...');

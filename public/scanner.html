@@ -511,8 +511,7 @@
     
     <!-- Instructions -->
     <div id="instructions">
-      <div class="icon">🎯</div>
-      <h2>Apuntá a la baldosa</h2>
+      <h2>Enfocá la baldosa</h2>
       <p>Enfocá la cámara hacia la baldosa para ver la experiencia AR</p>
       <div class="baldosa-info">
         <p style="margin: 0; font-weight: 600;" id="instruction-baldosa-name"></p>
@@ -692,141 +691,126 @@
         });
       }
 
-      async function capturarYGuardar() {
+     async function capturarYGuardar() {
         console.log('📸 Proceso de captura...');
-        
+
         if (!currentBaldosa) {
           mostrarToast('Error: baldosa no detectada', 'error');
           return;
         }
-        
-        // ESPERAR 500ms para render completo
+
+        // ── Feedback inmediato: deshabilitar botón y mostrar estado ──
+        const btn = document.getElementById('btn-capturar');
+        btn.disabled = true;
+        btn.style.animation = 'none';
+        btn.style.background = 'rgba(100,100,100,0.95)';
+        btn.innerHTML = `
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
+               style="animation: spin 0.8s linear infinite;">
+            <circle cx="12" cy="12" r="10" stroke-opacity="0.3"/>
+            <path d="M12 2 a10 10 0 0 1 10 10" stroke-linecap="round"/>
+          </svg>`;
+
+        // Inyectar keyframe spin si no existe
+        if (!document.getElementById('spin-style')) {
+          const s = document.createElement('style');
+          s.id = 'spin-style';
+          s.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+          document.head.appendChild(s);
+        }
+
+        // Toast de progreso (persiste hasta que termine)
+        const toastProgreso = document.createElement('div');
+        toastProgreso.className = 'toast info';
+        toastProgreso.textContent = '📸 Capturando...';
+        toastProgreso.style.opacity = '1';   // evitar que el timeout lo quite
+        document.body.appendChild(toastProgreso);
+
+        const limpiarUI = (exito) => {
+          // Quitar toast de progreso
+          toastProgreso.remove();
+
+          // Restaurar botón
+          btn.disabled = false;
+          btn.style.background = 'rgba(37, 99, 235, 0.95)';
+          btn.style.animation = 'pulseCapture 2s ease-in-out infinite';
+          btn.innerHTML = '<span class="camera-icon">📷</span>';
+
+          if (exito) mostrarToast('¡Foto guardada en tu recorrido!', 'success');
+        };
+
+        // ── Esperar render completo ───────────────────────────────────
         console.log('⏳ Esperando render...');
         await new Promise(resolve => setTimeout(resolve, 500));
-        
+
         const foto = await capturarScreenshot();
-        
-        if (!foto) {
+
+        if (!foto || foto.length < 1000) {
+          limpiarUI(false);
           mostrarToast('Error capturando foto', 'error');
           return;
         }
-        
-        if (foto.length < 1000) {
-          console.error('❌ Foto muy pequeña');
-          mostrarToast('Error: foto inválida', 'error');
-          return;
-        }
-        
+
         console.log('✅ Foto válida');
-        
-        // Verificar si el usuario está autenticado
+
+        // ── Verificar autenticación ───────────────────────────────────
         const isAuthenticated = await checkAuth();
-        
+
         if (isAuthenticated) {
-          // Guardar en backend
           console.log('🔐 Usuario autenticado, guardando en backend...');
-          
+
           try {
             const response = await fetch('/api/recorridos', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                baldosaId: currentBaldosa.codigo || currentBaldosa.id,
-                nombreVictima: currentBaldosa.nombre,
+                baldosaId:       currentBaldosa.codigo || currentBaldosa.id,
+                nombreVictima:   currentBaldosa.nombre,
                 fechaDesaparicion: currentBaldosa.fechaDesaparicion || '',
-                fotoBase64: foto,
-                ubicacion: currentBaldosa.direccion || currentBaldosa.barrio || 'Buenos Aires',
-                lat: currentBaldosa.lat,
-                lng: currentBaldosa.lng,
-                notas: ''
+                fotoBase64:      foto,
+                ubicacion:       currentBaldosa.direccion || currentBaldosa.barrio || 'Buenos Aires',
+                lat:             currentBaldosa.lat,
+                lng:             currentBaldosa.lng,
+                notas:           ''
               })
             });
-            
+
             const data = await response.json();
-            
+
             if (!response.ok) {
               if (data.error && data.error.includes('Ya has escaneado')) {
+                limpiarUI(false);
                 mostrarToast('Ya tenés esta baldosa en tu recorrido', 'info');
               } else {
                 throw new Error(data.error || 'Error al guardar');
               }
             } else {
               console.log('✅ Guardado en backend');
-              mostrarToast('¡Foto guardada! 📸', 'success');
+              limpiarUI(true);
             }
-            
-            setTimeout(() => {
-              window.location.href = '/coleccion';
-            }, 1000);
-            
+
           } catch (error) {
-            console.error('❌ Error guardando en backend:', error);
-            mostrarToast('Error al guardar', 'error');
+            console.error('❌ Error guardando:', error);
+            limpiarUI(false);
+            mostrarToast('Error al guardar la foto', 'error');
           }
-          
+
         } else {
-          // Usuario no autenticado - guardar en localStorage
-          console.log('📱 Usuario no autenticado, guardando en localStorage...');
-          
-          const coleccionStr = localStorage.getItem('baldosas_coleccion');
-          let coleccion = { items: [], totalEscaneos: 0 };
-          
-          if (coleccionStr) {
-            try {
-              coleccion = JSON.parse(coleccionStr);
-            } catch (e) {
-              console.error('Error parseando recorrido:', e);
-            }
-          }
-          
-          // Check duplicate
-          const yaExiste = coleccion.items.some(item => 
-            item.baldosaId === (currentBaldosa.codigo || currentBaldosa.id)
-          );
-          
-          if (yaExiste) {
-            mostrarToast('Ya tenés esta baldosa guardada', 'info');
-            return;
-          }
-          
-          // Create item
-          const nuevoItem = {
-            id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            baldosaId: currentBaldosa.codigo || currentBaldosa.id,
-            nombreVictima: currentBaldosa.nombre,
-            fechaDesaparicion: currentBaldosa.fechaDesaparicion || '',
-            fechaEscaneo: new Date().toISOString(),
-            fotoUrl: foto,
-            ubicacion: currentBaldosa.direccion || currentBaldosa.barrio || 'Buenos Aires',
-            lat: currentBaldosa.lat,
-            lng: currentBaldosa.lng,
-            notas: ''
-          };
-          
-          console.log('💾 Guardando...');
-          
-          coleccion.items.unshift(nuevoItem);
-          coleccion.totalEscaneos = coleccion.items.length;
-          coleccion.ultimoEscaneo = nuevoItem.fechaEscaneo;
-          
+          // ── No autenticado: descargar localmente ────────────────────
+          console.log('👤 No autenticado, descargando...');
           try {
-            localStorage.setItem('baldosas_coleccion', JSON.stringify(coleccion));
-            console.log('✅ Guardado en localStorage');
-          } catch (e) {
-            console.error('❌ Error guardando:', e);
-            if (e.name === 'QuotaExceededError') {
-              mostrarToast('Almacenamiento lleno', 'error');
-            } else {
-              mostrarToast('Error al guardar', 'error');
-            }
-            return;
+            const link = document.createElement('a');
+            link.download = `baldosa-${currentBaldosa.nombre?.replace(/\s+/g, '-') || 'memoria'}-${Date.now()}.jpg`;
+            link.href = foto;
+            link.click();
+            limpiarUI(true);
+          } catch (err) {
+            limpiarUI(false);
+            mostrarToast('Error al descargar la foto', 'error');
           }
-          
-          mostrarToast('¡Foto guardada! 📸', 'success');
-          mostrarToast('Inicia sesión para guardar tu recorrido en la nube', 'info');
         }
       }
-      
+            
       // Verificar autenticación
       async function checkAuth() {
         try {
