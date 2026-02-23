@@ -461,6 +461,89 @@
           box-shadow: 0 4px 30px rgba(37, 99, 235, 0.8);
         }
       }
+
+      /* ========== CAPTURE OVERLAY ========== */
+
+      #capture-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(10, 20, 35, 0.88);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        z-index: 9998;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #capture-overlay.visible {
+        display: flex;
+      }
+
+      .capture-overlay-box {
+        background: rgba(26, 42, 58, 0.97);
+        border: 1px solid rgba(37, 99, 235, 0.4);
+        border-radius: 20px;
+        padding: 36px 40px;
+        text-align: center;
+        width: min(90vw, 320px);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        animation: overlayEntrada 0.2s ease-out;
+      }
+
+      @keyframes overlayEntrada {
+        from { opacity: 0; transform: scale(0.92) translateY(10px); }
+        to   { opacity: 1; transform: scale(1) translateY(0); }
+      }
+
+      .capture-spinner {
+        width: 52px;
+        height: 52px;
+        border: 4px solid rgba(255,255,255,0.12);
+        border-top-color: #2563eb;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin: 0 auto 20px;
+      }
+
+      .capture-titulo {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #f0f4f8;
+        margin: 0 0 24px;
+        letter-spacing: 0.01em;
+      }
+
+      .capture-pasos {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        text-align: left;
+      }
+
+      .capture-paso {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.88rem;
+        color: rgba(240,244,248,0.4);
+        transition: color 0.3s;
+      }
+
+      .capture-paso.activo {
+        color: rgba(240,244,248,0.95);
+      }
+
+      .capture-paso.completado {
+        color: #34d399;
+      }
+
+      .paso-icono {
+        font-size: 1rem;
+        width: 22px;
+        text-align: center;
+        flex-shrink: 0;
+      }
       
       /* ========== AR CONTAINER ========== */
       
@@ -508,6 +591,28 @@
     <button id="btn-capturar" onclick="capturarYGuardar()">
       <span class="camera-icon">📷</span>
     </button>
+
+    <!-- Capture Overlay -->
+    <div id="capture-overlay">
+      <div class="capture-overlay-box">
+        <div class="capture-spinner"></div>
+        <p class="capture-titulo" id="capture-titulo">Capturando...</p>
+        <div class="capture-pasos">
+          <div class="capture-paso" id="paso-1">
+            <span class="paso-icono" id="icono-1">⏳</span>
+            <span>Procesando imagen</span>
+          </div>
+          <div class="capture-paso" id="paso-2">
+            <span class="paso-icono" id="icono-2">⬜</span>
+            <span>Verificando sesión</span>
+          </div>
+          <div class="capture-paso" id="paso-3">
+            <span class="paso-icono" id="icono-3">⬜</span>
+            <span>Guardando en tu recorrido</span>
+          </div>
+        </div>
+      </div>
+    </div>
     
     <!-- Instructions -->
     <div id="instructions">
@@ -649,14 +754,11 @@
                 }
 
                 // ── 4. Dibujar el video como fondo ────────────────────────
-                // El video puede tener distinta proporción; lo estiramos para
-                // cubrir exactamente el mismo viewport que el canvas WebGL
                 try {
                   ctx.drawImage(video, 0, 0, w, h);
                   console.log('✅ Video dibujado en canvas compuesto');
                 } catch (videoErr) {
                   console.warn('⚠️ No se pudo dibujar el video:', videoErr.message);
-                  // Continuar de todos modos — al menos se verá el overlay 3D
                 }
 
                 // ── 5. Dibujar el canvas WebGL encima ────────────────────
@@ -691,7 +793,40 @@
         });
       }
 
-     async function capturarYGuardar() {
+      // =============== CAPTURE OVERLAY HELPERS ===============
+
+      function mostrarOverlay() {
+        document.getElementById('capture-overlay').classList.add('visible');
+      }
+
+      function ocultarOverlay() {
+        document.getElementById('capture-overlay').classList.remove('visible');
+      }
+
+      function setPasoActivo(n) {
+        for (let i = 1; i <= 3; i++) {
+          const paso  = document.getElementById(`paso-${i}`);
+          const icono = document.getElementById(`icono-${i}`);
+          paso.classList.remove('activo', 'completado');
+          if (i < n) {
+            paso.classList.add('completado');
+            icono.textContent = '✓';
+          } else if (i === n) {
+            paso.classList.add('activo');
+            icono.textContent = '⏳';
+          } else {
+            icono.textContent = '⬜';
+          }
+        }
+      }
+
+      function setOverlayTitulo(texto) {
+        document.getElementById('capture-titulo').textContent = texto;
+      }
+
+      // =============== CAPTURE FUNCTION ===============
+
+      async function capturarYGuardar() {
         console.log('📸 Proceso de captura...');
 
         if (!currentBaldosa) {
@@ -699,62 +834,54 @@
           return;
         }
 
-        // ── Feedback inmediato: deshabilitar botón y mostrar estado ──
+        // Deshabilitar botón inmediatamente
         const btn = document.getElementById('btn-capturar');
         btn.disabled = true;
         btn.style.animation = 'none';
         btn.style.background = 'rgba(100,100,100,0.95)';
-        btn.innerHTML = `
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
-               style="animation: spin 0.8s linear infinite;">
-            <circle cx="12" cy="12" r="10" stroke-opacity="0.3"/>
-            <path d="M12 2 a10 10 0 0 1 10 10" stroke-linecap="round"/>
-          </svg>`;
+        btn.innerHTML = '<span style="font-size:22px; line-height:1">⏳</span>';
 
-        // Inyectar keyframe spin si no existe
-        if (!document.getElementById('spin-style')) {
-          const s = document.createElement('style');
-          s.id = 'spin-style';
-          s.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
-          document.head.appendChild(s);
-        }
+        // Mostrar overlay de pantalla completa inmediatamente
+        mostrarOverlay();
+        setOverlayTitulo('Capturando foto...');
+        setPasoActivo(1);
 
-        // Toast de progreso (persiste hasta que termine)
-        const toastProgreso = document.createElement('div');
-        toastProgreso.className = 'toast info';
-        toastProgreso.textContent = '📸 Capturando...';
-        toastProgreso.style.opacity = '1';   // evitar que el timeout lo quite
-        document.body.appendChild(toastProgreso);
-
-        const limpiarUI = (exito) => {
-          // Quitar toast de progreso
-          toastProgreso.remove();
-
-          // Restaurar botón
+        const restaurarBtn = () => {
           btn.disabled = false;
           btn.style.background = 'rgba(37, 99, 235, 0.95)';
           btn.style.animation = 'pulseCapture 2s ease-in-out infinite';
           btn.innerHTML = '<span class="camera-icon">📷</span>';
-
-          if (exito) mostrarToast('¡Foto guardada en tu recorrido!', 'success');
         };
 
-        // ── Esperar render completo ───────────────────────────────────
-        console.log('⏳ Esperando render...');
-        await new Promise(resolve => setTimeout(resolve, 500));
+        const finalizar = (exito, mensaje) => {
+          ocultarOverlay();
+          restaurarBtn();
+          if (exito) {
+            mostrarToast(mensaje || '¡Foto guardada en tu recorrido!', 'success');
+          } else {
+            mostrarToast(mensaje || 'Error al guardar', 'error');
+          }
+        };
 
+        // ── Paso 1: capturar imagen ──────────────────────────────────────
+        await new Promise(resolve => setTimeout(resolve, 300));
         const foto = await capturarScreenshot();
 
         if (!foto || foto.length < 1000) {
-          limpiarUI(false);
-          mostrarToast('Error capturando foto', 'error');
+          finalizar(false, 'Error capturando la foto');
           return;
         }
 
         console.log('✅ Foto válida');
 
-        // ── Verificar autenticación ───────────────────────────────────
+        // ── Paso 2: verificar autenticación ─────────────────────────────
+        setOverlayTitulo('Verificando sesión...');
+        setPasoActivo(2);
         const isAuthenticated = await checkAuth();
+
+        // ── Paso 3: guardar ──────────────────────────────────────────────
+        setOverlayTitulo('Guardando en tu recorrido...');
+        setPasoActivo(3);
 
         if (isAuthenticated) {
           console.log('🔐 Usuario autenticado, guardando en backend...');
@@ -764,14 +891,14 @@
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                baldosaId:       currentBaldosa.codigo || currentBaldosa.id,
-                nombreVictima:   currentBaldosa.nombre,
+                baldosaId:         currentBaldosa.codigo || currentBaldosa.id,
+                nombreVictima:     currentBaldosa.nombre,
                 fechaDesaparicion: currentBaldosa.fechaDesaparicion || '',
-                fotoBase64:      foto,
-                ubicacion:       currentBaldosa.direccion || currentBaldosa.barrio || 'Buenos Aires',
-                lat:             currentBaldosa.lat,
-                lng:             currentBaldosa.lng,
-                notas:           ''
+                fotoBase64:        foto,
+                ubicacion:         currentBaldosa.direccion || currentBaldosa.barrio || 'Buenos Aires',
+                lat:               currentBaldosa.lat,
+                lng:               currentBaldosa.lng,
+                notas:             ''
               })
             });
 
@@ -779,34 +906,31 @@
 
             if (!response.ok) {
               if (data.error && data.error.includes('Ya has escaneado')) {
-                limpiarUI(false);
-                mostrarToast('Ya tenés esta baldosa en tu recorrido', 'info');
+                finalizar(false, 'Ya tenés esta baldosa en tu recorrido');
               } else {
                 throw new Error(data.error || 'Error al guardar');
               }
             } else {
               console.log('✅ Guardado en backend');
-              limpiarUI(true);
+              finalizar(true, '¡Baldosa guardada en tu recorrido!');
             }
 
           } catch (error) {
             console.error('❌ Error guardando:', error);
-            limpiarUI(false);
-            mostrarToast('Error al guardar la foto', 'error');
+            finalizar(false, 'Error al guardar la foto');
           }
 
         } else {
-          // ── No autenticado: descargar localmente ────────────────────
+          // ── No autenticado: descargar localmente ─────────────────────
           console.log('👤 No autenticado, descargando...');
           try {
             const link = document.createElement('a');
             link.download = `baldosa-${currentBaldosa.nombre?.replace(/\s+/g, '-') || 'memoria'}-${Date.now()}.jpg`;
             link.href = foto;
             link.click();
-            limpiarUI(true);
+            finalizar(true, '¡Foto descargada!');
           } catch (err) {
-            limpiarUI(false);
-            mostrarToast('Error al descargar la foto', 'error');
+            finalizar(false, 'Error al descargar la foto');
           }
         }
       }
@@ -1014,7 +1138,6 @@
         console.log('📸 Foto final a usar:', fotoUrl);
         
         const fotoUrlFinal = fotoUrl;
-        
 
         // ================================================================
         // SISTEMA DE COORDENADAS EN MINDAR (leer antes de tocar valores)
