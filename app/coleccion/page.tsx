@@ -310,22 +310,19 @@ export default function RecorridoPage() {
             {items.map((item) => (
               <div
                 key={item.id}
-                className="hover-lift"
                 style={{
                   background: 'white',
                   borderRadius: '12px',
                   overflow: 'hidden',
                   boxShadow: 'var(--shadow-soft)',
-                  cursor: 'pointer',
                   transition: 'all var(--transition-base)',
                   display: 'flex',
                   flexDirection: 'column',
                 }}
-                onClick={() => router.push(`/baldosas/${item.baldosaId}`)}
               >
                 {/* Foto */}
                 <div style={{
-                  height: '220px',
+                  height: '140px',
                   overflow: 'hidden',
                   position: 'relative',
                   background: 'var(--color-parchment)',

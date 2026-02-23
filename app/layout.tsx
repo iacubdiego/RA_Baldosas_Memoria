@@ -49,6 +49,9 @@ export default function RootLayout({
               <a href="/coleccion" className="navbar-link">
                 Mi Recorrido
               </a>
+              <a href="/mapa" className="navbar-link">
+                Mapa
+              </a>
             </div>
           </div>
         </nav>
