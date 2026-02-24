@@ -31,8 +31,8 @@ type FaseExperiencia =
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const RADIO_ACTIVACION_M = 1000   // Metros para mostrar notificación
-const RADIO_AVISO_M       = 1200   // Metros para mostrar "te estás acercando"
+const RADIO_ACTIVACION_M = 20   // Metros para mostrar notificación
+const RADIO_AVISO_M       = 50   // Metros para mostrar "te estás acercando"
 const WATCH_OPTIONS: PositionOptions = {
   enableHighAccuracy: true,
   maximumAge: 2000,
@@ -175,23 +175,24 @@ export default function LocationARScanner() {
     if (fase !== 'ar' || scriptsOk) return
 
     async function cargarScripts() {
-      // A-Frame
+      // A-Frame 1.4.1
       if (!(window as any).AFRAME) {
         await loadScript('https://aframe.io/releases/1.4.1/aframe.min.js')
-        await delay(300)
+        await delay(500)
       }
-      // AR.js con componente GPS
+      // AR.js Location Only (única versión con gps-camera y gps-entity-place)
       if (!(window as any).AFRAME?.components?.['gps-camera']) {
         await loadScript(
-          'https://cdn.jsdelivr.net/npm/ar.js@2.3.4/aframe/build/aframe-ar.js'
+          'https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js'
         )
-        await delay(300)
+        await delay(500)
       }
       setScriptsOk(true)
     }
 
-    cargarScripts().catch(() => {
-      setErrorMsg('No se pudieron cargar las librerías AR')
+    cargarScripts().catch((e) => {
+      console.error('Error cargando scripts AR:', e)
+      setErrorMsg('No se pudieron cargar las librerías AR. Verificá tu conexión a internet.')
       setFase('error')
     })
   }, [fase, scriptsOk])
@@ -218,7 +219,7 @@ export default function LocationARScanner() {
         renderer="logarithmicDepthBuffer: true; antialias: true;"
         loading-screen="dotsColor: white; backgroundColor: #1a2a3a"
       >
-        <a-assets>
+        <a-assets timeout="10000">
           ${fotoUrl ? `<img id="foto-victima" src="${fotoUrl}" crossorigin="anonymous" />` : ''}
         </a-assets>
 
@@ -229,10 +230,11 @@ export default function LocationARScanner() {
         <a-entity
           id="baldosa-ar-entity"
           gps-entity-place="latitude: ${lat}; longitude: ${lng}"
+          animation="property: position; from: 0 1.4 0; to: 0 1.7 0; dir: alternate; dur: 2800; easing: easeInOutSine; loop: true"
         >
           <!-- Marco / portaretrato flotante -->
           <a-box
-            position="0 1.6 0"
+            position="0 0 0"
             width="0.85"
             height="1.1"
             depth="0.05"
@@ -245,7 +247,7 @@ export default function LocationARScanner() {
           <a-image
             id="foto-ar"
             src="#foto-victima"
-            position="0 1.6 0.03"
+            position="0 0 0.03"
             width="0.75"
             height="0.95"
             material="shader: flat; side: double;"
@@ -253,7 +255,7 @@ export default function LocationARScanner() {
           ` : `
           <a-text
             value="${nombre}"
-            position="0 1.6 0.04"
+            position="0 0 0.04"
             align="center"
             width="1.4"
             color="#f0e6d3"
@@ -263,18 +265,17 @@ export default function LocationARScanner() {
           <!-- Nombre de la víctima -->
           <a-text
             value="${nombre.toUpperCase()}"
-            position="0 0.9 0"
+            position="0 -0.7 0"
             align="center"
             width="1.6"
             color="#f0e6d3"
-            font="exo2bold"
             wrap-count="20"
           ></a-text>
 
           <!-- Mensaje AR -->
           <a-text
             value="${mensajeAR}"
-            position="0 0.65 0"
+            position="0 -0.95 0"
             align="center"
             width="1.4"
             color="#90b4ce"
@@ -283,7 +284,7 @@ export default function LocationARScanner() {
 
           <!-- Pañuelo blanco pequeño arriba -->
           <a-plane
-            position="0 2.35 0"
+            position="0 0.75 0"
             width="0.3"
             height="0.25"
             color="white"
@@ -291,16 +292,6 @@ export default function LocationARScanner() {
             rotation="-10 0 0"
           ></a-plane>
 
-          <!-- Animación suave de flotación vertical -->
-          <a-animation
-            attribute="position"
-            from="0 0 0"
-            to="0 0.12 0"
-            direction="alternate"
-            dur="2800"
-            easing="easeInOutSine"
-            repeat="indefinite"
-          ></a-animation>
         </a-entity>
       </a-scene>
     `
@@ -494,7 +485,7 @@ export default function LocationARScanner() {
             )}
 
             <div style={estilos.chipCategoria}>
-              {baldosaCercana.categoria.toUpperCase()}
+              {(baldosaCercana.categoria ?? 'histórico').toUpperCase()}
             </div>
 
             <h2 style={estilos.nombreBaldosa}>{baldosaCercana.nombre}</h2>
@@ -600,7 +591,7 @@ export default function LocationARScanner() {
             </div>
           )}
 
-          <div style={estilos.chipCategoria}>{baldosaActiva.categoria.toUpperCase()}</div>
+          <div style={estilos.chipCategoria}>{(baldosaActiva.categoria ?? 'histórico').toUpperCase()}</div>
           <h1 style={{ ...estilos.nombreBaldosa, fontSize: '2rem', marginTop: '0.5rem' }}>
             {baldosaActiva.nombre}
           </h1>
