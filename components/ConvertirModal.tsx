@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 
 interface Propuesta {
   id: string
@@ -9,479 +9,316 @@ interface Propuesta {
   lat: number
   lng: number
   direccion?: string
+  imagenBase64?: string
 }
 
 interface ConvertirModalProps {
   propuesta: Propuesta
   onClose: () => void
-  onSuccess: () => void
+  onSuccess: (mensaje: string) => void
 }
 
+const CATEGORIAS = [
+  { value: 'artista',    label: 'Artista' },
+  { value: 'politico',   label: 'Político / Militante' },
+  { value: 'historico',  label: 'Histórico' },
+  { value: 'deportista', label: 'Deportista' },
+  { value: 'cultural',   label: 'Cultural' },
+  { value: 'otro',       label: 'Otro' },
+]
+
 export default function ConvertirModal({ propuesta, onClose, onSuccess }: ConvertirModalProps) {
-  const [formData, setFormData] = useState({
-    codigo: '',
-    categoria: 'historico',
-    barrio: '',
-    mensajeAR: '',
-    infoExtendida: propuesta.descripcion,
-  })
-  
-  const [mindFile, setMindFile] = useState<File | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [codigo,        setCodigo]        = useState('')
+  const [categoria,     setCategoria]     = useState('historico')
+  const [barrio,        setBarrio]        = useState('')
+  const [mensajeAR,     setMensajeAR]     = useState(`${propuesta.nombrePersona.toUpperCase()} - Presente`)
+  const [infoExtendida, setInfoExtendida] = useState('')
+  const [procesando,    setProcesando]    = useState(false)
+  const [error,         setError]         = useState('')
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
+  const handleSubmit = async () => {
+    setError('')
 
-  const handleMindFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    if (!file.name.endsWith('.mind')) {
-      setError('El archivo debe tener extensión .mind')
+    if (!codigo.trim() || codigo.trim().length < 4) {
+      setError('El código debe tener al menos 4 caracteres (ej: BALD-0042)')
+      return
+    }
+    if (!mensajeAR.trim() || mensajeAR.trim().length < 5) {
+      setError('El mensaje AR es obligatorio')
       return
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      setError('El archivo es demasiado grande (máx 10MB)')
-      return
-    }
-
-    setMindFile(file)
-    setError(null)
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-
-    // Validaciones
-    if (!formData.codigo || formData.codigo.trim().length < 4) {
-      setError('El código debe tener al menos 4 caracteres')
-      return
-    }
-
-    if (!formData.mensajeAR || formData.mensajeAR.trim().length < 5) {
-      setError('El mensaje AR debe tener al menos 5 caracteres')
-      return
-    }
-
-    if (!mindFile) {
-      setError('Debes subir el archivo .mind compilado')
-      return
-    }
-
-    setLoading(true)
+    setProcesando(true)
 
     try {
-      // Crear FormData con todos los campos
-      const data = new FormData()
-      data.append('codigo', formData.codigo.trim())
-      data.append('categoria', formData.categoria)
-      data.append('barrio', formData.barrio.trim())
-      data.append('mensajeAR', formData.mensajeAR.trim())
-      data.append('infoExtendida', formData.infoExtendida.trim() || propuesta.descripcion)
-      data.append('mindFile', mindFile)
-
-      // Enviar al API
-      const response = await fetch(`/api/propuestas/${propuesta.id}/convertir`, {
+      const res = await fetch(`/api/propuestas/${propuesta.id}/convertir`, {
         method: 'POST',
-        body: data, // FormData se envía sin Content-Type header
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          codigo:        codigo.trim().toUpperCase(),
+          categoria,
+          barrio:        barrio.trim() || null,
+          mensajeAR:     mensajeAR.trim(),
+          infoExtendida: infoExtendida.trim() || null,
+        }),
       })
 
-      const result = await response.json()
+      const data = await res.json()
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Error al convertir propuesta')
+      if (!res.ok) {
+        setError(data.error || 'Error al crear la baldosa')
+        return
       }
 
-      // Éxito
-      onSuccess()
-      onClose()
-
-    } catch (err: any) {
-      setError(err.message || 'Error al convertir propuesta')
+      onSuccess(`✅ Baldosa ${data.baldosa.codigo} creada. Activa en ubicación GPS ${propuesta.lat.toFixed(5)}, ${propuesta.lng.toFixed(5)}`)
+    } catch {
+      setError('Error de red al crear la baldosa')
     } finally {
-      setLoading(false)
+      setProcesando(false)
     }
   }
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0,0,0,0.7)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px',
-      zIndex: 10000,
-      overflow: 'auto',
-    }}>
-      <div style={{
-        background: 'white',
-        borderRadius: '12px',
-        maxWidth: '600px',
-        width: '100%',
-        maxHeight: '90vh',
-        overflow: 'auto',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-      }}>
+    <div style={s.overlay}>
+      <div style={s.modal}>
         {/* Header */}
-        <div style={{
-          padding: '24px',
-          borderBottom: '1px solid #e5e7eb',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          position: 'sticky',
-          top: 0,
-          background: 'white',
-          zIndex: 1,
-        }}>
+        <div style={s.header}>
           <div>
-            <h2 style={{ fontSize: '1.5rem', color: '#1a2a3a', marginBottom: '4px' }}>
-              Convertir a Baldosa
-            </h2>
-            <p style={{ fontSize: '0.9rem', color: '#6b7280', margin: 0 }}>
-              {propuesta.nombrePersona}
-            </p>
+            <h2 style={s.titulo}>Convertir a Baldosa</h2>
+            <p style={s.subtitulo}>{propuesta.nombrePersona}</p>
           </div>
-          <button
-            onClick={onClose}
-            disabled={loading}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '1.5rem',
-              cursor: 'pointer',
-              color: '#6b7280',
-              padding: '4px 8px',
-            }}
-          >
-            ✕
-          </button>
+          <button onClick={onClose} style={s.btnCerrar}>✕</button>
         </div>
 
-        {/* Formulario */}
-        <form onSubmit={handleSubmit} style={{ padding: '24px' }}>
-          {/* Mensaje de error */}
-          {error && (
-            <div style={{
-              padding: '12px 16px',
-              background: '#fef2f2',
-              border: '1px solid #ef4444',
-              borderRadius: '8px',
-              color: '#dc2626',
-              marginBottom: '20px',
-              fontSize: '0.9rem',
-            }}>
-              {error}
-            </div>
-          )}
-
-          {/* Código */}
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '6px',
-              fontWeight: 500,
-              color: '#374151',
-              fontSize: '0.9rem',
-            }}>
-              Código único <span style={{ color: '#dc2626' }}>*</span>
-            </label>
-            <input
-              type="text"
-              name="codigo"
-              value={formData.codigo}
-              onChange={handleInputChange}
-              placeholder="Ej: BALD-015"
-              required
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '0.95rem',
-              }}
-            />
-            <p style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '4px' }}>
-              Debe ser único en el sistema
-            </p>
+        {/* Cuerpo */}
+        <div style={s.body}>
+          {/* Info de la propuesta */}
+          <div style={s.infoBox}>
+            <p style={s.infoLabel}>📍 Coordenadas GPS (modo location-based)</p>
+            <code style={s.codigo}>
+              lat: {propuesta.lat.toFixed(6)} · lng: {propuesta.lng.toFixed(6)}
+            </code>
+            {propuesta.direccion && (
+              <p style={{ marginTop: '0.25rem', fontSize: '0.85rem', color: '#6b8fa6' }}>
+                {propuesta.direccion}
+              </p>
+            )}
           </div>
 
-          {/* Categoría */}
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '6px',
-              fontWeight: 500,
-              color: '#374151',
-              fontSize: '0.9rem',
-            }}>
-              Categoría <span style={{ color: '#dc2626' }}>*</span>
-            </label>
+          {/* Campos */}
+          <div style={s.campo}>
+            <label style={s.label}>Código único *</label>
+            <input
+              value={codigo}
+              onChange={e => setCodigo(e.target.value.toUpperCase())}
+              placeholder="Ej: BALD-0042"
+              style={s.input}
+              maxLength={20}
+            />
+            <p style={s.hint}>Identificador único. Recomendado: BALD-NNNN</p>
+          </div>
+
+          <div style={s.campo}>
+            <label style={s.label}>Categoría *</label>
             <select
-              name="categoria"
-              value={formData.categoria}
-              onChange={handleInputChange}
-              required
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '0.95rem',
-              }}
+              value={categoria}
+              onChange={e => setCategoria(e.target.value)}
+              style={s.input}
             >
-              <option value="historico">Histórico</option>
-              <option value="artista">Artista</option>
-              <option value="politico">Político</option>
-              <option value="deportista">Deportista</option>
-              <option value="cultural">Cultural</option>
-              <option value="otro">Otro</option>
+              {CATEGORIAS.map(c => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
             </select>
           </div>
 
-          {/* Barrio */}
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '6px',
-              fontWeight: 500,
-              color: '#374151',
-              fontSize: '0.9rem',
-            }}>
-              Barrio (opcional)
-            </label>
+          <div style={s.campo}>
+            <label style={s.label}>Barrio</label>
             <input
-              type="text"
-              name="barrio"
-              value={formData.barrio}
-              onChange={handleInputChange}
-              placeholder="Ej: Balvanera"
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '0.95rem',
-              }}
+              value={barrio}
+              onChange={e => setBarrio(e.target.value)}
+              placeholder="Ej: Palermo"
+              style={s.input}
             />
           </div>
 
-          {/* Mensaje AR */}
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '6px',
-              fontWeight: 500,
-              color: '#374151',
-              fontSize: '0.9rem',
-            }}>
-              Mensaje AR <span style={{ color: '#dc2626' }}>*</span>
-            </label>
+          <div style={s.campo}>
+            <label style={s.label}>Mensaje AR *</label>
             <input
-              type="text"
-              name="mensajeAR"
-              value={formData.mensajeAR}
-              onChange={handleInputChange}
-              placeholder="Ej: Desaparecido 1977 - Nunca Más"
-              required
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '0.95rem',
-              }}
+              value={mensajeAR}
+              onChange={e => setMensajeAR(e.target.value)}
+              placeholder="Texto que aparece en la escena AR"
+              style={s.input}
+              maxLength={80}
             />
-            <p style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '4px' }}>
-              Texto que aparece en la experiencia AR
-            </p>
+            <p style={s.hint}>Se muestra flotando junto al portaretrato en la escena GPS</p>
           </div>
 
-          {/* Info extendida */}
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '6px',
-              fontWeight: 500,
-              color: '#374151',
-              fontSize: '0.9rem',
-            }}>
-              Información extendida (opcional)
-            </label>
+          <div style={s.campo}>
+            <label style={s.label}>Información extendida</label>
             <textarea
-              name="infoExtendida"
-              value={formData.infoExtendida}
-              onChange={handleInputChange}
-              rows={4}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '0.95rem',
-                fontFamily: 'inherit',
-                resize: 'vertical',
-              }}
+              value={infoExtendida}
+              onChange={e => setInfoExtendida(e.target.value)}
+              placeholder="Texto adicional que aparece en la ficha completa…"
+              style={{ ...s.input, height: '90px', resize: 'vertical' }}
+              rows={3}
             />
           </div>
 
-          {/* Archivo .mind */}
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '10px',
-              fontWeight: 500,
-              color: '#374151',
-              fontSize: '0.9rem',
-            }}>
-              Archivo .mind <span style={{ color: '#dc2626' }}>*</span>
-            </label>
+          {error && <p style={s.error}>{error}</p>}
+        </div>
 
-            {/* Instrucciones */}
-            <div style={{
-              padding: '16px',
-              background: '#f0f9ff',
-              border: '1px solid #0ea5e9',
-              borderRadius: '8px',
-              marginBottom: '16px',
-            }}>
-              <p style={{ fontSize: '0.85rem', color: '#0c4a6e', marginBottom: '8px', fontWeight: 500 }}>
-                📝 Compilar archivo .mind primero:
-              </p>
-              <ol style={{ marginLeft: '20px', fontSize: '0.85rem', color: '#0c4a6e' }}>
-                <li>Ir a: <a href="https://hiukim.github.io/mind-ar-js-doc/tools/compile" target="_blank" style={{ color: '#0ea5e9' }}>compilador online ↗</a></li>
-                <li>Subir la imagen de la baldosa</li>
-                <li>Click "Start" y esperar</li>
-                <li>Descargar targets.mind</li>
-                <li>Subir el archivo aquí</li>
-              </ol>
-            </div>
-
-            {/* Upload área */}
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              style={{
-                border: '2px dashed ' + (mindFile ? '#22c55e' : '#d1d5db'),
-                borderRadius: '8px',
-                padding: '30px 20px',
-                textAlign: 'center',
-                cursor: 'pointer',
-                background: mindFile ? '#f0fdf4' : '#f9fafb',
-                transition: 'all 0.2s',
-              }}
-            >
-              {mindFile ? (
-                <div>
-                  <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>✅</div>
-                  <p style={{ fontSize: '1rem', fontWeight: 500, color: '#16a34a', marginBottom: '4px' }}>
-                    {mindFile.name}
-                  </p>
-                  <p style={{ fontSize: '0.85rem', color: '#6b7280' }}>
-                    {(mindFile.size / 1024).toFixed(0)} KB
-                  </p>
-                  <p style={{ fontSize: '0.8rem', color: '#0ea5e9', marginTop: '12px' }}>
-                    Click para cambiar archivo
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>📁</div>
-                  <p style={{ fontSize: '1rem', fontWeight: 500, color: '#374151', marginBottom: '4px' }}>
-                    Click para subir archivo .mind
-                  </p>
-                  <p style={{ fontSize: '0.85rem', color: '#6b7280' }}>
-                    Archivo compilado con el compilador online
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".mind"
-              onChange={handleMindFileChange}
-              style={{ display: 'none' }}
-            />
-          </div>
-
-          {/* Botones */}
-          <div style={{
-            display: 'flex',
-            gap: '12px',
-            justifyContent: 'flex-end',
-            paddingTop: '16px',
-            borderTop: '1px solid #e5e7eb',
-          }}>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={loading}
-              style={{
-                padding: '10px 20px',
-                background: '#f3f4f6',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                fontWeight: 500,
-                opacity: loading ? 0.5 : 1,
-              }}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={loading || !mindFile}
-              style={{
-                padding: '10px 20px',
-                background: (loading || !mindFile) ? '#9ca3af' : '#22c55e',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: (loading || !mindFile) ? 'not-allowed' : 'pointer',
-                fontWeight: 500,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              {loading ? (
-                <>
-                  <span style={{
-                    width: '16px',
-                    height: '16px',
-                    border: '2px solid white',
-                    borderTopColor: 'transparent',
-                    borderRadius: '50%',
-                    animation: 'spin 0.6s linear infinite',
-                  }} />
-                  Creando...
-                </>
-              ) : (
-                '✓ Crear Baldosa'
-              )}
-            </button>
-          </div>
-        </form>
+        {/* Footer */}
+        <div style={s.footer}>
+          <button
+            onClick={handleSubmit}
+            disabled={procesando}
+            style={{ ...s.btnPrimario, opacity: procesando ? 0.7 : 1 }}
+          >
+            {procesando ? 'Creando baldosa…' : '✓ Crear baldosa location-based'}
+          </button>
+          <button onClick={onClose} style={s.btnGhost}>
+            Cancelar
+          </button>
+        </div>
       </div>
-
-      <style jsx>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   )
+}
+
+// ─── Estilos ──────────────────────────────────────────────────────────────────
+
+const s: Record<string, React.CSSProperties> = {
+  overlay: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0,0,0,0.65)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
+    padding: '1rem',
+  },
+  modal: {
+    background: '#1a2a3a',
+    borderRadius: '14px',
+    width: '100%',
+    maxWidth: '520px',
+    maxHeight: '90vh',
+    overflowY: 'auto',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+    border: '1px solid rgba(255,255,255,0.08)',
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: '1.25rem 1.5rem',
+    borderBottom: '1px solid rgba(255,255,255,0.08)',
+  },
+  titulo: {
+    color: '#f0e6d3',
+    fontSize: '1.2rem',
+    fontWeight: 700,
+    margin: 0,
+  },
+  subtitulo: {
+    color: '#6b8fa6',
+    fontSize: '0.9rem',
+    margin: '0.2rem 0 0',
+  },
+  btnCerrar: {
+    background: 'none',
+    border: 'none',
+    color: '#6b8fa6',
+    fontSize: '1.2rem',
+    cursor: 'pointer',
+    padding: '0.25rem',
+  },
+  body: {
+    padding: '1.25rem 1.5rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1rem',
+  },
+  infoBox: {
+    padding: '0.85rem 1rem',
+    background: 'rgba(37, 99, 235, 0.1)',
+    border: '1px solid rgba(37, 99, 235, 0.25)',
+    borderRadius: '8px',
+  },
+  infoLabel: {
+    color: '#60a5fa',
+    fontSize: '0.8rem',
+    fontWeight: 600,
+    margin: '0 0 0.3rem',
+  },
+  codigo: {
+    display: 'block',
+    color: '#90b4ce',
+    fontSize: '0.85rem',
+    background: 'rgba(0,0,0,0.2)',
+    padding: '0.3rem 0.5rem',
+    borderRadius: '4px',
+  },
+  campo: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.35rem',
+  },
+  label: {
+    color: '#90b4ce',
+    fontSize: '0.85rem',
+    fontWeight: 600,
+  },
+  input: {
+    padding: '0.65rem 0.9rem',
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(255,255,255,0.12)',
+    borderRadius: '8px',
+    color: '#f0e6d3',
+    fontSize: '0.95rem',
+    outline: 'none',
+    width: '100%',
+    boxSizing: 'border-box' as const,
+  },
+  hint: {
+    color: '#4a6b7c',
+    fontSize: '0.78rem',
+    margin: 0,
+  },
+  error: {
+    color: '#fca5a5',
+    background: 'rgba(220, 38, 38, 0.1)',
+    border: '1px solid rgba(220, 38, 38, 0.3)',
+    borderRadius: '6px',
+    padding: '0.65rem 1rem',
+    fontSize: '0.9rem',
+    margin: 0,
+  },
+  footer: {
+    padding: '1rem 1.5rem',
+    borderTop: '1px solid rgba(255,255,255,0.08)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem',
+  },
+  btnPrimario: {
+    padding: '0.85rem',
+    background: '#2563eb',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '0.95rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  btnGhost: {
+    padding: '0.75rem',
+    background: 'transparent',
+    color: '#6b8fa6',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '8px',
+    fontSize: '0.9rem',
+    cursor: 'pointer',
+  },
 }
