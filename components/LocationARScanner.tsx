@@ -266,7 +266,7 @@ export default function LocationARScanner() {
 
         </a-entity>
       </a-scene>
-    \`
+    `
 
     const scene = document.getElementById('escena-ar') as any
     sceneRef.current = scene
