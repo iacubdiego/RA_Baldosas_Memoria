@@ -1,19 +1,26 @@
 /**
- * ContadorBaldosas.tsx
- * ─────────────────────
- * Server Component: muestra el total de baldosas activas en la DB.
- * Se usa en app/page.tsx entre la descripción y el "Nunca Más".
+ * ContadorBaldosas.tsx — Server Component
+ * ─────────────────────────────────────────
+ * Muestra el total de baldosas activas en la DB.
  *
- * Uso en page.tsx:
+ * Ubicación en app/page.tsx — DESPUÉS del bloque Memorial Statement:
+ *
+ *   {/* Memorial Statement - Solo "Nunca Más" *\/}
+ *   <div className="memorial-statement animate-fade-in-scale delay-300">
+ *     ...
+ *   </div>
+ *
+ *   <ContadorBaldosas />     ← acá
+ *
+ *   {/* Botones de acción *\/}
+ *
+ * Importar con:
  *   import ContadorBaldosas from '@/components/ContadorBaldosas'
- *   ...
- *   <ContadorBaldosas />
  */
 
 import connectDB from '@/lib/mongodb'
 import Baldosa from '@/models/Baldosa'
 
-// Revalida cada 60 segundos
 export const revalidate = 60
 
 async function obtenerTotal(): Promise<number> {
@@ -31,14 +38,14 @@ export default async function ContadorBaldosas() {
 
   return (
     <div
-      className="animate-fade-in-up delay-250"
+      className="animate-fade-in-up"
       style={{
         display:        'flex',
         alignItems:     'center',
         justifyContent: 'center',
         gap:            '0.5rem',
-        margin:         '0 auto var(--space-lg)',
-        padding:        '0.55rem 1.25rem',
+        margin:         'var(--space-md) auto var(--space-lg)',
+        padding:        '0.55rem 1.4rem',
         background:     'rgba(37, 99, 235, 0.06)',
         border:         '1px solid rgba(37, 99, 235, 0.18)',
         borderRadius:   '24px',
@@ -48,10 +55,9 @@ export default async function ContadorBaldosas() {
       <span style={{ fontSize: '1rem' }}>🏛️</span>
       <span style={{
         fontFamily:    'var(--font-display)',
-        fontSize:      '1rem',
+        fontSize:      '1.05rem',
         fontWeight:    700,
         color:         'var(--color-primary)',
-        letterSpacing: '-0.01em',
       }}>
         {total.toLocaleString('es-AR')}
       </span>

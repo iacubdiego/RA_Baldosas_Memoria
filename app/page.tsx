@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 
+import ContadorBaldosas from '@/components/ContadorBaldosas'
+
 // Generar posiciones aleatorias para venecitas en el perímetro
 function generarVenecitas(cantidad: number) {
   const venecitas = [];
@@ -169,6 +171,8 @@ export default function Home() {
               Cada baldosa es un testimonio de nuestra historia.
             </p>
           </div>
+
+          <ContadorBaldosas />
 
           {/* Memorial Statement - Solo "Nunca Más" */}
           <div className="memorial-statement animate-fade-in-scale delay-300">
