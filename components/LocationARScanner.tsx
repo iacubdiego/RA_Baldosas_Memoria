@@ -31,8 +31,8 @@ type FaseExperiencia =
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const RADIO_ACTIVACION_M = 20   // Metros para mostrar notificación
-const RADIO_AVISO_M       = 50   // Metros para mostrar "te estás acercando"
+const RADIO_ACTIVACION_M = 1000   // Metros para mostrar notificación
+const RADIO_AVISO_M       = 1200   // Metros para mostrar "te estás acercando"
 const WATCH_OPTIONS: PositionOptions = {
   enableHighAccuracy: true,
   maximumAge: 2000,
