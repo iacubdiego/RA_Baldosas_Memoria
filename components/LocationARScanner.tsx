@@ -197,7 +197,14 @@ export default function LocationARScanner() {
     })
   }, [fase, scriptsOk])
 
-  // ── 4. Montar escena A-Frame con AR.js cuando los scripts estén listos ─────
+  // ── 4. Montar escena A-Frame cuando los scripts estén listos ────────────────
+  // Composición:
+  //   z-index 0 → <video> cámara trasera real, cubre 100% del contenedor
+  //   z-index 1 → canvas A-Frame con alpha:true (fondo transparente)
+  // Posicionamiento GLB:
+  //   z = -6  → 6 metros adelante del usuario
+  //   y = se calcula automáticamente via bounding box del modelo cargado,
+  //       para que el piso del GLB coincida con y=0 (nivel del suelo real)
   useEffect(() => {
     if (!scriptsOk || fase !== 'ar' || !baldosaActiva) return
 
@@ -208,113 +215,160 @@ export default function LocationARScanner() {
     setArListo(false)
 
     const { nombre, mensajeAR } = baldosaActiva
-
-    // Nombre seguro para HTML (sin comillas que rompan atributos)
     const nombreSafe  = nombre.replace(/"/g, '&quot;')
     const mensajeSafe = mensajeAR.replace(/"/g, '&quot;')
 
-    // ── Escena A-Frame: cámara web + objetos fijos frente al usuario ────────
-    // No usamos GPS. Los objetos se posicionan en z=-4 (4 metros adelante),
-    // y se mantienen en pantalla independientemente de la ubicación real.
-    const html = [
+    // ── Video de cámara real como fondo ───────────────────────────────────────
+    const video = document.createElement('video')
+    video.setAttribute('autoplay', '')
+    video.setAttribute('muted', '')
+    video.setAttribute('playsinline', '')
+    Object.assign(video.style, {
+      position:  'absolute', inset: '0',
+      width:     '100%',     height: '100%',
+      objectFit: 'cover',    zIndex: '0',
+    })
+    contenedor.appendChild(video)
+
+    let streamActivo: MediaStream | null = null
+    navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false,
+    }).then(stream => {
+      streamActivo    = stream
+      video.srcObject = stream
+      return video.play()
+    }).catch(e => console.warn('Cámara no disponible:', e))
+
+    // ── Canvas A-Frame encima, transparente ───────────────────────────────────
+    const wrapper = document.createElement('div')
+    Object.assign(wrapper.style, {
+      position: 'absolute', inset: '0',
+      width: '100%', height: '100%',
+      zIndex: '1',
+    })
+    contenedor.appendChild(wrapper)
+
+    // Z de las columnas: 6 metros adelante
+    const Z_COLS = -6
+    // Altura de los ojos del usuario en escena A-Frame
+    const Y_OJOS = 1.6
+
+    wrapper.innerHTML = [
       '<a-scene',
       '  id="escena-ar"',
       '  embedded',
-      '  renderer="antialias: true; colorManagement: true;"',
+      '  renderer="antialias: true; alpha: true; colorManagement: true;"',
+      '  background="transparent: true"',
       '  vr-mode-ui="enabled: false"',
-      '  loading-screen="dotsColor: white; backgroundColor: #0a121c"',
+      '  loading-screen="enabled: false"',
       '>',
       '  <a-assets timeout="20000">',
       '    <a-asset-item id="columnas-glb" src="/models/columnas_vmj.glb"></a-asset-item>',
       '  </a-assets>',
       '',
-      '  <!-- Cámara: el usuario mira hacia -Z, objetos a z negativo quedan adelante -->',
       '  <a-camera',
       '    id="camara-ar"',
-      '    position="0 1.6 0"',
-      '    look-controls="enabled: true; reverseMouseDrag: false"',
+      '    position="0 ' + Y_OJOS + ' 0"',
+      '    look-controls="enabled: false"',
       '    wasd-controls="enabled: false"',
       '    fov="70"',
       '  ></a-camera>',
       '',
-      '  <!-- Fondo: feed de cámara web vía getUserMedia -->',
-      '  <a-videosphere',
-      '    id="video-fondo"',
-      '    src="#camara-feed"',
-      '    radius="100"',
-      '    rotation="0 180 0"',
-      '  ></a-videosphere>',
-      '',
-      '  <!-- Columnas VMJ: posicionadas 4m adelante, a nivel del piso -->',
+      '  <!-- y="0" provisorio; se ajusta en runtime via bounding box -->',
       '  <a-entity',
       '    id="columnas-vmj"',
       '    gltf-model="#columnas-glb"',
-      '    position="0 0 -4"',
+      '    position="0 0 ' + Z_COLS + '"',
       '    scale="1 1 1"',
-      '    animation-mixer="clip: *; loop: once; clampWhenFinished: true; timeScale: 1;"',
+      '    animation-mixer="clip: *; loop: once; clampWhenFinished: true;"',
       '  ></a-entity>',
       '',
-      '  <!-- Nombre de la víctima -->',
-      '  <a-text',
+      '  <a-text id="txt-nombre"',
       '    value="' + nombreSafe + '"',
-      '    position="0 3.8 -4"',
-      '    align="center"',
-      '    width="5"',
-      '    color="#f0e6d3"',
-      '    wrap-count="22"',
+      '    position="0 99 ' + Z_COLS + '"',
+      '    align="center" width="5" color="#f0e6d3" wrap-count="22"',
       '  ></a-text>',
       '',
-      '  <!-- Mensaje AR -->',
-      '  <a-text',
+      '  <a-text id="txt-mensaje"',
       '    value="' + mensajeSafe + '"',
-      '    position="0 3.2 -4"',
-      '    align="center"',
-      '    width="4"',
-      '    color="#90b4ce"',
-      '    wrap-count="30"',
+      '    position="0 98 ' + Z_COLS + '"',
+      '    align="center" width="4" color="#90b4ce" wrap-count="30"',
       '  ></a-text>',
       '',
       '</a-scene>',
     ].join('\n')
 
-    contenedor.innerHTML = html
+    // Transparencia del canvas
+    const aplicarAlpha = () => {
+      const canvas = wrapper.querySelector('canvas') as HTMLCanvasElement | null
+      if (canvas) Object.assign(canvas.style, {
+        background: 'transparent', position: 'absolute',
+        inset: '0', width: '100%', height: '100%',
+      })
+    }
+    setTimeout(aplicarAlpha, 100)
+    setTimeout(aplicarAlpha, 500)
 
-    // Video de cámara web como fondo
-    async function iniciarCamaraFondo() {
+    // ── Ajuste de Y via bounding box del modelo ────────────────────────────────
+    // Cuando el GLB termina de cargar, Three.js ya tiene la geometría en memoria.
+    // Calculamos el punto más bajo del modelo (minY del bounding box) y lo
+    // usamos como offset negativo para que ese punto quede en y=0 (piso real).
+    // Luego el texto flota Y_OJOS metros por encima del techo del modelo (maxY).
+    const ajustarY = () => {
+      const entidad = document.getElementById('columnas-vmj') as any
+      if (!entidad || !entidad.object3D) return
+
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: false,
-        })
-        const video = document.createElement('video')
-        video.id        = 'camara-feed'
-        video.srcObject = stream
-        video.autoplay  = true
-        video.muted     = true
-        video.setAttribute('playsinline', '')
-        video.style.display = 'none'
-        document.body.appendChild(video)
-        await video.play()
-        // Conectar el video al a-videosphere
-        const sphere = document.getElementById('video-fondo') as any
-        if (sphere) sphere.setAttribute('src', video)
+        const THREE  = (window as any).THREE
+        const box    = new THREE.Box3().setFromObject(entidad.object3D)
+        const minY   = box.min.y   // piso del modelo en coordenadas locales
+        const maxY   = box.max.y   // techo del modelo
+
+        // Mover el modelo para que su piso quede en y = -Y_OJOS (nivel del suelo)
+        // La cámara está en y=Y_OJOS, el suelo real en y=0, entonces:
+        //   posY del entity = -Y_OJOS - minY
+        const posY = -Y_OJOS - minY
+        entidad.setAttribute('position', '0 ' + posY.toFixed(3) + ' ' + Z_COLS)
+
+        // Texto: flota 0.5m encima del techo del modelo
+        const altoTexto     = posY + maxY + 0.5
+        const altoSubtitulo = posY + maxY - 0.2
+        const txtNombre  = document.getElementById('txt-nombre')  as any
+        const txtMensaje = document.getElementById('txt-mensaje') as any
+        if (txtNombre)  txtNombre.setAttribute('position',  '0 ' + altoTexto.toFixed(2)     + ' ' + Z_COLS)
+        if (txtMensaje) txtMensaje.setAttribute('position', '0 ' + altoSubtitulo.toFixed(2) + ' ' + Z_COLS)
+
+        console.log('[AR] bbox minY=' + minY.toFixed(2) + ' maxY=' + maxY.toFixed(2) + ' → posY=' + posY.toFixed(2))
       } catch (e) {
-        console.warn('No se pudo iniciar cámara de fondo:', e)
-        // Sin cámara: fondo oscuro, igual se ven las columnas
+        console.warn('[AR] No se pudo calcular bounding box:', e)
       }
     }
 
-    iniciarCamaraFondo()
+    // El modelo puede tardar en cargar; intentamos varias veces
+    const t1 = setTimeout(ajustarY, 1500)
+    const t2 = setTimeout(ajustarY, 3000)
+    const t3 = setTimeout(ajustarY, 5000)
 
     const scene = document.getElementById('escena-ar') as any
-
     sceneRef.current = scene
 
-    const onLoaded = () => setArListo(true)
+    const onLoaded = () => {
+      aplicarAlpha()
+      setArListo(true)
+      setTimeout(ajustarY, 500)
+    }
     scene.addEventListener('loaded', onLoaded)
 
     return () => {
+      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3)
       scene.removeEventListener('loaded', onLoaded)
+      if (streamActivo) streamActivo.getTracks().forEach(t => t.stop())
+      // Limpiar video del DOM
+      const bgVideo = contenedor.querySelector('video')
+      if (bgVideo && bgVideo.srcObject) {
+        (bgVideo.srcObject as MediaStream).getTracks().forEach(t => t.stop())
+      }
       contenedor.innerHTML = ''
       setArListo(false)
     }
