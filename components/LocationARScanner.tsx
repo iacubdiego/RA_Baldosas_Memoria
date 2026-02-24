@@ -70,10 +70,18 @@ export default function LocationARScanner() {
   const [scriptsOk, setScriptsOk] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [guardado, setGuardado] = useState(false)
-  // Offset de altura manual: persiste en localStorage entre sesiones
-  const [offsetY, setOffsetY] = useState<number>(() => {
+  // Controles AR — persisten en localStorage
+  const [offsetY,  setOffsetY]  = useState<number>(() => {
     if (typeof window === 'undefined') return 0
     return parseFloat(localStorage.getItem('ar_offset_y') || '0')
+  })
+  const [rotY,     setRotY]     = useState<number>(() => {
+    if (typeof window === 'undefined') return 0
+    return parseFloat(localStorage.getItem('ar_rot_y') || '0')
+  })
+  const [zoom,     setZoom]     = useState<number>(() => {
+    if (typeof window === 'undefined') return 1
+    return parseFloat(localStorage.getItem('ar_zoom') || '1')
   })
 
   const watchIdRef   = useRef<number | null>(null)
@@ -340,22 +348,29 @@ export default function LocationARScanner() {
     }
   }, [scriptsOk, fase, baldosaActiva])
 
-  // ── 5. Aplicar offsetY en tiempo real cuando cambia ─────────────────────────
+  // ── 5. Aplicar controles AR en tiempo real ───────────────────────────────────
   useEffect(() => {
     if (fase !== 'ar' || !arListo) return
+
+    // Altura
     const entidad = document.getElementById('columnas-vmj') as any
-    if (!entidad) return
-    const Z_COLS = -12
-    // Y base = -1.6 (cámara a 1.6m, piso en 0) + offset del usuario
-    const posY = -1.6 + offsetY
-    entidad.setAttribute('position', '0 ' + posY.toFixed(2) + ' ' + Z_COLS)
-    // Texto sigue al techo aproximado (columna Justicia mide ~5m)
-    const txtNombre  = document.getElementById('txt-nombre')  as any
-    const txtMensaje = document.getElementById('txt-mensaje') as any
-    if (txtNombre)  txtNombre.setAttribute('position',  '0 ' + (posY + 5.6).toFixed(2) + ' ' + Z_COLS)
-    if (txtMensaje) txtMensaje.setAttribute('position', '0 ' + (posY + 4.9).toFixed(2) + ' ' + Z_COLS)
+    if (entidad) {
+      const Z_DIST = -12 * zoom           // zoom acerca/aleja cambiando Z
+      const posY   = -1.6 + offsetY
+      entidad.setAttribute('position', '0 ' + posY.toFixed(2) + ' ' + Z_DIST.toFixed(2))
+      // Rotación del grupo de columnas (eje Y)
+      entidad.setAttribute('rotation', '0 ' + rotY.toFixed(1) + ' 0')
+      // Texto sigue al grupo
+      const txtNombre  = document.getElementById('txt-nombre')  as any
+      const txtMensaje = document.getElementById('txt-mensaje') as any
+      if (txtNombre)  txtNombre.setAttribute('position',  '0 ' + (posY + 6.5).toFixed(2) + ' ' + Z_DIST.toFixed(2))
+      if (txtMensaje) txtMensaje.setAttribute('position', '0 ' + (posY + 5.8).toFixed(2) + ' ' + Z_DIST.toFixed(2))
+    }
+
     localStorage.setItem('ar_offset_y', offsetY.toString())
-  }, [offsetY, fase, arListo])
+    localStorage.setItem('ar_rot_y',    rotY.toString())
+    localStorage.setItem('ar_zoom',     zoom.toString())
+  }, [offsetY, rotY, zoom, fase, arListo])
 
   // ── 6. Handlers de acciones del usuario ───────────────────────────────────
 
@@ -631,69 +646,100 @@ export default function LocationARScanner() {
           </div>
         )}
 
-        {/* Panel de ajuste de altura — esquina inferior izquierda */}
-        {arListo && (
-          <div style={{
-            position:       'absolute',
-            bottom:         '2rem',
-            left:           '1rem',
-            zIndex:         200,
-            display:        'flex',
-            flexDirection:  'column',
-            alignItems:     'center',
-            gap:            '0.35rem',
-            background:     'rgba(10, 18, 28, 0.82)',
-            border:         '1px solid rgba(255,255,255,0.15)',
-            borderRadius:   '12px',
-            padding:        '0.6rem 0.75rem',
-            backdropFilter: 'blur(8px)',
-            userSelect:     'none',
-          }}>
-            <span style={{ color: '#90b4ce', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.06em' }}>
-              ALTURA
-            </span>
-            <button
-              onPointerDown={() => setOffsetY(v => Math.min(v + 0.25, 8))}
-              style={{
-                width: '2.4rem', height: '2.4rem',
-                background: 'rgba(37,99,235,0.25)',
-                border: '1px solid rgba(37,99,235,0.5)',
-                borderRadius: '8px', color: 'white',
-                fontSize: '1.2rem', cursor: 'pointer', lineHeight: 1,
-              }}
-            >▲</button>
-            <span style={{
-              color: '#f0e6d3', fontSize: '0.85rem',
-              fontVariantNumeric: 'tabular-nums', minWidth: '3rem', textAlign: 'center',
-            }}>
-              {offsetY >= 0 ? '+' : ''}{offsetY.toFixed(2)}m
-            </span>
-            <button
-              onPointerDown={() => setOffsetY(v => Math.max(v - 0.25, -8))}
-              style={{
-                width: '2.4rem', height: '2.4rem',
-                background: 'rgba(37,99,235,0.25)',
-                border: '1px solid rgba(37,99,235,0.5)',
-                borderRadius: '8px', color: 'white',
-                fontSize: '1.2rem', cursor: 'pointer', lineHeight: 1,
-              }}
-            >▼</button>
-            <button
-              onPointerDown={() => setOffsetY(0)}
-              style={{
-                marginTop: '0.1rem',
-                background: 'none', border: 'none',
-                color: '#6b8fa6', fontSize: '0.65rem',
-                cursor: 'pointer', padding: '0.1rem 0.3rem',
-              }}
-            >reset</button>
-          </div>
-        )}
+        {/* ── Panel de controles AR ─────────────────────────────────────── */}
+        {arListo && (() => {
+          // estilos reutilizables inline
+          const panelBase: React.CSSProperties = {
+            position: 'absolute', zIndex: 200,
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            gap: '0.3rem',
+            background: 'rgba(10,18,28,0.82)',
+            border: '1px solid rgba(255,255,255,0.13)',
+            borderRadius: '14px', padding: '0.55rem 0.65rem',
+            backdropFilter: 'blur(10px)', userSelect: 'none',
+          }
+          const btn: React.CSSProperties = {
+            width: '2.6rem', height: '2.6rem',
+            background: 'rgba(37,99,235,0.22)',
+            border: '1px solid rgba(37,99,235,0.45)',
+            borderRadius: '9px', color: 'white',
+            fontSize: '1.15rem', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            lineHeight: 1, touchAction: 'manipulation',
+          }
+          const lbl: React.CSSProperties = {
+            color: '#90b4ce', fontSize: '0.62rem',
+            fontWeight: 700, letterSpacing: '0.07em',
+          }
+          const val: React.CSSProperties = {
+            color: '#f0e6d3', fontSize: '0.8rem',
+            fontVariantNumeric: 'tabular-nums',
+            minWidth: '3.2rem', textAlign: 'center',
+          }
+          const resetBtn: React.CSSProperties = {
+            background: 'none', border: 'none',
+            color: '#4a6a82', fontSize: '0.6rem',
+            cursor: 'pointer', padding: '0.1rem 0.2rem',
+          }
 
-        {/* Instrucción inicial — desaparece al ajustar */}
-        {arListo && offsetY === 0 && (
+          return (<>
+            {/* ALTURA — izquierda */}
+            <div style={{ ...panelBase, bottom: '7rem', left: '1rem' }}>
+              <span style={lbl}>ALTURA</span>
+              <button style={btn} onPointerDown={() => setOffsetY(v => Math.min(v + 0.25, 10))}>▲</button>
+              <span style={val}>{offsetY >= 0 ? '+' : ''}{offsetY.toFixed(2)}m</span>
+              <button style={btn} onPointerDown={() => setOffsetY(v => Math.max(v - 0.25, -10))}>▼</button>
+              <button style={resetBtn} onPointerDown={() => setOffsetY(0)}>reset</button>
+            </div>
+
+            {/* ROTACIÓN — derecha */}
+            <div style={{ ...panelBase, bottom: '7rem', right: '1rem' }}>
+              <span style={lbl}>GIRAR</span>
+              <button style={btn} onPointerDown={() => setRotY(v => (v + 15) % 360)}>↻</button>
+              <span style={val}>{rotY.toFixed(0)}°</span>
+              <button style={btn} onPointerDown={() => setRotY(v => (v - 15 + 360) % 360)}>↺</button>
+              <button style={resetBtn} onPointerDown={() => setRotY(0)}>reset</button>
+            </div>
+
+            {/* ZOOM — centro inferior */}
+            <div style={{ ...panelBase, bottom: '1rem', left: '50%', transform: 'translateX(-50%)', flexDirection: 'row', gap: '0.5rem', padding: '0.55rem 1rem' }}>
+              <button style={btn} onPointerDown={() => setZoom(v => Math.max(v - 0.1, 0.3))}>🔍＋</button>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.1rem' }}>
+                <span style={lbl}>ZOOM</span>
+                <span style={{ ...val, fontSize: '0.75rem' }}>{zoom.toFixed(1)}×</span>
+              </div>
+              <button style={btn} onPointerDown={() => setZoom(v => Math.min(v + 0.1, 3))}>🔍－</button>
+              <button style={{ ...resetBtn, marginLeft: '0.4rem', fontSize: '0.7rem' }} onPointerDown={() => setZoom(1)}>reset</button>
+            </div>
+
+            {/* CENTRAR VISTA — barra superior derecha */}
+            <button
+              onPointerDown={() => {
+                const cam = document.getElementById('camara-ar') as any
+                if (cam) {
+                  cam.setAttribute('rotation', '0 0 0')
+                  // Resetear también look-controls internos de A-Frame
+                  const lc = cam.components?.['look-controls']
+                  if (lc) { lc.pitchObject.rotation.x = 0; lc.yawObject.rotation.y = 0 }
+                }
+              }}
+              style={{
+                position: 'absolute', top: '4rem', right: '1rem', zIndex: 200,
+                background: 'rgba(10,18,28,0.82)',
+                border: '1px solid rgba(255,255,255,0.13)',
+                borderRadius: '10px', color: '#f0e6d3',
+                fontSize: '0.75rem', fontWeight: 600,
+                padding: '0.45rem 0.75rem', cursor: 'pointer',
+                backdropFilter: 'blur(10px)', touchAction: 'manipulation',
+              }}
+            >⊙ Centrar</button>
+          </>)
+        })()}
+
+        {/* Instrucción — desaparece tras primer ajuste */}
+        {arListo && offsetY === 0 && rotY === 0 && zoom === 1 && (
           <div style={estilos.instruccionAR}>
-            Usá ▲ ▼ para ajustar la altura al piso
+            Ajustá con los controles · Arrastrá para rotar la vista
           </div>
         )}
       </div>
