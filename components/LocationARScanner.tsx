@@ -251,7 +251,7 @@ export default function LocationARScanner() {
     contenedor.appendChild(wrapper)
 
     // Z de las columnas: 6 metros adelante
-    const Z_COLS = -6
+    const Z_COLS = -12
     // Altura de los ojos del usuario en escena A-Frame
     const Y_OJOS = 1.6
 
@@ -271,7 +271,7 @@ export default function LocationARScanner() {
       '  <a-camera',
       '    id="camara-ar"',
       '    position="0 ' + Y_OJOS + ' 0"',
-      '    look-controls="enabled: false"',
+      '    look-controls="enabled: true; magicWindowTrackingEnabled: true; touchEnabled: true; reverseMouseDrag: false"',
       '    wasd-controls="enabled: false"',
       '    fov="70"',
       '  ></a-camera>',
