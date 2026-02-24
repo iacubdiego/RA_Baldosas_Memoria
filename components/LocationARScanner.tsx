@@ -204,11 +204,14 @@ export default function LocationARScanner() {
     const contenedor = document.getElementById('ar-container')
     if (!contenedor) return
 
-    // Limpiar escena anterior si existía
     contenedor.innerHTML = ''
     setArListo(false)
 
-    const { lat, lng, fotoUrl, nombre, mensajeAR } = baldosaActiva
+    const { lat, lng, nombre, mensajeAR } = baldosaActiva
+
+    // Nombre seguro para HTML
+    const nombreSafe  = nombre.replace(/"/g, '&quot;')
+    const mensajeSafe = mensajeAR.replace(/"/g, '&quot;')
 
     contenedor.innerHTML = `
       <a-scene
@@ -217,84 +220,53 @@ export default function LocationARScanner() {
         arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false; trackingMethod: best;"
         vr-mode-ui="enabled: false"
         renderer="logarithmicDepthBuffer: true; antialias: true;"
-        loading-screen="dotsColor: white; backgroundColor: #1a2a3a"
+        loading-screen="dotsColor: white; backgroundColor: #0a121c"
       >
-        <a-assets timeout="10000">
-          ${fotoUrl ? `<img id="foto-victima" src="${fotoUrl}" crossorigin="anonymous" />` : ''}
+        <a-assets timeout="15000">
+          <a-asset-item
+            id="columnas-glb"
+            src="/models/columnas_vmj.glb"
+          ></a-asset-item>
         </a-assets>
 
-        <!-- Cámara GPS -->
         <a-camera gps-camera rotation-reader></a-camera>
 
-        <!-- Entidad anclada a coordenadas reales de la baldosa -->
         <a-entity
-          id="baldosa-ar-entity"
+          id="escena-columnas"
           gps-entity-place="latitude: ${lat}; longitude: ${lng}"
-          animation="property: position; from: 0 1.4 0; to: 0 1.7 0; dir: alternate; dur: 2800; easing: easeInOutSine; loop: true"
         >
-          <!-- Marco / portaretrato flotante -->
-          <a-box
+          <!-- GLB con la animación de emergencia y temblor -->
+          <a-entity
+            id="columnas-vmj"
+            gltf-model="#columnas-glb"
             position="0 0 0"
-            width="0.85"
-            height="1.1"
-            depth="0.05"
-            color="#1a2a3a"
-            opacity="0.92"
-          ></a-box>
+            scale="1 1 1"
+            animation-mixer="clip: *; loop: once; clampWhenFinished: true;"
+          ></a-entity>
 
-          <!-- Foto dentro del marco -->
-          ${fotoUrl ? `
-          <a-image
-            id="foto-ar"
-            src="#foto-victima"
-            position="0 0 0.03"
-            width="0.75"
-            height="0.95"
-            material="shader: flat; side: double;"
-          ></a-image>
-          ` : `
+          <!-- Nombre flotante sobre las columnas -->
           <a-text
-            value="${nombre}"
-            position="0 0 0.04"
+            value="${nombreSafe}"
+            position="0 6.5 0"
             align="center"
-            width="1.4"
+            width="4"
             color="#f0e6d3"
-          ></a-text>
-          `}
-
-          <!-- Nombre de la víctima -->
-          <a-text
-            value="${nombre.toUpperCase()}"
-            position="0 -0.7 0"
-            align="center"
-            width="1.6"
-            color="#f0e6d3"
-            wrap-count="20"
+            wrap-count="22"
           ></a-text>
 
           <!-- Mensaje AR -->
           <a-text
-            value="${mensajeAR}"
-            position="0 -0.95 0"
+            value="${mensajeSafe}"
+            position="0 5.8 0"
             align="center"
-            width="1.4"
+            width="3.5"
             color="#90b4ce"
             wrap-count="28"
           ></a-text>
 
-          <!-- Pañuelo blanco pequeño arriba -->
-          <a-plane
-            position="0 0.75 0"
-            width="0.3"
-            height="0.25"
-            color="white"
-            opacity="0.9"
-            rotation="-10 0 0"
-          ></a-plane>
-
         </a-entity>
       </a-scene>
-    `
+    \`
 
     const scene = document.getElementById('escena-ar') as any
     sceneRef.current = scene
