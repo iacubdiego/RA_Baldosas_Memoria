@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import connectDB from '@/lib/mongodb'
+import Baldosa from '@/models/Baldosa'
 
 export const metadata: Metadata = {
   title: 'Baldosas por la Memoria',
@@ -14,11 +16,26 @@ export const viewport: Viewport = {
   themeColor: '#1a2a3a',
 }
 
-export default function RootLayout({
+// Revalida cada 60 segundos para que el contador se actualice
+// sin reconstruir la página entera
+export const revalidate = 60
+
+async function contarBaldosas(): Promise<number> {
+  try {
+    await connectDB()
+    return await Baldosa.countDocuments({ activo: true })
+  } catch {
+    return 0
+  }
+}
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const totalBaldosas = await contarBaldosas()
+
   return (
     <html lang="es">
       <head>
@@ -29,7 +46,7 @@ export default function RootLayout({
         
         <nav className="navbar">
           <div className="navbar-container">
-            {/* Fila superior: Logo y título */}
+            {/* Logo y título */}
             <div className="navbar-brand">
               <a href="/" className="navbar-logo-link">
                 <img 
@@ -41,7 +58,7 @@ export default function RootLayout({
               </a>
             </div>
             
-            {/* Fila inferior en mobile: Links de navegación */}
+            {/* Links + contador */}
             <div className="navbar-links">
               <a href="/scanner" className="navbar-link">
                 Encontrar
@@ -49,9 +66,30 @@ export default function RootLayout({
               <a href="/coleccion" className="navbar-link">
                 Mi Recorrido
               </a>
-              <a href="/mapa" className="navbar-link">
-                Mapa
-              </a>
+
+              {/* Contador de baldosas */}
+              {totalBaldosas > 0 && (
+                <span
+                  title={`${totalBaldosas} baldosas cargadas en la base`}
+                  style={{
+                    display:        'flex',
+                    alignItems:     'center',
+                    gap:            '0.35rem',
+                    background:     'rgba(255,255,255,0.10)',
+                    border:         '1px solid rgba(255,255,255,0.18)',
+                    borderRadius:   '20px',
+                    padding:        '0.25rem 0.75rem',
+                    fontSize:       '0.82rem',
+                    fontWeight:     600,
+                    color:          'var(--color-parchment)',
+                    letterSpacing:  '0.02em',
+                    whiteSpace:     'nowrap',
+                  }}
+                >
+                  <span style={{ fontSize: '0.9rem' }}>🏛️</span>
+                  {totalBaldosas.toLocaleString('es-AR')}
+                </span>
+              )}
             </div>
           </div>
         </nav>
@@ -75,6 +113,16 @@ export default function RootLayout({
             }}>
               Un proyecto de memoria colectiva y cooperativismo
             </p>
+            {totalBaldosas > 0 && (
+              <p style={{
+                fontSize: '0.82rem',
+                marginTop: 'var(--space-xs)',
+                opacity: 0.55,
+                color: 'var(--color-parchment)',
+              }}>
+                {totalBaldosas.toLocaleString('es-AR')} baldosas honran a víctimas de la dictadura (1976–1983)
+              </p>
+            )}
             <p style={{
               fontSize: '0.85rem',
               marginTop: 'var(--space-xs)',
