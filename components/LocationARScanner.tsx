@@ -379,14 +379,34 @@ export default function LocationARScanner() {
 
   const verEscenaAR = useCallback(() => {
     if (!baldosaCercana) return
-    setBaldosaActiva(baldosaCercana)
+    // Resetear estado AR para garantizar re-mount limpio de la escena
+    setScriptsOk(false)
+    setArListo(false)
+    setBaldosaActiva(null)
+    // Pequeño delay para que React procese el null antes de setear el valor real
+    setTimeout(() => {
+      setBaldosaActiva(baldosaCercana)
+      setFase('ar')
+    }, 50)
     setGuardado(false)
-    setFase('ar')
   }, [baldosaCercana])
 
   const cerrarAR = useCallback(() => {
-    setBaldosaActiva(prev => prev)  // mantener referencia para ficha
+    // Detener stream de cámara
+    const bgVideo = document.getElementById('camara-bg') as HTMLVideoElement | null
+    if (bgVideo && bgVideo.srcObject) {
+      (bgVideo.srcObject as MediaStream).getTracks().forEach(t => t.stop())
+      bgVideo.srcObject = null
+    }
+    const arContainer = document.getElementById('ar-container')
+    if (arContainer) arContainer.innerHTML = ''
+
+    // Resetear scriptsOk para que el useEffect vuelva a ejecutarse si el
+    // usuario hace "Ver AR de nuevo" — las dependencias cambian y re-monta la escena
+    setScriptsOk(false)
+    setArListo(false)
     setFase('ficha')
+    // baldosaActiva se mantiene para mostrar la ficha
   }, [])
 
   const volverACaminar = useCallback(() => {
@@ -450,7 +470,7 @@ export default function LocationARScanner() {
   if (fase === 'iniciando') {
     return (
       <div style={estilos.pantallaCentrada}>
-        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🌍</div>
+        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🌎</div>
         <h1 style={estilos.titulo}>Baldosas por la Memoria</h1>
         <p style={estilos.subtitulo}>
           Caminá por Buenos Aires y descubrí las baldosas que honran a los desaparecidos.
@@ -460,7 +480,7 @@ export default function LocationARScanner() {
           onClick={iniciarGPS}
           style={estilos.btnPrimario}
         >
-          🌍 Activar ubicación
+          🌎 Activar ubicación
         </button>
         <a href="/mapa" style={estilos.btnSecundario}>
           🗺️ Ver mapa primero
@@ -506,7 +526,7 @@ export default function LocationARScanner() {
           <div style={estilos.radar}>
             <div style={estilos.radarPulso1} />
             <div style={estilos.radarPulso2} />
-            <span style={{ fontSize: '2.5rem', position: 'relative', zIndex: 2 }}>🌍</span>
+            <span style={{ fontSize: '2.5rem', position: 'relative', zIndex: 2 }}>🌎</span>
           </div>
 
           <h2 style={{ ...estilos.titulo, marginTop: '1.5rem' }}>Buscando baldosas</h2>
@@ -541,7 +561,7 @@ export default function LocationARScanner() {
         <div style={estilos.cardNotificacion}>
           {/* Banner superior */}
           <div style={estilos.bannerDeteccion}>
-            <span style={{ fontSize: '1.4rem' }}>🌍</span>
+            <span style={{ fontSize: '1.4rem' }}>🌎</span>
             <span>Baldosa detectada</span>
             {distancia !== null && (
               <span style={estilos.badgeDistancia}>{formatearDistancia(distancia)}</span>
@@ -568,7 +588,7 @@ export default function LocationARScanner() {
             <h2 style={estilos.nombreBaldosa}>{baldosaCercana.nombre}</h2>
 
             {baldosaCercana.direccion && (
-              <p style={estilos.direccion}>🌍 {baldosaCercana.direccion}</p>
+              <p style={estilos.direccion}>🌎 {baldosaCercana.direccion}</p>
             )}
 
             {baldosaCercana.descripcion && (
@@ -674,7 +694,7 @@ export default function LocationARScanner() {
           </h1>
 
           {baldosaActiva.direccion && (
-            <p style={estilos.direccion}>🌍 {baldosaActiva.direccion}</p>
+            <p style={estilos.direccion}>🌎 {baldosaActiva.direccion}</p>
           )}
 
           {baldosaActiva.descripcion && (
