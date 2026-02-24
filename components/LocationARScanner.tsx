@@ -210,14 +210,14 @@ export default function LocationARScanner() {
     })
   }, [fase, scriptsOk])
 
-  // ── 4. Montar escena A-Frame cuando los scripts estén listos ────────────────
+  // ── 4. Montar escena A-Frame ────────────────────────────────────────────────
   // Composición:
-  //   z-index 0 → <video> cámara trasera real, cubre 100% del contenedor
-  //   z-index 1 → canvas A-Frame con alpha:true (fondo transparente)
-  // Posicionamiento GLB:
-  //   z = -6  → 6 metros adelante del usuario
-  //   y = se calcula automáticamente via bounding box del modelo cargado,
-  //       para que el piso del GLB coincida con y=0 (nivel del suelo real)
+  //   z-index 0 → <video> cámara trasera, fondo real
+  //   z-index 1 → canvas A-Frame con alpha:true (transparente)
+  // Gestos touch sobre el canvas:
+  //   1 dedo arrastra horizontal → rota grupo en Y
+  //   2 dedos pinch              → zoom (cambia Z)
+  //   2 dedos swipe vertical     → altura (cambia Y)
   useEffect(() => {
     if (!scriptsOk || fase !== 'ar' || !baldosaActiva) return
 
@@ -231,16 +231,16 @@ export default function LocationARScanner() {
     const nombreSafe  = nombre.replace(/"/g, '&quot;')
     const mensajeSafe = mensajeAR.replace(/"/g, '&quot;')
 
-    // ── Video de cámara real como fondo ───────────────────────────────────────
+    // ── Video cámara real como fondo ──────────────────────────────────────────
     const video = document.createElement('video')
     video.id = 'camara-bg'
     video.setAttribute('autoplay', '')
     video.setAttribute('muted', '')
     video.setAttribute('playsinline', '')
     Object.assign(video.style, {
-      position:  'absolute', inset: '0',
-      width:     '100%',     height: '100%',
-      objectFit: 'cover',    zIndex: '0',
+      position: 'absolute', inset: '0',
+      width: '100%', height: '100%',
+      objectFit: 'cover', zIndex: '0',
     })
     contenedor.appendChild(video)
 
@@ -249,7 +249,7 @@ export default function LocationARScanner() {
       video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
       audio: false,
     }).then(stream => {
-      streamActivo    = stream
+      streamActivo = stream
       video.srcObject = stream
       return video.play()
     }).catch(e => console.warn('Cámara no disponible:', e))
@@ -263,10 +263,8 @@ export default function LocationARScanner() {
     })
     contenedor.appendChild(wrapper)
 
-    // Z de las columnas: 6 metros adelante
-    const Z_COLS = -12
-    // Altura de los ojos del usuario en escena A-Frame
-    const Y_OJOS = 1.6
+    const Z_BASE  = -12   // distancia base en metros
+    const Y_OJOS  = 1.6
 
     wrapper.innerHTML = [
       '<a-scene',
@@ -284,36 +282,38 @@ export default function LocationARScanner() {
       '  <a-camera',
       '    id="camara-ar"',
       '    position="0 ' + Y_OJOS + ' 0"',
-      '    look-controls="enabled: true; magicWindowTrackingEnabled: true; touchEnabled: true; reverseMouseDrag: false"',
+      // look-controls: giroscopio activo pero con touchEnabled:false
+      // — el touch lo manejamos nosotros para rotar/zoom/altura el objeto
+      '    look-controls="enabled: true; magicWindowTrackingEnabled: true; touchEnabled: false; reverseMouseDrag: false"',
       '    wasd-controls="enabled: false"',
       '    fov="70"',
       '  ></a-camera>',
       '',
-      '  <!-- y="0" provisorio; se ajusta en runtime via bounding box -->',
       '  <a-entity',
       '    id="columnas-vmj"',
       '    gltf-model="#columnas-glb"',
-      '    position="0 0 ' + Z_COLS + '"',
+      '    position="0 -1.6 ' + Z_BASE + '"',
+      '    rotation="0 0 0"',
       '    scale="1 1 1"',
       '    animation-mixer="clip: *; loop: once; clampWhenFinished: true;"',
       '  ></a-entity>',
       '',
       '  <a-text id="txt-nombre"',
       '    value="' + nombreSafe + '"',
-      '    position="0 99 ' + Z_COLS + '"',
+      '    position="0 4.8 ' + Z_BASE + '"',
       '    align="center" width="5" color="#f0e6d3" wrap-count="22"',
       '  ></a-text>',
       '',
       '  <a-text id="txt-mensaje"',
       '    value="' + mensajeSafe + '"',
-      '    position="0 98 ' + Z_COLS + '"',
+      '    position="0 4.1 ' + Z_BASE + '"',
       '    align="center" width="4" color="#90b4ce" wrap-count="30"',
       '  ></a-text>',
       '',
       '</a-scene>',
     ].join('\n')
 
-    // Transparencia del canvas
+    // Canvas transparente
     const aplicarAlpha = () => {
       const canvas = wrapper.querySelector('canvas') as HTMLCanvasElement | null
       if (canvas) Object.assign(canvas.style, {
@@ -322,9 +322,118 @@ export default function LocationARScanner() {
       })
     }
     setTimeout(aplicarAlpha, 100)
-    setTimeout(aplicarAlpha, 500)
+    setTimeout(aplicarAlpha, 600)
 
-    // offsetY se aplica desde el panel de ajuste manual (ver render fase 'ar')
+    // ── Gestos touch ──────────────────────────────────────────────────────────
+    // Estado local de gestos (no necesita re-render de React)
+    let touches: Record<number, {x:number, y:number}> = {}
+    let lastPinchDist  = 0
+    let lastTwoFingerY = 0
+
+    const getEntity = () => document.getElementById('columnas-vmj') as any
+    const getTxtN   = () => document.getElementById('txt-nombre')   as any
+    const getTxtM   = () => document.getElementById('txt-mensaje')  as any
+
+    // Lee posición actual del entity como objeto {x,y,z}
+    const getPosicion = () => {
+      const e = getEntity()
+      if (!e) return { x: 0, y: -1.6, z: Z_BASE }
+      const p = e.getAttribute('position') as any
+      return { x: parseFloat(p?.x ?? 0), y: parseFloat(p?.y ?? -1.6), z: parseFloat(p?.z ?? Z_BASE) }
+    }
+
+    // Lee rotación actual del entity
+    const getRotacion = () => {
+      const e = getEntity()
+      if (!e) return { x: 0, y: 0, z: 0 }
+      const r = e.getAttribute('rotation') as any
+      return { x: parseFloat(r?.x ?? 0), y: parseFloat(r?.y ?? 0), z: parseFloat(r?.z ?? 0) }
+    }
+
+    const setPosicion = (x: number, y: number, z: number) => {
+      const e = getEntity(); const n = getTxtN(); const m = getTxtM()
+      if (!e) return
+      e.setAttribute('position', `${x.toFixed(2)} ${y.toFixed(2)} ${z.toFixed(2)}`)
+      if (n) n.setAttribute('position', `0 ${(y + 6.4).toFixed(2)} ${z.toFixed(2)}`)
+      if (m) m.setAttribute('position', `0 ${(y + 5.7).toFixed(2)} ${z.toFixed(2)}`)
+    }
+
+    const setRotacion = (y: number) => {
+      const e = getEntity()
+      if (e) e.setAttribute('rotation', `0 ${y.toFixed(1)} 0`)
+    }
+
+    const onTouchStart = (ev: TouchEvent) => {
+      Array.from(ev.changedTouches).forEach(t => {
+        touches[t.identifier] = { x: t.clientX, y: t.clientY }
+      })
+      if (Object.keys(touches).length === 2) {
+        const ids  = Object.keys(touches).map(Number)
+        const t0   = touches[ids[0]], t1 = touches[ids[1]]
+        lastPinchDist  = Math.hypot(t1.x - t0.x, t1.y - t0.y)
+        lastTwoFingerY = (t0.y + t1.y) / 2
+      }
+    }
+
+    const onTouchMove = (ev: TouchEvent) => {
+      ev.preventDefault()
+      const ids = Object.keys(touches).length
+
+      if (ids === 1) {
+        // ── 1 dedo: rotar grupo en Y ──────────────────────────────────────────
+        const t    = ev.changedTouches[0]
+        const prev = touches[t.identifier]
+        if (!prev) return
+        const dx = t.clientX - prev.x
+        touches[t.identifier] = { x: t.clientX, y: t.clientY }
+
+        const rot = getRotacion()
+        setRotacion(rot.y + dx * 0.5)          // 0.5° por pixel
+        setOffsetY(v => { return v })           // no-op para no re-render innecesario
+
+      } else if (ids === 2) {
+        // ── 2 dedos: pinch = zoom, swipe vertical = altura ────────────────────
+        const tList = Array.from(ev.changedTouches)
+        tList.forEach(t => { if (touches[t.identifier]) touches[t.identifier] = { x: t.clientX, y: t.clientY } })
+
+        const tIds  = Object.keys(touches).map(Number)
+        const t0    = touches[tIds[0]], t1 = touches[tIds[1]]
+        const dist  = Math.hypot(t1.x - t0.x, t1.y - t0.y)
+        const midY  = (t0.y + t1.y) / 2
+
+        // Pinch zoom: cambia Z
+        if (lastPinchDist > 0) {
+          const deltaDist = dist - lastPinchDist
+          const pos = getPosicion()
+          const newZ = Math.max(-25, Math.min(-4, pos.z - deltaDist * 0.04))
+          setPosicion(pos.x, pos.y, newZ)
+          // Sincronizar estado React para localStorage
+          setZoom(Math.abs(newZ / Z_BASE))
+        }
+        lastPinchDist = dist
+
+        // Swipe vertical dos dedos: cambia altura
+        if (lastTwoFingerY > 0) {
+          const deltaY = lastTwoFingerY - midY   // invertido: arriba = sube
+          const pos = getPosicion()
+          const newY = Math.max(-8, Math.min(6, pos.y + deltaY * 0.012))
+          setPosicion(pos.x, newY, pos.z)
+          setOffsetY(newY + 1.6)   // sincronizar estado React
+        }
+        lastTwoFingerY = midY
+      }
+    }
+
+    const onTouchEnd = (ev: TouchEvent) => {
+      Array.from(ev.changedTouches).forEach(t => { delete touches[t.identifier] })
+      if (Object.keys(touches).length < 2) { lastPinchDist = 0; lastTwoFingerY = 0 }
+    }
+
+    // Adjuntar listeners al wrapper (no al canvas directamente)
+    wrapper.addEventListener('touchstart',  onTouchStart as any, { passive: false })
+    wrapper.addEventListener('touchmove',   onTouchMove  as any, { passive: false })
+    wrapper.addEventListener('touchend',    onTouchEnd   as any, { passive: true })
+    wrapper.addEventListener('touchcancel', onTouchEnd   as any, { passive: true })
 
     const scene = document.getElementById('escena-ar') as any
     sceneRef.current = scene
@@ -332,21 +441,25 @@ export default function LocationARScanner() {
     const onLoaded = () => {
       aplicarAlpha()
       setArListo(true)
+      // Aplicar offsets guardados
+      const pos = getPosicion()
+      setPosicion(pos.x, -1.6 + offsetY, Z_BASE * zoom)
     }
     scene.addEventListener('loaded', onLoaded)
 
     return () => {
       scene.removeEventListener('loaded', onLoaded)
+      wrapper.removeEventListener('touchstart',  onTouchStart as any)
+      wrapper.removeEventListener('touchmove',   onTouchMove  as any)
+      wrapper.removeEventListener('touchend',    onTouchEnd   as any)
+      wrapper.removeEventListener('touchcancel', onTouchEnd   as any)
       if (streamActivo) streamActivo.getTracks().forEach(t => t.stop())
-      // Limpiar video del DOM
-      const bgVideo = contenedor.querySelector('video')
-      if (bgVideo && bgVideo.srcObject) {
-        (bgVideo.srcObject as MediaStream).getTracks().forEach(t => t.stop())
-      }
       contenedor.innerHTML = ''
       setArListo(false)
     }
   }, [scriptsOk, fase, baldosaActiva])
+
+
 
   // ── 5. Aplicar controles AR en tiempo real ───────────────────────────────────
   useEffect(() => {
@@ -646,102 +759,65 @@ export default function LocationARScanner() {
           </div>
         )}
 
-        {/* ── Panel de controles AR ─────────────────────────────────────── */}
+        {/* ── Controles AR ─────────────────────────────────────────────── */}
         {arListo && (() => {
-          // estilos reutilizables inline
-          const panelBase: React.CSSProperties = {
-            position: 'absolute', zIndex: 200,
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            gap: '0.3rem',
-            background: 'rgba(10,18,28,0.82)',
-            border: '1px solid rgba(255,255,255,0.13)',
-            borderRadius: '14px', padding: '0.55rem 0.65rem',
-            backdropFilter: 'blur(10px)', userSelect: 'none',
-          }
-          const btn: React.CSSProperties = {
-            width: '2.6rem', height: '2.6rem',
-            background: 'rgba(37,99,235,0.22)',
-            border: '1px solid rgba(37,99,235,0.45)',
-            borderRadius: '9px', color: 'white',
-            fontSize: '1.15rem', cursor: 'pointer',
+          const s: React.CSSProperties = {
+            width: '2.8rem', height: '2.8rem',
+            background: 'rgba(10,18,28,0.78)',
+            border: '1px solid rgba(255,255,255,0.18)',
+            borderRadius: '10px', color: 'white',
+            fontSize: '1.1rem', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            lineHeight: 1, touchAction: 'manipulation',
+            backdropFilter: 'blur(8px)', touchAction: 'manipulation',
           }
-          const lbl: React.CSSProperties = {
-            color: '#90b4ce', fontSize: '0.62rem',
-            fontWeight: 700, letterSpacing: '0.07em',
+          const getE = () => document.getElementById('columnas-vmj') as any
+          const getTN = () => document.getElementById('txt-nombre')  as any
+          const getTM = () => document.getElementById('txt-mensaje') as any
+          const getPos = () => {
+            const e = getE(); if (!e) return {x:0,y:-1.6,z:-12}
+            const p = e.getAttribute('position') as any
+            return {x:+p.x,y:+p.y,z:+p.z}
           }
-          const val: React.CSSProperties = {
-            color: '#f0e6d3', fontSize: '0.8rem',
-            fontVariantNumeric: 'tabular-nums',
-            minWidth: '3.2rem', textAlign: 'center',
+          const setPos = (x:number,y:number,z:number) => {
+            const e=getE(),n=getTN(),m=getTM(); if(!e) return
+            e.setAttribute('position',`${x.toFixed(2)} ${y.toFixed(2)} ${z.toFixed(2)}`)
+            if(n) n.setAttribute('position',`0 ${(y+6.4).toFixed(2)} ${z.toFixed(2)}`)
+            if(m) m.setAttribute('position',`0 ${(y+5.7).toFixed(2)} ${z.toFixed(2)}`)
           }
-          const resetBtn: React.CSSProperties = {
-            background: 'none', border: 'none',
-            color: '#4a6a82', fontSize: '0.6rem',
-            cursor: 'pointer', padding: '0.1rem 0.2rem',
-          }
+          const getRot = () => { const e=getE(); if(!e) return 0; return +(e.getAttribute('rotation') as any)?.y||0 }
 
-          return (<>
-            {/* ALTURA — izquierda */}
-            <div style={{ ...panelBase, bottom: '7rem', left: '1rem' }}>
-              <span style={lbl}>ALTURA</span>
-              <button style={btn} onPointerDown={() => setOffsetY(v => Math.min(v + 0.25, 10))}>▲</button>
-              <span style={val}>{offsetY >= 0 ? '+' : ''}{offsetY.toFixed(2)}m</span>
-              <button style={btn} onPointerDown={() => setOffsetY(v => Math.max(v - 0.25, -10))}>▼</button>
-              <button style={resetBtn} onPointerDown={() => setOffsetY(0)}>reset</button>
-            </div>
-
-            {/* ROTACIÓN — derecha */}
-            <div style={{ ...panelBase, bottom: '7rem', right: '1rem' }}>
-              <span style={lbl}>GIRAR</span>
-              <button style={btn} onPointerDown={() => setRotY(v => (v + 15) % 360)}>↻</button>
-              <span style={val}>{rotY.toFixed(0)}°</span>
-              <button style={btn} onPointerDown={() => setRotY(v => (v - 15 + 360) % 360)}>↺</button>
-              <button style={resetBtn} onPointerDown={() => setRotY(0)}>reset</button>
-            </div>
-
-            {/* ZOOM — centro inferior */}
-            <div style={{ ...panelBase, bottom: '1rem', left: '50%', transform: 'translateX(-50%)', flexDirection: 'row', gap: '0.5rem', padding: '0.55rem 1rem' }}>
-              <button style={btn} onPointerDown={() => setZoom(v => Math.max(v - 0.1, 0.3))}>🔍＋</button>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.1rem' }}>
-                <span style={lbl}>ZOOM</span>
-                <span style={{ ...val, fontSize: '0.75rem' }}>{zoom.toFixed(1)}×</span>
-              </div>
-              <button style={btn} onPointerDown={() => setZoom(v => Math.min(v + 0.1, 3))}>🔍－</button>
-              <button style={{ ...resetBtn, marginLeft: '0.4rem', fontSize: '0.7rem' }} onPointerDown={() => setZoom(1)}>reset</button>
-            </div>
-
-            {/* CENTRAR VISTA — barra superior derecha */}
-            <button
-              onPointerDown={() => {
-                const cam = document.getElementById('camara-ar') as any
-                if (cam) {
-                  cam.setAttribute('rotation', '0 0 0')
-                  // Resetear también look-controls internos de A-Frame
-                  const lc = cam.components?.['look-controls']
-                  if (lc) { lc.pitchObject.rotation.x = 0; lc.yawObject.rotation.y = 0 }
+          return (
+            <div style={{ position:'absolute', bottom:'1.5rem', right:'1rem', zIndex:200, display:'flex', flexDirection:'column', gap:'0.4rem', alignItems:'center' }}>
+              {/* Altura */}
+              <button style={s} onPointerDown={()=>{ const p=getPos(); setPos(p.x,Math.min(p.y+0.3,6),p.z); setOffsetY(v=>Math.min(v+0.3,6)) }} title="Subir">↑</button>
+              {/* Zoom acercar */}
+              <button style={s} onPointerDown={()=>{ const p=getPos(); setPos(p.x,p.y,Math.max(p.z+1.5,-4)); setZoom(v=>Math.max(v-0.15,0.3)) }} title="Acercar">🔍+</button>
+              {/* Reset */}
+              <button style={{...s, fontSize:'0.7rem', color:'#90b4ce'}} onPointerDown={()=>{
+                setPos(0,-1.6,-12); setOffsetY(0); setZoom(1)
+                const e=getE(); if(e) e.setAttribute('rotation','0 0 0')
+                // Centrar cámara
+                const cam=document.getElementById('camara-ar') as any
+                if(cam?.components?.['look-controls']) {
+                  cam.components['look-controls'].pitchObject.rotation.x=0
+                  cam.components['look-controls'].yawObject.rotation.y=0
                 }
-              }}
-              style={{
-                position: 'absolute', top: '4rem', right: '1rem', zIndex: 200,
-                background: 'rgba(10,18,28,0.82)',
-                border: '1px solid rgba(255,255,255,0.13)',
-                borderRadius: '10px', color: '#f0e6d3',
-                fontSize: '0.75rem', fontWeight: 600,
-                padding: '0.45rem 0.75rem', cursor: 'pointer',
-                backdropFilter: 'blur(10px)', touchAction: 'manipulation',
-              }}
-            >⊙ Centrar</button>
-          </>)
+              }} title="Reset">⊙</button>
+              {/* Zoom alejar */}
+              <button style={s} onPointerDown={()=>{ const p=getPos(); setPos(p.x,p.y,Math.min(p.z-1.5,-4)); setZoom(v=>Math.min(v+0.15,3)) }} title="Alejar">🔍−</button>
+              {/* Bajar */}
+              <button style={s} onPointerDown={()=>{ const p=getPos(); setPos(p.x,Math.max(p.y-0.3,-8),p.z); setOffsetY(v=>Math.max(v-0.3,-8)) }} title="Bajar">↓</button>
+            </div>
+          )
         })()}
 
-        {/* Instrucción — desaparece tras primer ajuste */}
-        {arListo && offsetY === 0 && rotY === 0 && zoom === 1 && (
-          <div style={estilos.instruccionAR}>
-            Ajustá con los controles · Arrastrá para rotar la vista
+        {/* Hint gestos — desaparece al primer toque */}
+        {arListo && offsetY === 0 && zoom === 1 && (
+          <div style={{ ...estilos.instruccionAR, fontSize: '0.75rem', lineHeight: 1.4 }}>
+            1 dedo: rotar · Pinch: zoom · 2 dedos arriba/abajo: altura
           </div>
         )}
+
       </div>
     )
   }
