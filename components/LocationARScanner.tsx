@@ -220,6 +220,7 @@ export default function LocationARScanner() {
 
     // ── Video de cámara real como fondo ───────────────────────────────────────
     const video = document.createElement('video')
+    video.id = 'camara-bg'
     video.setAttribute('autoplay', '')
     video.setAttribute('muted', '')
     video.setAttribute('playsinline', '')
@@ -389,7 +390,18 @@ export default function LocationARScanner() {
   }, [])
 
   const volverACaminar = useCallback(() => {
+    // Detener stream de cámara AR si quedó activo
+    const bgVideo = document.getElementById('camara-bg') as HTMLVideoElement | null
+    if (bgVideo && bgVideo.srcObject) {
+      (bgVideo.srcObject as MediaStream).getTracks().forEach(t => t.stop())
+      bgVideo.srcObject = null
+    }
+    // Limpiar el contenedor AR por si acaso
+    const arContainer = document.getElementById('ar-container')
+    if (arContainer) arContainer.innerHTML = ''
+
     setBaldosaActiva(null)
+    setBaldosaCercana(null)
     setScriptsOk(false)
     setArListo(false)
     setFase('caminando')
@@ -438,7 +450,7 @@ export default function LocationARScanner() {
   if (fase === 'iniciando') {
     return (
       <div style={estilos.pantallaCentrada}>
-        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📍</div>
+        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🌍</div>
         <h1 style={estilos.titulo}>Baldosas por la Memoria</h1>
         <p style={estilos.subtitulo}>
           Caminá por Buenos Aires y descubrí las baldosas que honran a los desaparecidos.
@@ -448,7 +460,7 @@ export default function LocationARScanner() {
           onClick={iniciarGPS}
           style={estilos.btnPrimario}
         >
-          📍 Activar ubicación
+          🌍 Activar ubicación
         </button>
         <a href="/mapa" style={estilos.btnSecundario}>
           🗺️ Ver mapa primero
@@ -494,7 +506,7 @@ export default function LocationARScanner() {
           <div style={estilos.radar}>
             <div style={estilos.radarPulso1} />
             <div style={estilos.radarPulso2} />
-            <span style={{ fontSize: '2.5rem', position: 'relative', zIndex: 2 }}>📍</span>
+            <span style={{ fontSize: '2.5rem', position: 'relative', zIndex: 2 }}>🌍</span>
           </div>
 
           <h2 style={{ ...estilos.titulo, marginTop: '1.5rem' }}>Buscando baldosas</h2>
@@ -529,7 +541,7 @@ export default function LocationARScanner() {
         <div style={estilos.cardNotificacion}>
           {/* Banner superior */}
           <div style={estilos.bannerDeteccion}>
-            <span style={{ fontSize: '1.4rem' }}>📍</span>
+            <span style={{ fontSize: '1.4rem' }}>🌍</span>
             <span>Baldosa detectada</span>
             {distancia !== null && (
               <span style={estilos.badgeDistancia}>{formatearDistancia(distancia)}</span>
@@ -556,7 +568,7 @@ export default function LocationARScanner() {
             <h2 style={estilos.nombreBaldosa}>{baldosaCercana.nombre}</h2>
 
             {baldosaCercana.direccion && (
-              <p style={estilos.direccion}>📍 {baldosaCercana.direccion}</p>
+              <p style={estilos.direccion}>🌍 {baldosaCercana.direccion}</p>
             )}
 
             {baldosaCercana.descripcion && (
@@ -662,7 +674,7 @@ export default function LocationARScanner() {
           </h1>
 
           {baldosaActiva.direccion && (
-            <p style={estilos.direccion}>📍 {baldosaActiva.direccion}</p>
+            <p style={estilos.direccion}>🌍 {baldosaActiva.direccion}</p>
           )}
 
           {baldosaActiva.descripcion && (
