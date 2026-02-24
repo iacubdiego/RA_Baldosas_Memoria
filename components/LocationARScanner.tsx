@@ -170,29 +170,29 @@ export default function LocationARScanner() {
     }
   }, [])
 
-  // ── 3. Cargar scripts AR.js cuando el usuario elige ver la escena ──────────
+  // ── 3. Cargar A-Frame cuando el usuario elige ver la escena ──────────────────
+  // Modo: cámara web pura, objetos fijos frente a la cámara (sin GPS)
   useEffect(() => {
     if (fase !== 'ar' || scriptsOk) return
 
     async function cargarScripts() {
-      // A-Frame 1.4.1
       if (!(window as any).AFRAME) {
         await loadScript('https://aframe.io/releases/1.4.1/aframe.min.js')
-        await delay(500)
+        await delay(600)
       }
-      // AR.js Location Only (única versión con gps-camera y gps-entity-place)
-      if (!(window as any).AFRAME?.components?.['gps-camera']) {
+      // aframe-extras para animation-mixer (reproducir animación del GLB)
+      if (!(window as any).AFRAME?.systems?.['animation-mixer']) {
         await loadScript(
-          'https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js'
+          'https://cdn.jsdelivr.net/npm/aframe-extras@7.2.0/dist/aframe-extras.min.js'
         )
-        await delay(500)
+        await delay(400)
       }
       setScriptsOk(true)
     }
 
     cargarScripts().catch((e) => {
       console.error('Error cargando scripts AR:', e)
-      setErrorMsg('No se pudieron cargar las librerías AR. Verificá tu conexión a internet.')
+      setErrorMsg('No se pudieron cargar las librerías. Verificá tu conexión a internet.')
       setFase('error')
     })
   }, [fase, scriptsOk])
@@ -207,68 +207,107 @@ export default function LocationARScanner() {
     contenedor.innerHTML = ''
     setArListo(false)
 
-    const { lat, lng, nombre, mensajeAR } = baldosaActiva
+    const { nombre, mensajeAR } = baldosaActiva
 
-    // Nombre seguro para HTML
+    // Nombre seguro para HTML (sin comillas que rompan atributos)
     const nombreSafe  = nombre.replace(/"/g, '&quot;')
     const mensajeSafe = mensajeAR.replace(/"/g, '&quot;')
 
-    contenedor.innerHTML = `
-      <a-scene
-        id="escena-ar"
-        embedded
-        arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false; trackingMethod: best;"
-        vr-mode-ui="enabled: false"
-        renderer="logarithmicDepthBuffer: true; antialias: true;"
-        loading-screen="dotsColor: white; backgroundColor: #0a121c"
-      >
-        <a-assets timeout="15000">
-          <a-asset-item
-            id="columnas-glb"
-            src="/models/columnas_vmj.glb"
-          ></a-asset-item>
-        </a-assets>
+    // ── Escena A-Frame: cámara web + objetos fijos frente al usuario ────────
+    // No usamos GPS. Los objetos se posicionan en z=-4 (4 metros adelante),
+    // y se mantienen en pantalla independientemente de la ubicación real.
+    const html = [
+      '<a-scene',
+      '  id="escena-ar"',
+      '  embedded',
+      '  renderer="antialias: true; colorManagement: true;"',
+      '  vr-mode-ui="enabled: false"',
+      '  loading-screen="dotsColor: white; backgroundColor: #0a121c"',
+      '>',
+      '  <a-assets timeout="20000">',
+      '    <a-asset-item id="columnas-glb" src="/models/columnas_vmj.glb"></a-asset-item>',
+      '  </a-assets>',
+      '',
+      '  <!-- Cámara: el usuario mira hacia -Z, objetos a z negativo quedan adelante -->',
+      '  <a-camera',
+      '    id="camara-ar"',
+      '    position="0 1.6 0"',
+      '    look-controls="enabled: true; reverseMouseDrag: false"',
+      '    wasd-controls="enabled: false"',
+      '    fov="70"',
+      '  ></a-camera>',
+      '',
+      '  <!-- Fondo: feed de cámara web vía getUserMedia -->',
+      '  <a-videosphere',
+      '    id="video-fondo"',
+      '    src="#camara-feed"',
+      '    radius="100"',
+      '    rotation="0 180 0"',
+      '  ></a-videosphere>',
+      '',
+      '  <!-- Columnas VMJ: posicionadas 4m adelante, a nivel del piso -->',
+      '  <a-entity',
+      '    id="columnas-vmj"',
+      '    gltf-model="#columnas-glb"',
+      '    position="0 0 -4"',
+      '    scale="1 1 1"',
+      '    animation-mixer="clip: *; loop: once; clampWhenFinished: true; timeScale: 1;"',
+      '  ></a-entity>',
+      '',
+      '  <!-- Nombre de la víctima -->',
+      '  <a-text',
+      '    value="' + nombreSafe + '"',
+      '    position="0 3.8 -4"',
+      '    align="center"',
+      '    width="5"',
+      '    color="#f0e6d3"',
+      '    wrap-count="22"',
+      '  ></a-text>',
+      '',
+      '  <!-- Mensaje AR -->',
+      '  <a-text',
+      '    value="' + mensajeSafe + '"',
+      '    position="0 3.2 -4"',
+      '    align="center"',
+      '    width="4"',
+      '    color="#90b4ce"',
+      '    wrap-count="30"',
+      '  ></a-text>',
+      '',
+      '</a-scene>',
+    ].join('\n')
 
-        <a-camera gps-camera rotation-reader></a-camera>
+    contenedor.innerHTML = html
 
-        <a-entity
-          id="escena-columnas"
-          gps-entity-place="latitude: ${lat}; longitude: ${lng}"
-        >
-          <!-- GLB con la animación de emergencia y temblor -->
-          <a-entity
-            id="columnas-vmj"
-            gltf-model="#columnas-glb"
-            position="0 0 0"
-            scale="1 1 1"
-            animation-mixer="clip: *; loop: once; clampWhenFinished: true;"
-          ></a-entity>
+    // Video de cámara web como fondo
+    async function iniciarCamaraFondo() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false,
+        })
+        const video = document.createElement('video')
+        video.id        = 'camara-feed'
+        video.srcObject = stream
+        video.autoplay  = true
+        video.muted     = true
+        video.setAttribute('playsinline', '')
+        video.style.display = 'none'
+        document.body.appendChild(video)
+        await video.play()
+        // Conectar el video al a-videosphere
+        const sphere = document.getElementById('video-fondo') as any
+        if (sphere) sphere.setAttribute('src', video)
+      } catch (e) {
+        console.warn('No se pudo iniciar cámara de fondo:', e)
+        // Sin cámara: fondo oscuro, igual se ven las columnas
+      }
+    }
 
-          <!-- Nombre flotante sobre las columnas -->
-          <a-text
-            value="${nombreSafe}"
-            position="0 6.5 0"
-            align="center"
-            width="4"
-            color="#f0e6d3"
-            wrap-count="22"
-          ></a-text>
-
-          <!-- Mensaje AR -->
-          <a-text
-            value="${mensajeSafe}"
-            position="0 5.8 0"
-            align="center"
-            width="3.5"
-            color="#90b4ce"
-            wrap-count="28"
-          ></a-text>
-
-        </a-entity>
-      </a-scene>
-    `
+    iniciarCamaraFondo()
 
     const scene = document.getElementById('escena-ar') as any
+
     sceneRef.current = scene
 
     const onLoaded = () => setArListo(true)
