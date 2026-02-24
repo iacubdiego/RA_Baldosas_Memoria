@@ -70,6 +70,11 @@ export default function LocationARScanner() {
   const [scriptsOk, setScriptsOk] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [guardado, setGuardado] = useState(false)
+  // Offset de altura manual: persiste en localStorage entre sesiones
+  const [offsetY, setOffsetY] = useState<number>(() => {
+    if (typeof window === 'undefined') return 0
+    return parseFloat(localStorage.getItem('ar_offset_y') || '0')
+  })
 
   const watchIdRef   = useRef<number | null>(null)
   const sceneRef     = useRef<HTMLElement | null>(null)
@@ -311,45 +316,7 @@ export default function LocationARScanner() {
     setTimeout(aplicarAlpha, 100)
     setTimeout(aplicarAlpha, 500)
 
-    // ── Ajuste de Y via bounding box del modelo ────────────────────────────────
-    // Cuando el GLB termina de cargar, Three.js ya tiene la geometría en memoria.
-    // Calculamos el punto más bajo del modelo (minY del bounding box) y lo
-    // usamos como offset negativo para que ese punto quede en y=0 (piso real).
-    // Luego el texto flota Y_OJOS metros por encima del techo del modelo (maxY).
-    const ajustarY = () => {
-      const entidad = document.getElementById('columnas-vmj') as any
-      if (!entidad || !entidad.object3D) return
-
-      try {
-        const THREE  = (window as any).THREE
-        const box    = new THREE.Box3().setFromObject(entidad.object3D)
-        const minY   = box.min.y   // piso del modelo en coordenadas locales
-        const maxY   = box.max.y   // techo del modelo
-
-        // Mover el modelo para que su piso quede en y = -Y_OJOS (nivel del suelo)
-        // La cámara está en y=Y_OJOS, el suelo real en y=0, entonces:
-        //   posY del entity = -Y_OJOS - minY
-        const posY = -Y_OJOS - minY
-        entidad.setAttribute('position', '0 ' + posY.toFixed(3) + ' ' + Z_COLS)
-
-        // Texto: flota 0.5m encima del techo del modelo
-        const altoTexto     = posY + maxY + 0.5
-        const altoSubtitulo = posY + maxY - 0.2
-        const txtNombre  = document.getElementById('txt-nombre')  as any
-        const txtMensaje = document.getElementById('txt-mensaje') as any
-        if (txtNombre)  txtNombre.setAttribute('position',  '0 ' + altoTexto.toFixed(2)     + ' ' + Z_COLS)
-        if (txtMensaje) txtMensaje.setAttribute('position', '0 ' + altoSubtitulo.toFixed(2) + ' ' + Z_COLS)
-
-        console.log('[AR] bbox minY=' + minY.toFixed(2) + ' maxY=' + maxY.toFixed(2) + ' → posY=' + posY.toFixed(2))
-      } catch (e) {
-        console.warn('[AR] No se pudo calcular bounding box:', e)
-      }
-    }
-
-    // El modelo puede tardar en cargar; intentamos varias veces
-    const t1 = setTimeout(ajustarY, 1500)
-    const t2 = setTimeout(ajustarY, 3000)
-    const t3 = setTimeout(ajustarY, 5000)
+    // offsetY se aplica desde el panel de ajuste manual (ver render fase 'ar')
 
     const scene = document.getElementById('escena-ar') as any
     sceneRef.current = scene
@@ -357,12 +324,10 @@ export default function LocationARScanner() {
     const onLoaded = () => {
       aplicarAlpha()
       setArListo(true)
-      setTimeout(ajustarY, 500)
     }
     scene.addEventListener('loaded', onLoaded)
 
     return () => {
-      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3)
       scene.removeEventListener('loaded', onLoaded)
       if (streamActivo) streamActivo.getTracks().forEach(t => t.stop())
       // Limpiar video del DOM
@@ -375,7 +340,24 @@ export default function LocationARScanner() {
     }
   }, [scriptsOk, fase, baldosaActiva])
 
-  // ── 5. Handlers de acciones del usuario ───────────────────────────────────
+  // ── 5. Aplicar offsetY en tiempo real cuando cambia ─────────────────────────
+  useEffect(() => {
+    if (fase !== 'ar' || !arListo) return
+    const entidad = document.getElementById('columnas-vmj') as any
+    if (!entidad) return
+    const Z_COLS = -12
+    // Y base = -1.6 (cámara a 1.6m, piso en 0) + offset del usuario
+    const posY = -1.6 + offsetY
+    entidad.setAttribute('position', '0 ' + posY.toFixed(2) + ' ' + Z_COLS)
+    // Texto sigue al techo aproximado (columna Justicia mide ~5m)
+    const txtNombre  = document.getElementById('txt-nombre')  as any
+    const txtMensaje = document.getElementById('txt-mensaje') as any
+    if (txtNombre)  txtNombre.setAttribute('position',  '0 ' + (posY + 5.6).toFixed(2) + ' ' + Z_COLS)
+    if (txtMensaje) txtMensaje.setAttribute('position', '0 ' + (posY + 4.9).toFixed(2) + ' ' + Z_COLS)
+    localStorage.setItem('ar_offset_y', offsetY.toString())
+  }, [offsetY, fase, arListo])
+
+  // ── 6. Handlers de acciones del usuario ───────────────────────────────────
 
   const verEscenaAR = useCallback(() => {
     if (!baldosaCercana) return
@@ -649,10 +631,69 @@ export default function LocationARScanner() {
           </div>
         )}
 
-        {/* Instrucción inicial */}
+        {/* Panel de ajuste de altura — esquina inferior izquierda */}
         {arListo && (
+          <div style={{
+            position:       'absolute',
+            bottom:         '2rem',
+            left:           '1rem',
+            zIndex:         200,
+            display:        'flex',
+            flexDirection:  'column',
+            alignItems:     'center',
+            gap:            '0.35rem',
+            background:     'rgba(10, 18, 28, 0.82)',
+            border:         '1px solid rgba(255,255,255,0.15)',
+            borderRadius:   '12px',
+            padding:        '0.6rem 0.75rem',
+            backdropFilter: 'blur(8px)',
+            userSelect:     'none',
+          }}>
+            <span style={{ color: '#90b4ce', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.06em' }}>
+              ALTURA
+            </span>
+            <button
+              onPointerDown={() => setOffsetY(v => Math.min(v + 0.25, 8))}
+              style={{
+                width: '2.4rem', height: '2.4rem',
+                background: 'rgba(37,99,235,0.25)',
+                border: '1px solid rgba(37,99,235,0.5)',
+                borderRadius: '8px', color: 'white',
+                fontSize: '1.2rem', cursor: 'pointer', lineHeight: 1,
+              }}
+            >▲</button>
+            <span style={{
+              color: '#f0e6d3', fontSize: '0.85rem',
+              fontVariantNumeric: 'tabular-nums', minWidth: '3rem', textAlign: 'center',
+            }}>
+              {offsetY >= 0 ? '+' : ''}{offsetY.toFixed(2)}m
+            </span>
+            <button
+              onPointerDown={() => setOffsetY(v => Math.max(v - 0.25, -8))}
+              style={{
+                width: '2.4rem', height: '2.4rem',
+                background: 'rgba(37,99,235,0.25)',
+                border: '1px solid rgba(37,99,235,0.5)',
+                borderRadius: '8px', color: 'white',
+                fontSize: '1.2rem', cursor: 'pointer', lineHeight: 1,
+              }}
+            >▼</button>
+            <button
+              onPointerDown={() => setOffsetY(0)}
+              style={{
+                marginTop: '0.1rem',
+                background: 'none', border: 'none',
+                color: '#6b8fa6', fontSize: '0.65rem',
+                cursor: 'pointer', padding: '0.1rem 0.3rem',
+              }}
+            >reset</button>
+          </div>
+        )}
+
+        {/* Instrucción inicial — desaparece al ajustar */}
+        {arListo && offsetY === 0 && (
           <div style={estilos.instruccionAR}>
-            Apuntá la cámara hacia donde está la baldosa
+            Usá ▲ ▼ para ajustar la altura al piso
           </div>
         )}
       </div>
