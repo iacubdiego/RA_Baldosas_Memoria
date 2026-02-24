@@ -787,7 +787,7 @@ export default function LocationARScanner() {
           const getRot = () => { const e=getE(); if(!e) return 0; return +(e.getAttribute('rotation') as any)?.y||0 }
 
           return (
-            <div style={{ position:'absolute', bottom:'1.5rem', right:'1rem', zIndex:200, display:'flex', flexDirection:'column', gap:'0.4rem', alignItems:'center' }}>
+            <div style={{ position:'absolute', bottom:'5rem', right:'1rem', zIndex:200, display:'flex', flexDirection:'column', gap:'0.4rem', alignItems:'center' }}>
               {/* Altura */}
               <button style={s} onPointerDown={()=>{ const p=getPos(); setPos(p.x,Math.min(p.y+0.3,6),p.z); setOffsetY(v=>Math.min(v+0.3,6)) }} title="Subir">↑</button>
               {/* Zoom acercar */}

@@ -67,29 +67,6 @@ export default async function RootLayout({
                 Mi Recorrido
               </a>
 
-              {/* Contador de baldosas */}
-              {totalBaldosas > 0 && (
-                <span
-                  title={`${totalBaldosas} baldosas cargadas en la base`}
-                  style={{
-                    display:        'flex',
-                    alignItems:     'center',
-                    gap:            '0.35rem',
-                    background:     'rgba(255,255,255,0.10)',
-                    border:         '1px solid rgba(255,255,255,0.18)',
-                    borderRadius:   '20px',
-                    padding:        '0.25rem 0.75rem',
-                    fontSize:       '0.82rem',
-                    fontWeight:     600,
-                    color:          'var(--color-parchment)',
-                    letterSpacing:  '0.02em',
-                    whiteSpace:     'nowrap',
-                  }}
-                >
-                  <span style={{ fontSize: '0.9rem' }}>🏛️</span>
-                  {totalBaldosas.toLocaleString('es-AR')}
-                </span>
-              )}
             </div>
           </div>
         </nav>
