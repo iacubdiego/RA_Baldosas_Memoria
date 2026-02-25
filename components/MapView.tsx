@@ -5,7 +5,6 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
-// Fix para iconos de Leaflet en Next.js
 delete (L.Icon.Default.prototype as any)._getIconUrl
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -21,9 +20,7 @@ const baldosaIcon = new L.Icon({
       <circle cx="16" cy="16" r="4" fill="#2563eb"/>
     </svg>
   `),
-  iconSize:    [32, 40],
-  iconAnchor:  [16, 40],
-  popupAnchor: [0, -40],
+  iconSize: [32, 40], iconAnchor: [16, 40], popupAnchor: [0, -40],
 })
 
 const userIcon = new L.Icon({
@@ -32,202 +29,137 @@ const userIcon = new L.Icon({
       <circle cx="12" cy="12" r="10" fill="#22c55e" stroke="white" stroke-width="3"/>
     </svg>
   `),
-  iconSize:   [24, 24],
-  iconAnchor: [12, 12],
+  iconSize: [24, 24], iconAnchor: [12, 12],
 })
 
-const RADIO_MAXIMO = 100 // metros para considerar "cerca"
+const RADIO_MAXIMO   = 100
+const LIMIT_CERCANAS = 20
 
-// ─── Tipos ────────────────────────────────────────────────────────────────────
-
-// Pin mínimo para el mapa (viene de /api/baldosas/pins)
 interface Pin {
-  id:        string
-  codigo:    string
-  nombre:    string
-  direccion: string
-  barrio:    string
-  lat:       number
-  lng:       number
+  id: string; codigo: string; nombre: string
+  direccion: string; barrio: string; lat: number; lng: number
 }
 
-// Baldosa cercana con detalle (viene de /api/baldosas/nearby)
 interface BaldosaCercana {
-  id:        string
-  codigo:    string
-  nombre:    string
-  lat:       number
-  lng:       number
-  direccion: string
-  barrio:    string
-  mensajeAR: string
-  distancia?: number
+  id: string; codigo: string; nombre: string
+  lat: number; lng: number; direccion: string; barrio: string
+  mensajeAR: string; distancia?: number
 }
 
 interface MapViewProps {
   initialLocation: { lat: number; lng: number }
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function calcularDistancia(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R  = 6371e3
-  const φ1 = (lat1 * Math.PI) / 180
-  const φ2 = (lat2 * Math.PI) / 180
-  const Δφ = ((lat2 - lat1) * Math.PI) / 180
-  const Δλ = ((lng2 - lng1) * Math.PI) / 180
-  const a  = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  const R = 6371e3
+  const ph1 = (lat1 * Math.PI) / 180, ph2 = (lat2 * Math.PI) / 180
+  const dp = ((lat2 - lat1) * Math.PI) / 180
+  const dl = ((lng2 - lng1) * Math.PI) / 180
+  const a = Math.sin(dp/2)**2 + Math.cos(ph1)*Math.cos(ph2)*Math.sin(dl/2)**2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
 }
 
-function formatearDistancia(metros: number): string {
-  return metros < 1000 ? `${Math.round(metros)} m` : `${(metros / 1000).toFixed(1)} km`
+function formatearDistancia(m: number): string {
+  return m < 1000 ? `${Math.round(m)} m` : `${(m/1000).toFixed(1)} km`
 }
 
-// Mueve el mapa para encuadrar todos los pins (solo al montar)
 function MapFitter({ pins }: { pins: Pin[] }) {
-  const map  = useMap()
+  const map = useMap()
   const done = useRef(false)
   useEffect(() => {
     if (pins.length > 0 && !done.current) {
       done.current = true
-      const bounds = L.latLngBounds(pins.map(p => [p.lat, p.lng] as [number, number]))
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 })
+      map.fitBounds(
+        L.latLngBounds(pins.map(p => [p.lat, p.lng] as [number, number])),
+        { padding: [50, 50], maxZoom: 15 }
+      )
     }
   }, [pins, map])
   return null
 }
 
-// ─── Componente principal ─────────────────────────────────────────────────────
-
 export default function MapView({ initialLocation }: MapViewProps) {
-  // ── Estado del mapa (pins) ─────────────────────────────────────────────────
-  const [pins,          setPins]          = useState<Pin[]>([])
-  const [loadingPins,   setLoadingPins]   = useState(true)
-
-  // ── Estado del panel (50 más cercanas) ────────────────────────────────────
-  const [cercanas,         setCercanas]         = useState<BaldosaCercana[]>([])
-  const [loadingCercanas,  setLoadingCercanas]  = useState(false)
-  const [selectedId,       setSelectedId]       = useState<string | null>(null)
-
-  // ── Ubicación del usuario ─────────────────────────────────────────────────
-  const [userLocation,    setUserLocation]    = useState<{ lat: number; lng: number } | null>(null)
+  const [pins,            setPins]            = useState<Pin[]>([])
+  const [loadingPins,     setLoadingPins]     = useState(true)
+  const [userLocation,    setUserLocation]    = useState<{lat:number;lng:number}|null>(null)
   const [loadingLocation, setLoadingLocation] = useState(true)
+  const [panelAbierto,    setPanelAbierto]    = useState(false)
+  const [cercanas,        setCercanas]        = useState<BaldosaCercana[]>([])
+  const [loadingCercanas, setLoadingCercanas] = useState(false)
+  const [cargado,         setCargado]         = useState(false)
+  const [selectedId,      setSelectedId]      = useState<string|null>(null)
 
-  const panelRef = useRef<HTMLDivElement>(null)
-
-  // ── 1. Pedir ubicación ────────────────────────────────────────────────────
   useEffect(() => {
     if (!navigator.geolocation) { setLoadingLocation(false); return }
     navigator.geolocation.getCurrentPosition(
-      pos => {
-        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
-        setLoadingLocation(false)
-      },
-      () => setLoadingLocation(false),
+      pos => { setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setLoadingLocation(false) },
+      ()  => setLoadingLocation(false),
       { enableHighAccuracy: true, timeout: 10000 }
     )
   }, [])
 
-  // ── 2. Cargar pins mínimos para el mapa ───────────────────────────────────
   useEffect(() => {
     fetch('/api/baldosas/pins')
       .then(r => r.json())
       .then(d => setPins(d.pins || []))
-      .catch(e => console.error('Error cargando pins:', e))
+      .catch(e => console.error('Error pins:', e))
       .finally(() => setLoadingPins(false))
   }, [])
 
-  // ── 3. Cargar las 50 más cercanas cuando hay ubicación ───────────────────
-  useEffect(() => {
-    if (!userLocation) return
+  const abrirPanel = () => {
+    setPanelAbierto(true)
+    if (cargado) return
     setLoadingCercanas(true)
-    const { lat, lng } = userLocation
-    fetch(`/api/baldosas/nearby?lat=${lat}&lng=${lng}&radius=5000`)
-      .then(r => r.json())
-      .then(d => {
-        const lista: BaldosaCercana[] = (d.baldosas || []).map((b: any) => ({
-          ...b,
-          distancia: calcularDistancia(lat, lng, b.lat, b.lng),
-        }))
-        // Ordenar por distancia
-        lista.sort((a, b) => (a.distancia ?? 0) - (b.distancia ?? 0))
-        setCercanas(lista)
-      })
-      .catch(e => console.error('Error cargando cercanas:', e))
-      .finally(() => setLoadingCercanas(false))
-  }, [userLocation])
-
-  // ── 4. Sin ubicación: mostrar las primeras 50 pins en el panel ────────────
-  useEffect(() => {
-    if (userLocation || loadingLocation || pins.length === 0) return
-    // Copia los primeros 50 pins como lista del panel (sin distancia)
-    setCercanas(pins.slice(0, 50).map(p => ({ ...p, mensajeAR: '' })))
-  }, [loadingLocation, userLocation, pins])
-
-  const selectedPin = pins.find(p => p.id === selectedId) ?? null
+    setCargado(true)
+    if (userLocation) {
+      const { lat, lng } = userLocation
+      fetch(`/api/baldosas/nearby?lat=${lat}&lng=${lng}&radius=5000`)
+        .then(r => r.json())
+        .then(d => {
+          const lista: BaldosaCercana[] = (d.baldosas || [])
+            .slice(0, LIMIT_CERCANAS)
+            .map((b: any) => ({ ...b, distancia: calcularDistancia(lat, lng, b.lat, b.lng) }))
+          lista.sort((a, b) => (a.distancia??0) - (b.distancia??0))
+          setCercanas(lista)
+        })
+        .catch(e => console.error('Error cercanas:', e))
+        .finally(() => setLoadingCercanas(false))
+    } else {
+      setCercanas(pins.slice(0, LIMIT_CERCANAS).map(p => ({ ...p, mensajeAR: '' })))
+      setLoadingCercanas(false)
+    }
+  }
 
   return (
-    <div style={{ position: 'relative' }}>
-      {/* ── Mapa ──────────────────────────────────────────────────────────── */}
+    <div style={{ position: 'relative', height: 'calc(100vh - 120px)' }}>
+
       <MapContainer
         center={[userLocation?.lat ?? initialLocation.lat, userLocation?.lng ?? initialLocation.lng]}
         zoom={13}
-        style={{ height: 'calc(100vh - 120px)', width: '100%' }}
+        style={{ height: '100%', width: '100%' }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-
-        {/* Ubicación del usuario */}
         {userLocation && (
           <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
-            <Popup>
-              <div style={{ fontFamily: 'sans-serif', textAlign: 'center' }}>
-                <strong>Tu ubicación</strong>
-              </div>
-            </Popup>
+            <Popup><div style={{ fontFamily: 'sans-serif', textAlign: 'center' }}><strong>Tu ubicación</strong></div></Popup>
           </Marker>
         )}
-
-        {/* Markers de baldosas — solo lat/lng/nombre/dirección */}
         {pins.map(pin => {
-          const distancia = userLocation
-            ? calcularDistancia(userLocation.lat, userLocation.lng, pin.lat, pin.lng)
-            : null
+          const distancia = userLocation ? calcularDistancia(userLocation.lat, userLocation.lng, pin.lat, pin.lng) : null
           const cerca = distancia !== null && distancia <= RADIO_MAXIMO
-
           return (
-            <Marker
-              key={pin.id}
-              position={[pin.lat, pin.lng]}
-              icon={baldosaIcon}
-              eventHandlers={{ click: () => setSelectedId(pin.id) }}
-            >
+            <Marker key={pin.id} position={[pin.lat, pin.lng]} icon={baldosaIcon}
+              eventHandlers={{ click: () => setSelectedId(pin.id) }}>
               <Popup>
-                <div style={{ fontFamily: 'sans-serif', minWidth: '200px' }}>
-                  <h3 style={{ fontSize: '1rem', color: '#1a2a3a', marginBottom: '4px' }}>
-                    {pin.nombre}
-                  </h3>
-                  {pin.direccion && (
-                    <p style={{ fontSize: '0.85rem', color: '#4a6b7c', marginBottom: '8px' }}>
-                      🌎 {pin.direccion}
-                    </p>
-                  )}
+                <div style={{ fontFamily: 'sans-serif', minWidth: '190px' }}>
+                  <h3 style={{ fontSize: '1rem', color: '#1a2a3a', marginBottom: '4px' }}>{pin.nombre}</h3>
+                  {pin.direccion && <p style={{ fontSize: '0.82rem', color: '#4a6b7c', marginBottom: '8px' }}>🌎 {pin.direccion}</p>}
                   {distancia !== null && (
-                    <div style={{
-                      padding: '8px',
-                      background: cerca ? '#dcfce7' : '#f3f4f6',
-                      borderRadius: '6px',
-                      textAlign: 'center',
-                      fontSize: '0.85rem',
-                      color: cerca ? '#166534' : '#4b5563',
-                    }}>
-                      {cerca
-                        ? '✓ Estás cerca — podés escanear'
-                        : `📏 ${formatearDistancia(distancia)}`
-                      }
+                    <div style={{ padding: '7px', borderRadius: '6px', textAlign: 'center', fontSize: '0.82rem', background: cerca ? '#dcfce7' : '#f3f4f6', color: cerca ? '#166534' : '#4b5563' }}>
+                      {cerca ? '✓ Estás cerca — podés escanear' : `📏 ${formatearDistancia(distancia)}`}
                     </div>
                   )}
                 </div>
@@ -235,121 +167,111 @@ export default function MapView({ initialLocation }: MapViewProps) {
             </Marker>
           )
         })}
-
         <MapFitter pins={pins} />
       </MapContainer>
 
-      {/* ── Panel lateral: 50 más cercanas ───────────────────────────────── */}
-      <div
-        ref={panelRef}
-        style={{
-          position:   'absolute',
-          top:         0,
-          right:       0,
-          width:       '300px',
-          maxWidth:    '100%',
-          height:      'calc(100vh - 120px)',
-          background:  'white',
-          boxShadow:   '-4px 0 20px rgba(0,0,0,0.1)',
-          overflowY:   'auto',
-          zIndex:      1000,
-          padding:     '16px',
-          display:     'flex',
-          flexDirection: 'column',
-          gap:         '0',
-        }}
-      >
-        {/* Header del panel */}
-        <div style={{ marginBottom: '12px' }}>
-          <h2 style={{ fontSize: '1.2rem', color: '#1a2a3a', fontWeight: 600, marginBottom: '4px' }}>
-            Baldosas cercanas
-          </h2>
-          {userLocation ? (
-            <p style={{ fontSize: '0.8rem', color: '#0369a1', margin: 0 }}>
-              📍 Las 50 más cercanas a vos
-            </p>
-          ) : loadingLocation ? (
-            <p style={{ fontSize: '0.8rem', color: '#6b7280', margin: 0 }}>
-              Obteniendo tu ubicación…
-            </p>
-          ) : (
-            <p style={{ fontSize: '0.8rem', color: '#6b7280', margin: 0 }}>
-              Primeras 50 baldosas · Activá el GPS para ordenar por distancia
-            </p>
+      {/* Botón abrir panel */}
+      {!panelAbierto && (
+        <button onClick={abrirPanel} style={{
+          position: 'absolute', bottom: '2rem', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 1000, background: '#1a2a3a', color: 'white', border: 'none',
+          borderRadius: '24px', padding: '0.65rem 1.5rem', fontSize: '0.9rem',
+          fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+          display: 'flex', alignItems: 'center', gap: '0.5rem', whiteSpace: 'nowrap',
+        }}>
+          🏛️ Ver baldosas cercanas
+          {!loadingPins && (
+            <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '12px', padding: '1px 8px', fontSize: '0.78rem' }}>
+              {pins.length.toLocaleString('es-AR')} en el mapa
+            </span>
           )}
-        </div>
+        </button>
+      )}
 
-        {/* Contador total de pins del mapa */}
-        {!loadingPins && (
+      {/* Panel inferior */}
+      {panelAbierto && (
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 1000,
+          background: 'white', borderRadius: '16px 16px 0 0',
+          boxShadow: '0 -4px 24px rgba(0,0,0,0.15)',
+          maxHeight: 'min(25vh, 320px)',
+          overflowY: 'auto',
+        }}>
+          {/* Header sticky */}
           <div style={{
-            padding:      '6px 10px',
-            background:   'rgba(37,99,235,0.06)',
-            borderRadius: '8px',
-            marginBottom: '12px',
-            fontSize:     '0.8rem',
-            color:        '#2563eb',
+            position: 'sticky', top: 0, background: 'white', borderRadius: '16px 16px 0 0',
+            padding: '10px 16px 8px', borderBottom: '1px solid #f0f0f0',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 1,
           }}>
-            🏛️ {pins.length.toLocaleString('es-AR')} baldosas en el mapa
+            <div>
+              <div style={{ width: '36px', height: '4px', background: '#e5e7eb', borderRadius: '2px', margin: '0 auto 6px' }} />
+              <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1a2a3a' }}>
+                {userLocation ? `${LIMIT_CERCANAS} baldosas más cercanas` : `Primeras ${LIMIT_CERCANAS} baldosas`}
+              </span>
+              {!userLocation && !loadingLocation && (
+                <p style={{ fontSize: '0.72rem', color: '#6b7280', margin: '1px 0 0' }}>
+                  Activá el GPS para ordenar por distancia
+                </p>
+              )}
+            </div>
+            <button onClick={() => setPanelAbierto(false)} style={{
+              background: '#f3f4f6', border: 'none', borderRadius: '50%',
+              width: '28px', height: '28px', cursor: 'pointer', fontSize: '0.85rem',
+              color: '#6b7280', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>✕</button>
           </div>
-        )}
 
-        {/* Lista */}
-        {loadingCercanas || (loadingLocation && cercanas.length === 0) ? (
-          <div style={{ textAlign: 'center', padding: '30px 0' }}>
-            <div className="loading" />
-            <p style={{ marginTop: '10px', color: '#4a6b7c', fontSize: '0.85rem' }}>
-              Cargando cercanas…
-            </p>
-          </div>
-        ) : cercanas.length === 0 ? (
-          <p style={{ color: '#6b7280', fontSize: '0.9rem', textAlign: 'center', padding: '20px 0' }}>
-            No se encontraron baldosas cercanas
-          </p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {cercanas.map(b => {
-              const cerca = b.distancia !== undefined && b.distancia <= RADIO_MAXIMO
-              const seleccionada = selectedId === b.id
-              return (
-                <div
-                  key={b.id}
-                  onClick={() => setSelectedId(seleccionada ? null : b.id)}
-                  style={{
-                    padding:    '12px',
-                    border:     seleccionada ? '2px solid #2563eb' : '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    cursor:     'pointer',
-                    background: seleccionada ? 'rgba(37,99,235,0.05)' : 'white',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  <p style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1a2a3a', marginBottom: '2px' }}>
-                    {b.nombre}
-                  </p>
-                  {b.direccion && (
-                    <p style={{ fontSize: '0.8rem', color: '#4a6b7c', marginBottom: '4px' }}>
-                      {b.direccion}{b.barrio ? ` · ${b.barrio}` : ''}
-                    </p>
-                  )}
-                  {b.distancia !== undefined && (
-                    <span style={{
-                      display:      'inline-block',
-                      fontSize:     '0.75rem',
-                      fontWeight:   600,
-                      padding:      '2px 8px',
-                      borderRadius: '12px',
-                      background:   cerca ? '#dcfce7' : '#f3f4f6',
-                      color:        cerca ? '#166534' : '#6b7280',
+          {/* Lista */}
+          <div style={{ padding: '8px 12px 12px' }}>
+            {loadingCercanas ? (
+              <div style={{ textAlign: 'center', padding: '16px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                <div className="loading" style={{ width: '18px', height: '18px' }} />
+                <span style={{ fontSize: '0.85rem', color: '#4a6b7c' }}>Buscando cercanas…</span>
+              </div>
+            ) : cercanas.length === 0 ? (
+              <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '0.85rem', padding: '12px 0' }}>
+                No se encontraron baldosas en el área
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {cercanas.map(b => {
+                  const cerca = b.distancia !== undefined && b.distancia <= RADIO_MAXIMO
+                  const sel   = selectedId === b.id
+                  return (
+                    <div key={b.id} onClick={() => setSelectedId(sel ? null : b.id)} style={{
+                      padding: '10px 12px', borderRadius: '8px', cursor: 'pointer',
+                      border: sel ? '2px solid #2563eb' : '1px solid #e5e7eb',
+                      background: sel ? 'rgba(37,99,235,0.05)' : 'white',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px',
                     }}>
-                      {cerca ? '✓ Cerca' : formatearDistancia(b.distancia)}
-                    </span>
-                  )}
-                </div>
-              )
-            })}
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: '0.9rem', fontWeight: 600, color: '#1a2a3a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {b.nombre}
+                        </p>
+                        {b.direccion && (
+                          <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: '1px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {b.direccion}{b.barrio ? ` · ${b.barrio}` : ''}
+                          </p>
+                        )}
+                      </div>
+                      {b.distancia !== undefined && (
+                        <span style={{
+                          flexShrink: 0, fontSize: '0.75rem', fontWeight: 600,
+                          padding: '3px 8px', borderRadius: '12px',
+                          background: cerca ? '#dcfce7' : '#f3f4f6',
+                          color:      cerca ? '#166534' : '#6b7280',
+                        }}>
+                          {cerca ? '✓ Cerca' : formatearDistancia(b.distancia)}
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
