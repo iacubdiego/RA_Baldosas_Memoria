@@ -205,7 +205,25 @@ export default function MapView({ initialLocation }:MapViewProps) {
 
       {/* Botón abrir panel */}
       {!panelAbierto&&(
-        <button onClick={abrirPanel} style={{position:'absolute',bottom:'2.5rem',left:'50%',transform:'translateX(-50%)',zIndex:400,background:'#1a2a3a',color:'white',border:'none',borderRadius:'14px',padding:'1rem 2.5rem',fontSize:'1.05rem',fontWeight:700,cursor:'pointer',boxShadow:'0 6px 20px rgba(0,0,0,0.3)',whiteSpace:'nowrap',minWidth:'220px',textAlign:'center'}}>
+        <button onClick={abrirPanel} style={{
+          position:'absolute',
+          // env(safe-area-inset-bottom) cubre la barra de Android/iOS
+          bottom:'calc(env(safe-area-inset-bottom, 0px) + 5rem)',
+          left:'1rem', right:'1rem',
+          zIndex:400,
+          background:'#1a2a3a', color:'white', border:'none',
+          borderRadius:'16px',
+          padding:'1.1rem 1rem',
+          fontSize:'1.1rem', fontWeight:700, letterSpacing:'0.01em',
+          cursor:'pointer',
+          boxShadow:'0 6px 24px rgba(0,0,0,0.35)',
+          textAlign:'center',
+          // anchura completa con márgenes laterales
+          width:'calc(100% - 2rem)',
+          maxWidth:'480px',
+          marginLeft:'auto', marginRight:'auto',
+          display:'block',
+        }}>
           Ver baldosas cercanas
         </button>
       )}

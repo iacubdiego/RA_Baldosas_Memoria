@@ -2,18 +2,12 @@
 
 /**
  * ContadorBaldosas.tsx — Client Component
- * ─────────────────────────────────────────
- * Obtiene el total de baldosas via /api/baldosas/count
- * (nunca toca MongoDB directamente desde el cliente).
- *
- * Uso en app/page.tsx, después del bloque Memorial Statement:
+ * Uso en app/page.tsx después del bloque {/* Memorial Statement *\/}
  *
  *   import ContadorBaldosas from '@/components/ContadorBaldosas'
  *   ...
  *   </div>  ← cierre del memorial-statement
- *
  *   <ContadorBaldosas />
- *
  *   {/* Botones de acción *\/}
  */
 
@@ -32,36 +26,41 @@ export default function ContadorBaldosas() {
   if (!total) return null
 
   return (
-    <div
-      style={{
-        display:        'flex',
-        alignItems:     'center',
-        justifyContent: 'center',
-        gap:            '0.5rem',
-        margin:         'var(--space-md) auto var(--space-lg)',
-        padding:        '0.55rem 1.4rem',
-        background:     'rgba(37, 99, 235, 0.06)',
-        border:         '1px solid rgba(37, 99, 235, 0.18)',
-        borderRadius:   '24px',
-        width:          'fit-content',
-      }}
-    >
-      <span style={{ fontSize: '1rem' }}>🏛️</span>
-      <span style={{
-        fontFamily: 'var(--font-display)',
-        fontSize:   '1.05rem',
-        fontWeight:  700,
-        color:      'var(--color-primary)',
+    <div style={{
+      margin:    'var(--space-lg) auto var(--space-xl)',
+      textAlign: 'center',
+      padding:   'var(--space-lg) var(--space-md)',
+      background: 'rgba(37, 99, 235, 0.05)',
+      border:    '1px solid rgba(37, 99, 235, 0.15)',
+      borderRadius: '16px',
+      maxWidth:  '400px',
+    }}>
+      <div style={{
+        fontFamily:    'var(--font-display)',
+        fontSize:      'clamp(2.8rem, 8vw, 4rem)',
+        fontWeight:     800,
+        color:         'var(--color-primary)',
+        lineHeight:     1,
+        letterSpacing: '-0.03em',
       }}>
         {total.toLocaleString('es-AR')}
-      </span>
-      <span style={{
-        fontSize:   '0.88rem',
-        color:      'var(--color-dust)',
-        fontWeight:  500,
+      </div>
+      <div style={{
+        fontSize:      '1rem',
+        color:         'var(--color-stone)',
+        fontWeight:     600,
+        marginTop:     '0.4rem',
+        letterSpacing: '0.02em',
       }}>
-        baldosas en la base
-      </span>
+        baldosas honran a víctimas
+      </div>
+      <div style={{
+        fontSize:   '0.85rem',
+        color:      'var(--color-dust)',
+        marginTop:  '0.2rem',
+      }}>
+        de la última dictadura en Buenos Aires
+      </div>
     </div>
   )
 }
