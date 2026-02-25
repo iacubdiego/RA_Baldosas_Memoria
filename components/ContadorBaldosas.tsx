@@ -1,44 +1,38 @@
+'use client'
+
 /**
- * ContadorBaldosas.tsx — Server Component
+ * ContadorBaldosas.tsx — Client Component
  * ─────────────────────────────────────────
- * Muestra el total de baldosas activas en la DB.
+ * Obtiene el total de baldosas via /api/baldosas/count
+ * (nunca toca MongoDB directamente desde el cliente).
  *
- * Ubicación en app/page.tsx — DESPUÉS del bloque Memorial Statement:
+ * Uso en app/page.tsx, después del bloque Memorial Statement:
  *
- *   {/* Memorial Statement - Solo "Nunca Más" *\/}
- *   <div className="memorial-statement animate-fade-in-scale delay-300">
- *     ...
- *   </div>
+ *   import ContadorBaldosas from '@/components/ContadorBaldosas'
+ *   ...
+ *   </div>  ← cierre del memorial-statement
  *
- *   <ContadorBaldosas />     ← acá
+ *   <ContadorBaldosas />
  *
  *   {/* Botones de acción *\/}
- *
- * Importar con:
- *   import ContadorBaldosas from '@/components/ContadorBaldosas'
  */
 
-import connectDB from '@/lib/mongodb'
-import Baldosa from '@/models/Baldosa'
+import { useEffect, useState } from 'react'
 
-export const revalidate = 60
+export default function ContadorBaldosas() {
+  const [total, setTotal] = useState<number | null>(null)
 
-async function obtenerTotal(): Promise<number> {
-  try {
-    await connectDB()
-    return await Baldosa.countDocuments({ activo: true })
-  } catch {
-    return 0
-  }
-}
+  useEffect(() => {
+    fetch('/api/baldosas/count')
+      .then(r => r.json())
+      .then(d => setTotal(d.total ?? null))
+      .catch(() => {})
+  }, [])
 
-export default async function ContadorBaldosas() {
-  const total = await obtenerTotal()
-  if (total === 0) return null
+  if (!total) return null
 
   return (
     <div
-      className="animate-fade-in-up"
       style={{
         display:        'flex',
         alignItems:     'center',
@@ -54,17 +48,17 @@ export default async function ContadorBaldosas() {
     >
       <span style={{ fontSize: '1rem' }}>🏛️</span>
       <span style={{
-        fontFamily:    'var(--font-display)',
-        fontSize:      '1.05rem',
-        fontWeight:    700,
-        color:         'var(--color-primary)',
+        fontFamily: 'var(--font-display)',
+        fontSize:   '1.05rem',
+        fontWeight:  700,
+        color:      'var(--color-primary)',
       }}>
         {total.toLocaleString('es-AR')}
       </span>
       <span style={{
         fontSize:   '0.88rem',
         color:      'var(--color-dust)',
-        fontWeight: 500,
+        fontWeight:  500,
       }}>
         baldosas en la base
       </span>
