@@ -83,6 +83,8 @@ export default function MapView({ initialLocation }:MapViewProps) {
   const [loadingCercanas,setLoadingCercanas]=useState(false)
   const [cargado,setCargado]=useState(false)
   const [destino,setDestino]=useState<BaldosaCercana|null>(null)
+  const [detalle,setDetalle]=useState<Pin|BaldosaCercana|null>(null)
+  const [loadingDetalle,setLoadingDetalle]=useState(false)
   const [ruta,setRuta]=useState<[number,number][]>([])
   const [loadingRuta,setLoadingRuta]=useState(false)
 
@@ -135,6 +137,18 @@ export default function MapView({ initialLocation }:MapViewProps) {
     }
   }
 
+  // Carga el detalle completo de una baldosa desde la API
+  const verDetalle=async(id:string,datosBasicos:Pin|BaldosaCercana)=>{
+    setDetalle(datosBasicos)  // mostrar inmediatamente con datos básicos
+    setLoadingDetalle(true)
+    try {
+      const res=await fetch(`/api/baldosas/${id}`)
+      const data=await res.json()
+      if(data.baldosa) setDetalle(data.baldosa)
+    } catch(e) { console.error('Error detalle:',e) }
+    finally { setLoadingDetalle(false) }
+  }
+
   const iniciarRecorrido=(b:BaldosaCercana)=>{
     if(destino?.id===b.id){ setDestino(null); setRuta([]); return }
     setDestino(b); setRuta([]); setPanelAbierto(false)
@@ -175,7 +189,10 @@ export default function MapView({ initialLocation }:MapViewProps) {
                   <h3 style={{fontSize:'0.95rem',color:'#1a2a3a',margin:'0 0 4px'}}>{pin.nombre}</h3>
                   {pin.direccion&&<p style={{fontSize:'0.8rem',color:'#4a6b7c',margin:'0 0 6px'}}>📍 {pin.direccion}</p>}
                   {dist!==null&&<p style={{fontSize:'0.8rem',fontWeight:600,color:cerca?'#166534':'#4b5563',margin:'0 0 8px'}}>{cerca?'✓ Estás cerca':`📏 ${formatearDistancia(dist)}`}</p>}
-                  {userLocation&&<button onClick={()=>iniciarRecorrido({...pin,mensajeAR:''})} style={{width:'100%',padding:'7px',background:'#2563eb',color:'white',border:'none',borderRadius:'6px',fontSize:'0.82rem',fontWeight:600,cursor:'pointer'}}>Cómo llegar</button>}
+                  <div style={{display:'flex',gap:'6px',marginTop:'4px'}}>
+                    <button onClick={()=>verDetalle(pin.id,pin)} style={{flex:1,padding:'7px',background:'#2563eb',color:'white',border:'none',borderRadius:'6px',fontSize:'0.82rem',fontWeight:600,cursor:'pointer'}}>Ver detalle</button>
+                    {userLocation&&<button onClick={()=>iniciarRecorrido({...pin,mensajeAR:''})} style={{flex:1,padding:'7px',background:'#f0f4f8',color:'#1a2a3a',border:'1px solid #e5e7eb',borderRadius:'6px',fontSize:'0.82rem',fontWeight:600,cursor:'pointer'}}>Ir →</button>}
+                  </div>
                 </div>
               </Popup>
             </Marker>
@@ -268,6 +285,9 @@ export default function MapView({ initialLocation }:MapViewProps) {
                             {cerca?'✓ Cerca':formatearDistancia(b.distancia)}
                           </span>
                         )}
+                        <button onClick={()=>verDetalle(b.id,b)} style={{background:'#f0f4f8',border:'1px solid #e5e7eb',borderRadius:'8px',padding:'5px 8px',fontSize:'0.78rem',fontWeight:600,color:'#1a2a3a',cursor:'pointer',whiteSpace:'nowrap'}}>
+                          Ver
+                        </button>
                         <button onClick={()=>iniciarRecorrido(b)} style={{background:activa?'#fee2e2':'#eff6ff',border:'none',borderRadius:'8px',padding:'5px 10px',fontSize:'0.78rem',fontWeight:600,color:activa?'#dc2626':'#2563eb',cursor:'pointer',whiteSpace:'nowrap',opacity:loadingRuta&&!activa?0.6:1}}>
                           {activa?'Cancelar':'Ir →'}
                         </button>
@@ -277,6 +297,82 @@ export default function MapView({ initialLocation }:MapViewProps) {
                 })}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Panel de detalle de baldosa ──────────────────────────────── */}
+      {detalle&&(
+        <div style={{position:'absolute',inset:0,zIndex:500,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'flex-end'}} onClick={()=>setDetalle(null)}>
+          <div onClick={e=>e.stopPropagation()} style={{width:'100%',background:'white',borderRadius:'20px 20px 0 0',boxShadow:'0 -8px 40px rgba(0,0,0,0.2)',maxHeight:'80vh',display:'flex',flexDirection:'column',overflow:'hidden'}}>
+            {/* Header */}
+            <div style={{flexShrink:0,padding:'16px 20px 12px',borderBottom:'1px solid #f0f0f0',position:'relative'}}>
+              <div style={{width:'40px',height:'4px',background:'#e5e7eb',borderRadius:'2px',margin:'0 auto 12px'}}/>
+              <button onClick={()=>setDetalle(null)} style={{position:'absolute',top:'16px',right:'16px',background:'#f3f4f6',border:'none',borderRadius:'50%',width:'32px',height:'32px',cursor:'pointer',color:'#6b7280',fontSize:'1rem',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+              <h2 style={{fontSize:'1.2rem',fontWeight:700,color:'#1a2a3a',margin:0,paddingRight:'40px'}}>
+                {'nombre' in detalle ? detalle.nombre : ''}
+              </h2>
+              {('direccion' in detalle && detalle.direccion)&&(
+                <p style={{fontSize:'0.85rem',color:'#4a6b7c',margin:'4px 0 0'}}>
+                  📍 {detalle.direccion}{'barrio' in detalle && detalle.barrio ? ` · ${detalle.barrio}` : ''}
+                </p>
+              )}
+            </div>
+            {/* Contenido scrollable */}
+            <div style={{overflowY:'auto',padding:'16px 20px 32px',flex:1}}>
+              {loadingDetalle?(
+                <div style={{textAlign:'center',padding:'24px 0',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}>
+                  <div className="loading" style={{width:'20px',height:'20px'}}/>
+                  <span style={{color:'#4a6b7c',fontSize:'0.9rem'}}>Cargando información…</span>
+                </div>
+              ):(
+                <>
+                  {/* Foto */}
+                  {('fotoUrl' in detalle && detalle.fotoUrl)&&(
+                    <img src={detalle.fotoUrl as string} alt={'nombre' in detalle ? detalle.nombre : ''} style={{width:'100%',borderRadius:'10px',marginBottom:'16px',objectFit:'cover',maxHeight:'200px'}}/>
+                  )}
+                  {/* Codigo */}
+                  {('codigo' in detalle && detalle.codigo)&&(
+                    <div style={{display:'inline-block',background:'rgba(37,99,235,0.08)',borderRadius:'6px',padding:'3px 10px',fontSize:'0.78rem',fontWeight:600,color:'#2563eb',marginBottom:'12px'}}>
+                      {detalle.codigo}
+                    </div>
+                  )}
+                  {/* Descripción */}
+                  {('descripcion' in detalle && (detalle as any).descripcion)&&(
+                    <p style={{fontSize:'0.95rem',color:'#374151',lineHeight:1.6,marginBottom:'14px'}}>
+                      {(detalle as any).descripcion}
+                    </p>
+                  )}
+                  {/* Info extendida */}
+                  {('infoExtendida' in detalle && (detalle as any).infoExtendida)&&(
+                    <div style={{background:'#f8fafc',borderRadius:'10px',padding:'12px 14px',marginBottom:'14px'}}>
+                      <p style={{fontSize:'0.88rem',color:'#4a6b7c',lineHeight:1.65,margin:0}}>
+                        {(detalle as any).infoExtendida}
+                      </p>
+                    </div>
+                  )}
+                  {/* Mensaje AR */}
+                  {('mensajeAR' in detalle && detalle.mensajeAR)&&(
+                    <div style={{borderTop:'1px solid #f0f0f0',paddingTop:'12px',marginTop:'4px'}}>
+                      <p style={{fontSize:'0.8rem',color:'#9ca3af',margin:'0 0 4px',textTransform:'uppercase',letterSpacing:'0.05em'}}>Mensaje</p>
+                      <p style={{fontSize:'0.95rem',color:'#1a2a3a',fontWeight:600,margin:0}}>{detalle.mensajeAR}</p>
+                    </div>
+                  )}
+                  {/* Botón recorrido */}
+                  {userLocation&&(
+                    <button
+                      onClick={()=>{
+                        const b={...detalle,mensajeAR:('mensajeAR' in detalle?detalle.mensajeAR:'')} as BaldosaCercana
+                        iniciarRecorrido(b); setDetalle(null)
+                      }}
+                      style={{width:'100%',marginTop:'16px',padding:'12px',background:'#1a2a3a',color:'white',border:'none',borderRadius:'12px',fontSize:'1rem',fontWeight:700,cursor:'pointer'}}
+                    >
+                      Cómo llegar
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
