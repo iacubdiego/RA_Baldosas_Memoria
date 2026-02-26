@@ -314,7 +314,7 @@ export default function LocationARScanner() {
       '<a-scene',
       '  id="escena-ar"',
       '  embedded',
-      '  renderer="antialias: true; alpha: true; colorManagement: true;"',
+      '  renderer="antialias: true; alpha: true; colorManagement: true; preserveDrawingBuffer: true;"',
       '  background="transparent: true"',
       '  vr-mode-ui="enabled: false"',
       '  loading-screen="enabled: false"',
@@ -652,7 +652,10 @@ export default function LocationARScanner() {
     setCapturando(true)
 
     try {
-      // 1. Capturar escena siempre, antes de verificar auth
+      // 1. Esperar al próximo frame renderizado antes de capturar
+      await new Promise<void>(resolve => requestAnimationFrame(() => setTimeout(resolve, 50)))
+
+      // 2. Capturar escena siempre, antes de verificar auth
       const video   = document.getElementById('camara-bg') as HTMLVideoElement | null
       const aScene  = document.getElementById('escena-ar') as any
       const aCanvas = aScene?.canvas as HTMLCanvasElement | null
