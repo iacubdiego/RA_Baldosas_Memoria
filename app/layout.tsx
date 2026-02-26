@@ -3,7 +3,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Baldosas por la Memoria',
-  description: 'Descubre las baldosas históricas de Buenos Aires a través de realidad aumentada',
+  description: 'Descubre baldosas geolocalizadas a través de realidad aumentada',
   manifest: '/manifest.json',
 }
 

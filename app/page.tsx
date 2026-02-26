@@ -122,9 +122,9 @@ export default function Home() {
               </div>
               
               {/* Texto superior - Memoria, Verdad y Justicia */}
-              <span className="baldosa-texto-superior">
+              {/* <span className="baldosa-texto-superior">
                 Memoria, Verdad y Justicia
-              </span>
+              </span> */}
               
               {/* Imagen central - Nunca Más */}
               <img 
@@ -167,8 +167,7 @@ export default function Home() {
               margin: '0 auto var(--space-xl)',
               lineHeight: 1.8,
             }}>
-              Recorre las baldosas de la memoria que honran a las víctimas de la última dictadura militar argentina (1976-1983). 
-              Cada baldosa es un testimonio de nuestra historia.
+              Recorre las baldosas que se colocaron en todo el país para mantener viva la memoria y exigir verdad y justicia.
             </p>
           </div>
 
@@ -251,7 +250,7 @@ export default function Home() {
                   Descubre las Baldosas
                 </h3>
                 <p style={{ color: 'var(--color-dust)', fontSize: '0.95rem', marginBottom: 0 }}>
-                  Explora el mapa con las baldosas que honran a víctimas de la dictadura
+                  Explora el mapa y busca las baldosas más cercanas a tu ubicación
                 </p>
               </div>
 
@@ -280,7 +279,7 @@ export default function Home() {
                   Escanea en Realidad Aumentada
                 </h3>
                 <p style={{ color: 'var(--color-dust)', fontSize: '0.95rem', marginBottom: 0 }}>
-                  Usa tu cámara para ver información de la baldosa y su significado
+                  Usa tu cámara para ver información de la baldosa y encontrar una escena sumando REALIDAD AUMENTADA
                 </p>
               </div>
 
@@ -309,7 +308,7 @@ export default function Home() {
                   Mantén Viva la Memoria
                 </h3>
                 <p style={{ color: 'var(--color-dust)', fontSize: '0.95rem', marginBottom: 0 }}>
-                  Conoce las historias de quienes lucharon por la libertad y la justicia
+                  Recorre las distintas baldosas y guarda fotos de donde estuviste y lo que viste
                 </p>
               </div>
             </div>
