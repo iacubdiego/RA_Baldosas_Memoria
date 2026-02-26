@@ -596,6 +596,82 @@ export default function LocationARScanner() {
     }
   }, [baldosaActiva, guardando])
 
+  const capturarYGuardar = useCallback(async () => {
+    if (!baldosaActiva || capturando || capturaOk) return
+    setCapturando(true)
+
+    try {
+      // 1. Esperar al próximo frame renderizado antes de capturar
+      await new Promise<void>(resolve => requestAnimationFrame(() => setTimeout(resolve, 50)))
+
+      // 2. Capturar escena siempre, antes de verificar auth
+      const video   = document.getElementById('camara-bg') as HTMLVideoElement | null
+      const aScene  = document.getElementById('escena-ar') as any
+      const aCanvas = aScene?.canvas as HTMLCanvasElement | null
+
+      const W = window.innerWidth
+      const H = window.innerHeight
+      const offscreen = document.createElement('canvas')
+      offscreen.width  = W
+      offscreen.height = H
+      const ctx = offscreen.getContext('2d')!
+
+      if (video && video.readyState >= 2) {
+        ctx.drawImage(video, 0, 0, W, H)
+      } else {
+        ctx.fillStyle = '#0a121c'
+        ctx.fillRect(0, 0, W, H)
+      }
+      if (aCanvas) {
+        ctx.drawImage(aCanvas, 0, 0, W, H)
+      }
+
+      const fotoBase64 = offscreen.toDataURL('image/jpeg', 0.82)
+
+      // 3. Verificar auth
+      const authRes = await fetch('/api/auth/me')
+      if (!authRes.ok) {
+        sessionStorage.setItem('captura_pendiente', JSON.stringify({
+          baldosaId:     baldosaActiva.codigo || baldosaActiva.id,
+          nombreVictima: baldosaActiva.nombre,
+          fotoBase64,
+          ubicacion:     baldosaActiva.direccion || baldosaActiva.barrio || 'Buenos Aires',
+          lat:           baldosaActiva.lat,
+          lng:           baldosaActiva.lng,
+        }))
+        window.location.href = `/auth?redirect=/scanner&pendiente=captura`
+        return
+      }
+
+      // 4. Guardar en BD
+      const res = await fetch('/api/recorridos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          baldosaId:         baldosaActiva.codigo || baldosaActiva.id,
+          nombreVictima:     baldosaActiva.nombre,
+          fechaDesaparicion: '',
+          fotoBase64,
+          ubicacion:         baldosaActiva.direccion || baldosaActiva.barrio || 'Buenos Aires',
+          lat:               baldosaActiva.lat,
+          lng:               baldosaActiva.lng,
+          notas:             'Captura AR',
+        }),
+      })
+
+      const data = await res.json()
+      if (res.ok || data.error?.includes('Ya has escaneado')) {
+        setCapturaOk(true)
+        setGuardado(true)
+        setTimeout(() => { window.location.href = '/coleccion' }, 1200)
+      }
+    } catch {
+      // Silencioso
+    } finally {
+      setCapturando(false)
+    }
+  }, [baldosaActiva, capturando, capturaOk])
+
   // ── 6. Renders por fase ───────────────────────────────────────────────────
 
   // Pantalla de inicio / pedido de permisos
@@ -832,6 +908,41 @@ export default function LocationARScanner() {
             </div>
           )
         })()}
+
+        {/* ── Botón capturar — esquina inferior izquierda ──────────────── */}
+        {arListo && (
+          <button
+            onClick={capturarYGuardar}
+            disabled={capturando || capturaOk}
+            style={{
+              position: 'absolute',
+              bottom: '5rem',
+              left: '1rem',
+              zIndex: 200,
+              padding: '0.65rem 1rem',
+              background: capturaOk
+                ? 'rgba(22, 101, 52, 0.92)'
+                : 'rgba(10, 18, 28, 0.82)',
+              color: 'white',
+              border: '1px solid rgba(255,255,255,0.22)',
+              borderRadius: '12px',
+              fontSize: '1.3rem',
+              cursor: capturaOk ? 'default' : 'pointer',
+              backdropFilter: 'blur(8px)',
+              touchAction: 'manipulation',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              opacity: capturando ? 0.6 : 1,
+              transition: 'all 0.2s',
+            }}
+          >
+            <span>{capturaOk ? '✓' : capturando ? '⏳' : '📸'}</span>
+            <span style={{ fontSize: '0.78rem', fontWeight: 600 }}>
+              {capturaOk ? 'Guardado' : capturando ? 'Guardando…' : 'Capturar'}
+            </span>
+          </button>
+        )}
 
         {/* Hint gestos — desaparece al primer toque */}
         {arListo && offsetY === 0 && zoom === 1 && (

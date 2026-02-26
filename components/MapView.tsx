@@ -47,7 +47,7 @@ const RADIO_MAXIMO   = 100
 const LIMIT_CERCANAS = 20
 
 interface Pin { id:string; codigo:string; nombre:string; direccion:string; barrio:string; lat:number; lng:number }
-interface BaldosaCercana { id:string; codigo:string; nombre:string; lat:number; lng:number; direccion:string; barrio:string; mensajeAR:string; distancia?:number }
+interface BaldosaCercana { id:string; codigo:string; nombre:string; lat:number; lng:number; direccion:string; barrio:string; mensajeAR:string; distancia?:number; vecesEscaneada?:number }
 interface MapViewProps { initialLocation: { lat:number; lng:number } }
 
 function calcularDistancia(lat1:number,lng1:number,lat2:number,lng2:number):number {
@@ -278,6 +278,11 @@ export default function MapView({ initialLocation }:MapViewProps) {
                       <div style={{minWidth:0,flex:1}}>
                         <p style={{fontSize:'0.92rem',fontWeight:600,color:'#1a2a3a',margin:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{b.nombre}</p>
                         {b.direccion&&<p style={{fontSize:'0.76rem',color:'#6b7280',margin:'2px 0 0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{b.direccion}{b.barrio?` · ${b.barrio}`:''}</p>}
+                        {b.vecesEscaneada!==undefined&&b.vecesEscaneada>0&&(
+                          <p style={{fontSize:'0.72rem',color:'#60a5fa',margin:'2px 0 0'}}>
+                            👁 {b.vecesEscaneada.toLocaleString('es-AR')} {b.vecesEscaneada===1?'escaneo':'escaneos'}
+                          </p>
+                        )}
                       </div>
                       <div style={{display:'flex',alignItems:'center',gap:'6px',flexShrink:0}}>
                         {b.distancia!==undefined&&(

@@ -76,10 +76,11 @@ export async function GET(request: NextRequest) {
         barrio: baldosa.barrio,
         mensajeAR: baldosa.mensajeAR,
         imagenUrl: baldosa.imagenUrl,
-        fotoUrl: baldosa.fotoUrl,        // ✅ AGREGAR
+        fotoUrl: baldosa.fotoUrl,
         clusterId: baldosa.clusterId,
         targetIndex: baldosa.targetIndex,
         mindFileUrl: baldosa.mindFileUrl,
+        vecesEscaneada: baldosa.vecesEscaneada ?? 0,  // ← nuevo
         distancia: Math.round(distance),
       };
     });
