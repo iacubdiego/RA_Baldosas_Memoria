@@ -505,7 +505,6 @@ export default function LocationARScanner() {
     setGuardado(false)
     setCapturaOk(false)
     setCapturando(false)
-    setYaEscaneada(false)
 
     // Incrementar contador — fire & forget, no bloquea la UX
     const id = baldosaCercana.codigo || baldosaCercana.id
