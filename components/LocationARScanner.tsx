@@ -99,12 +99,12 @@ export default function LocationARScanner() {
     const pendiente = sessionStorage.getItem('captura_pendiente')
     if (!pendiente) return
 
-    async function intentarGuardarPendiente() {
+    async function intentarGuardarPendiente(raw: string) {
       try {
         const authRes = await fetch('/api/auth/me')
-        if (!authRes.ok) return // aún no logueado
+        if (!authRes.ok) return
 
-        const datos = JSON.parse(pendiente)
+        const datos = JSON.parse(raw)
         sessionStorage.removeItem('captura_pendiente')
 
         const res = await fetch('/api/recorridos', {
@@ -124,7 +124,6 @@ export default function LocationARScanner() {
 
         const data = await res.json()
         if (res.ok || data.error?.includes('Ya has escaneado')) {
-          // Redirigir a Mi Recorrido
           window.location.href = '/coleccion'
         }
       } catch {
@@ -132,7 +131,7 @@ export default function LocationARScanner() {
       }
     }
 
-    intentarGuardarPendiente()
+    intentarGuardarPendiente(pendiente)
   }, [])
 
   // ── 1. Cargar todas las baldosas al montar ─────────────────────────────────
@@ -533,16 +532,16 @@ export default function LocationARScanner() {
 
   const verEscenaAR = useCallback(() => {
     if (!baldosaCercana) return
-    // Resetear estado AR para garantizar re-mount limpio de la escena
     setScriptsOk(false)
     setArListo(false)
     setBaldosaActiva(null)
-    // Pequeño delay para que React procese el null antes de setear el valor real
     setTimeout(() => {
       setBaldosaActiva(baldosaCercana)
       setFase('ar')
     }, 50)
     setGuardado(false)
+    setCapturaOk(false)
+    setCapturando(false)
   }, [baldosaCercana])
 
   const cerrarAR = useCallback(() => {
@@ -612,26 +611,24 @@ export default function LocationARScanner() {
         setGuardado(true)
       }
     } catch {
-      // Silencioso — no es crítico
+      // Silencioso
     } finally {
       setGuardando(false)
     }
   }, [baldosaActiva, guardando])
 
-  // ── Capturar escena AR y guardar en recorrido ─────────────────────────────
   const capturarYGuardar = useCallback(async () => {
     if (!baldosaActiva || capturando || capturaOk) return
     setCapturando(true)
 
     try {
-      // 1. Capturar la escena AR siempre (antes de verificar auth)
+      // 1. Capturar escena siempre, antes de verificar auth
       const video   = document.getElementById('camara-bg') as HTMLVideoElement | null
       const aScene  = document.getElementById('escena-ar') as any
       const aCanvas = aScene?.canvas as HTMLCanvasElement | null
 
       const W = window.innerWidth
       const H = window.innerHeight
-
       const offscreen = document.createElement('canvas')
       offscreen.width  = W
       offscreen.height = H
@@ -652,7 +649,7 @@ export default function LocationARScanner() {
       // 2. Verificar auth
       const authRes = await fetch('/api/auth/me')
       if (!authRes.ok) {
-        // Guardar captura y datos en sessionStorage para recuperar post-login
+        // Guardar captura en sessionStorage y redirigir al login
         sessionStorage.setItem('captura_pendiente', JSON.stringify({
           baldosaId:     baldosaActiva.codigo || baldosaActiva.id,
           nombreVictima: baldosaActiva.nombre,
@@ -685,10 +682,8 @@ export default function LocationARScanner() {
       if (res.ok || data.error?.includes('Ya has escaneado')) {
         setCapturaOk(true)
         setGuardado(true)
-        // Redirigir a Mi Recorrido tras 1.2s para que el usuario vea el feedback
-        setTimeout(() => {
-          window.location.href = '/coleccion'
-        }, 1200)
+        // Redirigir a Mi Recorrido tras breve feedback visual
+        setTimeout(() => { window.location.href = '/coleccion' }, 1200)
       }
     } catch {
       // Silencioso
@@ -934,6 +929,41 @@ export default function LocationARScanner() {
           )
         })()}
 
+        {/* ── Botón capturar — esquina inferior izquierda ──────────────── */}
+        {arListo && (
+          <button
+            onClick={capturarYGuardar}
+            disabled={capturando || capturaOk}
+            style={{
+              position: 'absolute',
+              bottom: '5rem',
+              left: '1rem',
+              zIndex: 200,
+              padding: '0.65rem 1rem',
+              background: capturaOk
+                ? 'rgba(22, 101, 52, 0.92)'
+                : 'rgba(10, 18, 28, 0.82)',
+              color: 'white',
+              border: '1px solid rgba(255,255,255,0.22)',
+              borderRadius: '12px',
+              fontSize: '1.3rem',
+              cursor: capturaOk ? 'default' : 'pointer',
+              backdropFilter: 'blur(8px)',
+              touchAction: 'manipulation',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              opacity: capturando ? 0.6 : 1,
+              transition: 'all 0.2s',
+            }}
+          >
+            <span>{capturaOk ? '✓' : capturando ? '⏳' : '📸'}</span>
+            <span style={{ fontSize: '0.78rem', fontWeight: 600 }}>
+              {capturaOk ? 'Guardado' : capturando ? 'Guardando…' : 'Capturar'}
+            </span>
+          </button>
+        )}
+
         {/* Hint gestos — desaparece al primer toque */}
         {arListo && offsetY === 0 && zoom === 1 && (
           <div style={{ ...estilos.instruccionAR, fontSize: '0.75rem', lineHeight: 1.4 }}>
@@ -998,7 +1028,6 @@ export default function LocationARScanner() {
           {/* Acciones */}
           <div style={{ ...estilos.botonesAccion, marginTop: '2rem' }}>
 
-            {/* Si ya está guardado, mostrar navegación rápida */}
             {guardado ? (
               <>
                 <div style={{
@@ -1015,16 +1044,10 @@ export default function LocationARScanner() {
                 }}>
                   ✓ Guardado en tu recorrido
                 </div>
-                <a
-                  href="/coleccion"
-                  style={{ ...estilos.btnPrimario, marginBottom: '0.25rem' }}
-                >
+                <a href="/coleccion" style={{ ...estilos.btnPrimario, marginBottom: '0.25rem' }}>
                   📋 Ver mi recorrido
                 </a>
-                <a
-                  href="/"
-                  style={{ ...estilos.btnSecundario }}
-                >
+                <a href="/" style={{ ...estilos.btnSecundario }}>
                   🏠 Ir al inicio
                 </a>
               </>
@@ -1042,10 +1065,7 @@ export default function LocationARScanner() {
               ✨ Ver AR de nuevo
             </button>
 
-            <button
-              onClick={volverACaminar}
-              style={{ ...estilos.btnSecundario }}
-            >
+            <button onClick={volverACaminar} style={{ ...estilos.btnSecundario }}>
               ← Seguir caminando
             </button>
 
