@@ -52,14 +52,14 @@ export default function ContadorBaldosas() {
         marginTop:     '0.4rem',
         letterSpacing: '0.02em',
       }}>
-        baldosas honran a víctimas
+        Son las baldosas que pudimos encontrar.
       </div>
       <div style={{
         fontSize:   '0.85rem',
         color:      'var(--color-dust)',
         marginTop:  '0.2rem',
       }}>
-        de la última dictadura en Buenos Aires
+        Todavía faltan
       </div>
     </div>
   )
