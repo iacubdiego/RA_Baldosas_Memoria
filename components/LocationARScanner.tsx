@@ -506,17 +506,19 @@ export default function LocationARScanner() {
   // ── 4b. Verificar si la baldosa activa ya fue escaneada ──────────────────
   useEffect(() => {
     if (!baldosaActiva) return
-    setYaEscaneada(false) // reset al cambiar de baldosa
+    setYaEscaneada(false)
+
+    const baldosa = baldosaActiva // captura local — TypeScript sabe que no es null
 
     async function verificarEscaneada() {
       try {
         const authRes = await fetch('/api/auth/me')
-        if (!authRes.ok) return // no logueado, no hay recorrido que verificar
+        if (!authRes.ok) return
 
         const res = await fetch('/api/recorridos')
         if (!res.ok) return
         const data = await res.json()
-        const id = baldosaActiva.codigo || baldosaActiva.id
+        const id = baldosa.codigo || baldosa.id
         const existe = (data.recorridos || []).some(
           (r: { baldosaId: string }) => r.baldosaId === id
         )
