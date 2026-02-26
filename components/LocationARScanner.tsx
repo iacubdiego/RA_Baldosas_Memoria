@@ -72,6 +72,7 @@ export default function LocationARScanner() {
   const [guardado, setGuardado] = useState(false)
   const [capturando, setCapturando] = useState(false)
   const [capturaOk, setCapturaOk] = useState(false)
+  const [yaEscaneada, setYaEscaneada] = useState(false)
 
   // Controles AR — persisten en localStorage
   const [offsetY,  setOffsetY]  = useState<number>(() => {
@@ -502,7 +503,35 @@ export default function LocationARScanner() {
     }
   }, [scriptsOk, fase, baldosaActiva])
 
+  // ── 4b. Verificar si la baldosa activa ya fue escaneada ──────────────────
+  useEffect(() => {
+    if (!baldosaActiva) return
+    setYaEscaneada(false) // reset al cambiar de baldosa
 
+    async function verificarEscaneada() {
+      try {
+        const authRes = await fetch('/api/auth/me')
+        if (!authRes.ok) return // no logueado, no hay recorrido que verificar
+
+        const res = await fetch('/api/recorridos')
+        if (!res.ok) return
+        const data = await res.json()
+        const id = baldosaActiva.codigo || baldosaActiva.id
+        const existe = (data.recorridos || []).some(
+          (r: { baldosaId: string }) => r.baldosaId === id
+        )
+        if (existe) {
+          setYaEscaneada(true)
+          setGuardado(true)
+          setCapturaOk(true)
+        }
+      } catch {
+        // Silencioso
+      }
+    }
+
+    verificarEscaneada()
+  }, [baldosaActiva])
 
   // ── 5. Aplicar controles AR en tiempo real ───────────────────────────────────
   useEffect(() => {
@@ -542,6 +571,7 @@ export default function LocationARScanner() {
     setGuardado(false)
     setCapturaOk(false)
     setCapturando(false)
+    setYaEscaneada(false)
   }, [baldosaCercana])
 
   const cerrarAR = useCallback(() => {
@@ -931,37 +961,65 @@ export default function LocationARScanner() {
 
         {/* ── Botón capturar — esquina inferior izquierda ──────────────── */}
         {arListo && (
-          <button
-            onClick={capturarYGuardar}
-            disabled={capturando || capturaOk}
-            style={{
+          yaEscaneada && !capturaOk ? (
+            // Ya tiene foto guardada de sesión anterior
+            <div style={{
               position: 'absolute',
               bottom: '5rem',
               left: '1rem',
               zIndex: 200,
               padding: '0.65rem 1rem',
-              background: capturaOk
-                ? 'rgba(22, 101, 52, 0.92)'
-                : 'rgba(10, 18, 28, 0.82)',
-              color: 'white',
-              border: '1px solid rgba(255,255,255,0.22)',
+              background: 'rgba(120, 53, 15, 0.92)',
+              color: '#fde68a',
+              border: '1px solid rgba(251, 191, 36, 0.4)',
               borderRadius: '12px',
-              fontSize: '1.3rem',
-              cursor: capturaOk ? 'default' : 'pointer',
               backdropFilter: 'blur(8px)',
-              touchAction: 'manipulation',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              opacity: capturando ? 0.6 : 1,
-              transition: 'all 0.2s',
-            }}
-          >
-            <span>{capturaOk ? '✓' : capturando ? '⏳' : '📸'}</span>
-            <span style={{ fontSize: '0.78rem', fontWeight: 600 }}>
-              {capturaOk ? 'Guardado' : capturando ? 'Guardando…' : 'Capturar'}
-            </span>
-          </button>
+              maxWidth: '200px',
+              fontSize: '0.75rem',
+              lineHeight: 1.4,
+            }}>
+              <div style={{ fontWeight: 700, marginBottom: '0.2rem' }}>📸 Ya tenés una foto</div>
+              <div style={{ opacity: 0.9 }}>
+                Eliminá la anterior desde{' '}
+                <a href="/coleccion" style={{ color: '#fde68a', fontWeight: 600 }}>
+                  Mi recorrido
+                </a>
+                {' '}para tomar una nueva.
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={capturarYGuardar}
+              disabled={capturando || capturaOk}
+              style={{
+                position: 'absolute',
+                bottom: '5rem',
+                left: '1rem',
+                zIndex: 200,
+                padding: '0.65rem 1rem',
+                background: capturaOk
+                  ? 'rgba(22, 101, 52, 0.92)'
+                  : 'rgba(10, 18, 28, 0.82)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.22)',
+                borderRadius: '12px',
+                fontSize: '1.3rem',
+                cursor: capturaOk ? 'default' : 'pointer',
+                backdropFilter: 'blur(8px)',
+                touchAction: 'manipulation',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                opacity: capturando ? 0.6 : 1,
+                transition: 'all 0.2s',
+              }}
+            >
+              <span>{capturaOk ? '✓' : capturando ? '⏳' : '📸'}</span>
+              <span style={{ fontSize: '0.78rem', fontWeight: 600 }}>
+                {capturaOk ? 'Guardado' : capturando ? 'Guardando…' : 'Capturar'}
+              </span>
+            </button>
+          )
         )}
 
         {/* Hint gestos — desaparece al primer toque */}
