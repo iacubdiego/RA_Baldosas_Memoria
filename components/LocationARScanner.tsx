@@ -19,6 +19,7 @@ interface Baldosa {
   lng: number
   direccion?: string
   barrio?: string
+  vecesEscaneada?: number
 }
 
 type FaseExperiencia =
@@ -72,7 +73,6 @@ export default function LocationARScanner() {
   const [guardado, setGuardado] = useState(false)
   const [capturando, setCapturando] = useState(false)
   const [capturaOk, setCapturaOk] = useState(false)
-  const [yaEscaneada, setYaEscaneada] = useState(false)
 
   // Controles AR — persisten en localStorage
   const [offsetY,  setOffsetY]  = useState<number>(() => {
@@ -94,46 +94,6 @@ export default function LocationARScanner() {
 
   // Mantener ref sincronizada
   useEffect(() => { baldosasRef.current = baldosas }, [baldosas])
-
-  // ── Recuperar captura pendiente post-login ─────────────────────────────────
-  useEffect(() => {
-    const pendiente = sessionStorage.getItem('captura_pendiente')
-    if (!pendiente) return
-
-    async function intentarGuardarPendiente(raw: string) {
-      try {
-        const authRes = await fetch('/api/auth/me')
-        if (!authRes.ok) return
-
-        const datos = JSON.parse(raw)
-        sessionStorage.removeItem('captura_pendiente')
-
-        const res = await fetch('/api/recorridos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            baldosaId:         datos.baldosaId,
-            nombreVictima:     datos.nombreVictima,
-            fechaDesaparicion: '',
-            fotoBase64:        datos.fotoBase64,
-            ubicacion:         datos.ubicacion,
-            lat:               datos.lat,
-            lng:               datos.lng,
-            notas:             'Captura AR',
-          }),
-        })
-
-        const data = await res.json()
-        if (res.ok || data.error?.includes('Ya has escaneado')) {
-          window.location.href = '/coleccion'
-        }
-      } catch {
-        sessionStorage.removeItem('captura_pendiente')
-      }
-    }
-
-    intentarGuardarPendiente(pendiente)
-  }, [])
 
   // ── 1. Cargar todas las baldosas al montar ─────────────────────────────────
   useEffect(() => {
@@ -314,7 +274,7 @@ export default function LocationARScanner() {
       '<a-scene',
       '  id="escena-ar"',
       '  embedded',
-      '  renderer="antialias: true; alpha: true; colorManagement: true; preserveDrawingBuffer: true;"',
+      '  renderer="antialias: true; alpha: true; colorManagement: true;"',
       '  background="transparent: true"',
       '  vr-mode-ui="enabled: false"',
       '  loading-screen="enabled: false"',
@@ -503,37 +463,7 @@ export default function LocationARScanner() {
     }
   }, [scriptsOk, fase, baldosaActiva])
 
-  // ── 4b. Verificar si la baldosa activa ya fue escaneada ──────────────────
-  useEffect(() => {
-    if (!baldosaActiva) return
-    setYaEscaneada(false)
 
-    const baldosa = baldosaActiva // captura local — TypeScript sabe que no es null
-
-    async function verificarEscaneada() {
-      try {
-        const authRes = await fetch('/api/auth/me')
-        if (!authRes.ok) return
-
-        const res = await fetch('/api/recorridos')
-        if (!res.ok) return
-        const data = await res.json()
-        const id = baldosa.codigo || baldosa.id
-        const existe = (data.recorridos || []).some(
-          (r: { baldosaId: string }) => r.baldosaId === id
-        )
-        if (existe) {
-          setYaEscaneada(true)
-          setGuardado(true)
-          setCapturaOk(true)
-        }
-      } catch {
-        // Silencioso
-      }
-    }
-
-    verificarEscaneada()
-  }, [baldosaActiva])
 
   // ── 5. Aplicar controles AR en tiempo real ───────────────────────────────────
   useEffect(() => {
@@ -563,9 +493,11 @@ export default function LocationARScanner() {
 
   const verEscenaAR = useCallback(() => {
     if (!baldosaCercana) return
+    // Resetear estado AR para garantizar re-mount limpio de la escena
     setScriptsOk(false)
     setArListo(false)
     setBaldosaActiva(null)
+    // Pequeño delay para que React procese el null antes de setear el valor real
     setTimeout(() => {
       setBaldosaActiva(baldosaCercana)
       setFase('ar')
@@ -574,6 +506,10 @@ export default function LocationARScanner() {
     setCapturaOk(false)
     setCapturando(false)
     setYaEscaneada(false)
+
+    // Incrementar contador — fire & forget, no bloquea la UX
+    const id = baldosaCercana.codigo || baldosaCercana.id
+    fetch(`/api/baldosas/${id}`, { method: 'PATCH' }).catch(() => {})
   }, [baldosaCercana])
 
   const cerrarAR = useCallback(() => {
@@ -586,12 +522,24 @@ export default function LocationARScanner() {
     const arContainer = document.getElementById('ar-container')
     if (arContainer) arContainer.innerHTML = ''
 
-    // Resetear scriptsOk para que el useEffect vuelva a ejecutarse si el
-    // usuario hace "Ver AR de nuevo" — las dependencias cambian y re-monta la escena
     setScriptsOk(false)
     setArListo(false)
     setFase('ficha')
-    // baldosaActiva se mantiene para mostrar la ficha
+
+    // Enriquecer baldosaActiva con vecesEscaneada actualizada
+    setBaldosaActiva(prev => {
+      if (!prev) return prev
+      const id = prev.codigo || prev.id
+      fetch(`/api/baldosas/${id}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.baldosa?.vecesEscaneada !== undefined) {
+            setBaldosaActiva(b => b ? { ...b, vecesEscaneada: data.baldosa.vecesEscaneada } : b)
+          }
+        })
+        .catch(() => {})
+      return prev
+    })
   }, [])
 
   const volverACaminar = useCallback(() => {
@@ -619,7 +567,7 @@ export default function LocationARScanner() {
     try {
       const authRes = await fetch('/api/auth/me')
       if (!authRes.ok) {
-        window.location.href = `/auth?redirect=/scanner`
+        window.location.href = `/login?redirect=/scanner`
         return
       }
 
@@ -643,89 +591,11 @@ export default function LocationARScanner() {
         setGuardado(true)
       }
     } catch {
-      // Silencioso
+      // Silencioso — no es crítico
     } finally {
       setGuardando(false)
     }
   }, [baldosaActiva, guardando])
-
-  const capturarYGuardar = useCallback(async () => {
-    if (!baldosaActiva || capturando || capturaOk) return
-    setCapturando(true)
-
-    try {
-      // 1. Esperar al próximo frame renderizado antes de capturar
-      await new Promise<void>(resolve => requestAnimationFrame(() => setTimeout(resolve, 50)))
-
-      // 2. Capturar escena siempre, antes de verificar auth
-      const video   = document.getElementById('camara-bg') as HTMLVideoElement | null
-      const aScene  = document.getElementById('escena-ar') as any
-      const aCanvas = aScene?.canvas as HTMLCanvasElement | null
-
-      const W = window.innerWidth
-      const H = window.innerHeight
-      const offscreen = document.createElement('canvas')
-      offscreen.width  = W
-      offscreen.height = H
-      const ctx = offscreen.getContext('2d')!
-
-      if (video && video.readyState >= 2) {
-        ctx.drawImage(video, 0, 0, W, H)
-      } else {
-        ctx.fillStyle = '#0a121c'
-        ctx.fillRect(0, 0, W, H)
-      }
-      if (aCanvas) {
-        ctx.drawImage(aCanvas, 0, 0, W, H)
-      }
-
-      const fotoBase64 = offscreen.toDataURL('image/jpeg', 0.82)
-
-      // 2. Verificar auth
-      const authRes = await fetch('/api/auth/me')
-      if (!authRes.ok) {
-        // Guardar captura en sessionStorage y redirigir al login
-        sessionStorage.setItem('captura_pendiente', JSON.stringify({
-          baldosaId:     baldosaActiva.codigo || baldosaActiva.id,
-          nombreVictima: baldosaActiva.nombre,
-          fotoBase64,
-          ubicacion:     baldosaActiva.direccion || baldosaActiva.barrio || 'Buenos Aires',
-          lat:           baldosaActiva.lat,
-          lng:           baldosaActiva.lng,
-        }))
-        window.location.href = `/auth?redirect=/scanner&pendiente=captura`
-        return
-      }
-
-      // 3. Guardar en BD
-      const res = await fetch('/api/recorridos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          baldosaId:         baldosaActiva.codigo || baldosaActiva.id,
-          nombreVictima:     baldosaActiva.nombre,
-          fechaDesaparicion: '',
-          fotoBase64,
-          ubicacion:         baldosaActiva.direccion || baldosaActiva.barrio || 'Buenos Aires',
-          lat:               baldosaActiva.lat,
-          lng:               baldosaActiva.lng,
-          notas:             'Captura AR',
-        }),
-      })
-
-      const data = await res.json()
-      if (res.ok || data.error?.includes('Ya has escaneado')) {
-        setCapturaOk(true)
-        setGuardado(true)
-        // Redirigir a Mi Recorrido tras breve feedback visual
-        setTimeout(() => { window.location.href = '/coleccion' }, 1200)
-      }
-    } catch {
-      // Silencioso
-    } finally {
-      setCapturando(false)
-    }
-  }, [baldosaActiva, capturando, capturaOk])
 
   // ── 6. Renders por fase ───────────────────────────────────────────────────
 
@@ -964,69 +834,6 @@ export default function LocationARScanner() {
           )
         })()}
 
-        {/* ── Botón capturar — esquina inferior izquierda ──────────────── */}
-        {arListo && (
-          yaEscaneada && !capturaOk ? (
-            // Ya tiene foto guardada de sesión anterior
-            <div style={{
-              position: 'absolute',
-              bottom: '5rem',
-              left: '1rem',
-              zIndex: 200,
-              padding: '0.65rem 1rem',
-              background: 'rgba(120, 53, 15, 0.92)',
-              color: '#fde68a',
-              border: '1px solid rgba(251, 191, 36, 0.4)',
-              borderRadius: '12px',
-              backdropFilter: 'blur(8px)',
-              maxWidth: '200px',
-              fontSize: '0.75rem',
-              lineHeight: 1.4,
-            }}>
-              <div style={{ fontWeight: 700, marginBottom: '0.2rem' }}>📸 Ya tenés una foto</div>
-              <div style={{ opacity: 0.9 }}>
-                Eliminá la anterior desde{' '}
-                <a href="/coleccion" style={{ color: '#fde68a', fontWeight: 600 }}>
-                  Mi recorrido
-                </a>
-                {' '}para tomar una nueva.
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={capturarYGuardar}
-              disabled={capturando || capturaOk}
-              style={{
-                position: 'absolute',
-                bottom: '5rem',
-                left: '1rem',
-                zIndex: 200,
-                padding: '0.65rem 1rem',
-                background: capturaOk
-                  ? 'rgba(22, 101, 52, 0.92)'
-                  : 'rgba(10, 18, 28, 0.82)',
-                color: 'white',
-                border: '1px solid rgba(255,255,255,0.22)',
-                borderRadius: '12px',
-                fontSize: '1.3rem',
-                cursor: capturaOk ? 'default' : 'pointer',
-                backdropFilter: 'blur(8px)',
-                touchAction: 'manipulation',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                opacity: capturando ? 0.6 : 1,
-                transition: 'all 0.2s',
-              }}
-            >
-              <span>{capturaOk ? '✓' : capturando ? '⏳' : '📸'}</span>
-              <span style={{ fontSize: '0.78rem', fontWeight: 600 }}>
-                {capturaOk ? 'Guardado' : capturando ? 'Guardando…' : 'Capturar'}
-              </span>
-            </button>
-          )
-        )}
-
         {/* Hint gestos — desaparece al primer toque */}
         {arListo && offsetY === 0 && zoom === 1 && (
           <div style={{ ...estilos.instruccionAR, fontSize: '0.75rem', lineHeight: 1.4 }}>
@@ -1076,6 +883,12 @@ export default function LocationARScanner() {
             <p style={estilos.direccion}>🌎 {baldosaActiva.direccion}</p>
           )}
 
+          {(baldosaActiva.vecesEscaneada !== undefined && baldosaActiva.vecesEscaneada > 0) && (
+            <p style={{ ...estilos.direccion, color: '#60a5fa' }}>
+              👁 Vista {baldosaActiva.vecesEscaneada.toLocaleString('es-AR')} {baldosaActiva.vecesEscaneada === 1 ? 'vez' : 'veces'} en AR
+            </p>
+          )}
+
           {baldosaActiva.descripcion && (
             <p style={{ color: '#d0c8bc', lineHeight: 1.7, marginTop: '1rem' }}>
               {baldosaActiva.descripcion}
@@ -1090,48 +903,28 @@ export default function LocationARScanner() {
 
           {/* Acciones */}
           <div style={{ ...estilos.botonesAccion, marginTop: '2rem' }}>
-
-            {guardado ? (
-              <>
-                <div style={{
-                  width: '100%',
-                  maxWidth: '340px',
-                  padding: '0.85rem 1.5rem',
-                  background: '#166534',
-                  color: 'white',
-                  borderRadius: '10px',
-                  fontSize: '1rem',
-                  fontWeight: 600,
-                  textAlign: 'center',
-                  marginBottom: '0.25rem',
-                }}>
-                  ✓ Guardado en tu recorrido
-                </div>
-                <a href="/coleccion" style={{ ...estilos.btnPrimario, marginBottom: '0.25rem' }}>
-                  📋 Ver mi recorrido
-                </a>
-                <a href="/" style={{ ...estilos.btnSecundario }}>
-                  🏠 Ir al inicio
-                </a>
-              </>
-            ) : (
-              <button
-                onClick={guardarEnRecorrido}
-                disabled={guardando}
-                style={{ ...estilos.btnPrimario }}
-              >
-                {guardando ? 'Guardando…' : '📌 Guardar en mi recorrido'}
-              </button>
-            )}
+            <button
+              onClick={guardarEnRecorrido}
+              disabled={guardando || guardado}
+              style={{
+                ...estilos.btnPrimario,
+                opacity: guardado ? 0.7 : 1,
+                background: guardado ? '#166534' : undefined,
+              }}
+            >
+              {guardado ? '✓ Guardado en tu recorrido' : guardando ? 'Guardando…' : '📌 Guardar en mi recorrido'}
+            </button>
 
             <button onClick={verEscenaAR} style={estilos.btnSecundario}>
               ✨ Ver AR de nuevo
             </button>
 
-            <button onClick={volverACaminar} style={{ ...estilos.btnSecundario }}>
-              ← Seguir caminando
-            </button>
-
+            <a
+              href={`/baldosas/${baldosaActiva.codigo}`}
+              style={{ ...estilos.btnSecundario, display: 'block', textAlign: 'center' }}
+            >
+              📖 Más información
+            </a>
           </div>
         </div>
       </div>

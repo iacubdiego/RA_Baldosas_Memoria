@@ -18,7 +18,6 @@ export async function GET(
       try {
         baldosa = await Baldosa.findById(id);
       } catch (error) {
-        // Si falla, intentar por codigo
         console.log('No es un ObjectId válido, buscando por codigo');
       }
     }
@@ -37,7 +36,6 @@ export async function GET(
 
     const [lng, lat] = baldosa.ubicacion.coordinates;
 
-    // IMPORTANTE: Envolver en objeto "baldosa"
     return NextResponse.json({
       baldosa: {
         id: baldosa._id.toString(),
@@ -50,7 +48,7 @@ export async function GET(
         direccion: baldosa.direccion,
         barrio: baldosa.barrio,
         imagenUrl: baldosa.imagenUrl,
-        fotoUrl: baldosa.fotoUrl,        // ✅ NUEVO
+        fotoUrl: baldosa.fotoUrl,
         audioUrl: baldosa.audioUrl,
         mensajeAR: baldosa.mensajeAR,
         infoExtendida: baldosa.infoExtendida,
@@ -64,6 +62,56 @@ export async function GET(
     console.error('Error en /api/baldosas/[id]:', error);
     return NextResponse.json(
       { error: 'Error al obtener baldosa' },
+      { status: 500 }
+    );
+  }
+}
+
+// ── PATCH: incrementar vecesEscaneada ────────────────────────────────────────
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { id } = params;
+
+    await connectDB();
+
+    let baldosa = null;
+
+    if (id.match(/^[0-9a-fA-F]{24}$/)) {
+      try {
+        baldosa = await Baldosa.findByIdAndUpdate(
+          id,
+          { $inc: { vecesEscaneada: 1 } },
+          { new: true }
+        );
+      } catch {
+        // no era ObjectId, intentar por codigo
+      }
+    }
+
+    if (!baldosa) {
+      baldosa = await Baldosa.findOneAndUpdate(
+        { codigo: id },
+        { $inc: { vecesEscaneada: 1 } },
+        { new: true }
+      );
+    }
+
+    if (!baldosa) {
+      return NextResponse.json(
+        { error: 'Baldosa no encontrada' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ vecesEscaneada: baldosa.vecesEscaneada });
+
+  } catch (error) {
+    console.error('Error en PATCH /api/baldosas/[id]:', error);
+    return NextResponse.json(
+      { error: 'Error al actualizar contador' },
       { status: 500 }
     );
   }

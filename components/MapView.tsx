@@ -358,6 +358,12 @@ export default function MapView({ initialLocation }:MapViewProps) {
                       <p style={{fontSize:'0.95rem',color:'#1a2a3a',fontWeight:600,margin:0}}>{detalle.mensajeAR}</p>
                     </div>
                   )}
+                  {/* Veces escaneada */}
+                  {('vecesEscaneada' in detalle && (detalle as any).vecesEscaneada > 0)&&(
+                    <p style={{fontSize:'0.82rem',color:'#60a5fa',marginTop:'10px',marginBottom:0}}>
+                      👁 Vista {(detalle as any).vecesEscaneada.toLocaleString('es-AR')} {(detalle as any).vecesEscaneada === 1 ? 'vez' : 'veces'} en AR
+                    </p>
+                  )}
                   {/* Botón recorrido */}
                   {userLocation&&(
                     <button
