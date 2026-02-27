@@ -274,44 +274,51 @@ export default function LocationARScanner() {
       '<a-scene',
       '  id="escena-ar"',
       '  embedded',
-      '  renderer="antialias: true; alpha: true; colorManagement: true;"',
+      '  renderer="antialias: true; alpha: true; colorManagement: true; preserveDrawingBuffer: true;"',
       '  background="transparent: true"',
       '  vr-mode-ui="enabled: false"',
       '  loading-screen="enabled: false"',
       '>',
       '  <a-assets timeout="20000">',
-      '    <a-asset-item id="columnas-glb" src="/models/columnas_vmj.glb"></a-asset-item>',
+      '    <a-asset-item id="panuelo-glb" src="/models/logo_flores.glb"></a-asset-item>',
       '  </a-assets>',
       '',
       '  <a-camera',
       '    id="camara-ar"',
       '    position="0 ' + Y_OJOS + ' 0"',
-      // look-controls: giroscopio activo pero con touchEnabled:false
-      // — el touch lo manejamos nosotros para rotar/zoom/altura el objeto
       '    look-controls="enabled: true; magicWindowTrackingEnabled: true; touchEnabled: false; reverseMouseDrag: false"',
       '    wasd-controls="enabled: false"',
       '    fov="70"',
       '  ></a-camera>',
       '',
+      // Pañuelo: empieza abajo pequeño, sube y se agranda
       '  <a-entity',
       '    id="columnas-vmj"',
-      '    gltf-model="#columnas-glb"',
-      '    position="0 -1.6 ' + Z_BASE + '"',
+      '    gltf-model="#panuelo-glb"',
+      '    position="0 -3 ' + Z_BASE + '"',
       '    rotation="0 0 0"',
-      '    scale="1 1 1"',
-      '    animation-mixer="clip: *; loop: once; clampWhenFinished: true;"',
+      '    scale="0.8 0.8 0.8"',
+      '    animation__subir="property: position; to: 0 0 ' + Z_BASE + '; dur: 1800; easing: easeOutCubic; startEvents: escena-lista"',
+      '    animation__crecer="property: scale; to: 1.8 1.8 1.8; dur: 1800; easing: easeOutCubic; startEvents: escena-lista"',
+      '    animation-mixer="clip: *; loop: repeat;"',
       '  ></a-entity>',
       '',
+      // Nombre de la víctima
       '  <a-text id="txt-nombre"',
       '    value="' + nombreSafe + '"',
-      '    position="0 4.8 ' + Z_BASE + '"',
-      '    align="center" width="5" color="#f0e6d3" wrap-count="22"',
+      '    position="0 3.5 ' + Z_BASE + '"',
+      '    align="center" width="6" color="#f0e6d3" wrap-count="22"',
+      '    animation__aparecer="property: opacity; from: 0; to: 1; dur: 1200; delay: 1400; easing: easeInOutQuad; startEvents: escena-lista"',
+      '    opacity="0"',
       '  ></a-text>',
       '',
+      // Texto fijo: Verdad, Memoria y Justicia
       '  <a-text id="txt-mensaje"',
-      '    value="' + mensajeSafe + '"',
-      '    position="0 4.1 ' + Z_BASE + '"',
-      '    align="center" width="4" color="#90b4ce" wrap-count="30"',
+      '    value="Verdad, Memoria y Justicia"',
+      '    position="0 2.7 ' + Z_BASE + '"',
+      '    align="center" width="5" color="#90b4ce" wrap-count="30"',
+      '    animation__aparecer="property: opacity; from: 0; to: 1; dur: 1200; delay: 1600; easing: easeInOutQuad; startEvents: escena-lista"',
+      '    opacity="0"',
       '  ></a-text>',
       '',
       '</a-scene>',
@@ -448,6 +455,16 @@ export default function LocationARScanner() {
       // Aplicar offsets guardados
       const pos = getPosicion()
       setPosicion(pos.x, -1.6 + offsetY, Z_BASE * zoom)
+
+      // Disparar evento para iniciar las animaciones de entrada
+      const panuelo = document.getElementById('columnas-vmj') as any
+      const txtN    = document.getElementById('txt-nombre')   as any
+      const txtM    = document.getElementById('txt-mensaje')  as any
+      setTimeout(() => {
+        panuelo?.emit('escena-lista')
+        txtN?.emit('escena-lista')
+        txtM?.emit('escena-lista')
+      }, 300)
     }
     scene.addEventListener('loaded', onLoaded)
 
