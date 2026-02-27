@@ -32,7 +32,7 @@ export default function RootLayout({
             <div className="navbar-brand">
               <a href="/" className="navbar-logo-link">
                 <img
-                  src="images/logo_flores.png"
+                  src="/images/logo_flores.png"
                   alt="Pañuelo"
                   className="navbar-logo"
                 />
