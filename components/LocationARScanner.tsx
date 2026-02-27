@@ -23,6 +23,7 @@ interface Baldosa {
 }
 
 type FaseExperiencia =
+  | 'verificando'     // Chequeando permisos silenciosamente al montar
   | 'iniciando'       // Pedido de permisos
   | 'caminando'       // Watcheando GPS, sin baldosa cerca
   | 'cerca'           // Baldosa detectada a ≤ RADIO_AVISO metros → notificación
@@ -61,7 +62,7 @@ function formatearDistancia(m: number): string {
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function LocationARScanner() {
-  const [fase, setFase] = useState<FaseExperiencia>('iniciando')
+  const [fase, setFase] = useState<FaseExperiencia>('verificando')
   const [baldosas, setBaldosas] = useState<Baldosa[]>([])
   const [baldosaCercana, setBaldosaCercana] = useState<Baldosa | null>(null)
   const [baldosaActiva, setBaldosaActiva] = useState<Baldosa | null>(null)
@@ -112,19 +113,27 @@ export default function LocationARScanner() {
 
   // ── 2. Verificar permisos al montar — si ya están otorgados, arrancar directo
   useEffect(() => {
-    if (!navigator.geolocation) return
+    if (!navigator.geolocation) {
+      setFase('iniciando')
+      return
+    }
 
-    // Permissions API: disponible en la mayoría de browsers modernos
     if (navigator.permissions) {
       navigator.permissions.query({ name: 'geolocation' }).then(result => {
         if (result.state === 'granted') {
           // Permiso ya otorgado — arrancar sin mostrar pantalla de inicio
           iniciarGPS()
+        } else {
+          // 'prompt' o 'denied' → mostrar pantalla con botón
+          setFase('iniciando')
         }
-        // 'prompt' o 'denied' → quedarse en 'iniciando' para que el usuario decida
       }).catch(() => {
-        // Permissions API no disponible — mantener flujo normal
+        // Permissions API no disponible — mostrar pantalla normal
+        setFase('iniciando')
       })
+    } else {
+      // Browser sin Permissions API — mostrar pantalla normal
+      setFase('iniciando')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -734,6 +743,15 @@ export default function LocationARScanner() {
   }, [baldosaActiva, capturando, capturaOk])
 
   // ── 6. Renders por fase ───────────────────────────────────────────────────
+
+  // Verificando permisos — loader silencioso, no muestra nada al usuario
+  if (fase === 'verificando') {
+    return (
+      <div style={{ ...estilos.pantallaCentrada, background: 'var(--color-stone)' }}>
+        <div style={estilos.spinner} />
+      </div>
+    )
+  }
 
   // Pantalla de inicio / pedido de permisos
   if (fase === 'iniciando') {
