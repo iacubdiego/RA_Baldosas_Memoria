@@ -8,19 +8,15 @@ import 'leaflet/dist/leaflet.css'
 delete (L.Icon.Default.prototype as any)._getIconUrl
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl:       'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  iconUrl:       'public/images/nuncamas-avatar.jpg',
   shadowUrl:     'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 })
 
 const baldosaIcon = new L.Icon({
-  iconUrl: 'data:image/svg+xml;base64,' + btoa(`
-    <svg width="32" height="40" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg">
-      <path d="M16 0C7.163 0 0 7.163 0 16c0 12 16 24 16 24s16-12 16-24c0-8.837-7.163-16-16-16z" fill="#2563eb"/>
-      <circle cx="16" cy="16" r="8" fill="white"/>
-      <circle cx="16" cy="16" r="4" fill="#2563eb"/>
-    </svg>
-  `),
-  iconSize: [32, 40], iconAnchor: [16, 40], popupAnchor: [0, -40],
+  iconUrl: '/images/logo_flores.png',
+  iconSize: [32, 40],
+  iconAnchor: [16, 40],
+  popupAnchor: [0, -40],
 })
 
 const destinoIcon = new L.Icon({
