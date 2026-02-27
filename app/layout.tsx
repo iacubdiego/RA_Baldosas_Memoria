@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import NavbarWrapper from '@/components/NavbarWrapper'
 
 export const metadata: Metadata = {
   title: 'Recorremos Memoria',
@@ -27,26 +28,7 @@ export default function RootLayout({
       <body>
         <div className="grain-overlay" />
 
-        <nav className="navbar">
-          <div className="navbar-container">
-            <div className="navbar-brand">
-              <a href="/" className="navbar-logo-link">
-                <img
-                  src="/images/logo_flores.png"
-                  alt="Pañuelo"
-                  className="navbar-logo"
-                />
-                <span className="navbar-title">Recorremos Memoria</span>
-              </a>
-            </div>
-
-            <div className="navbar-links">
-              <a href="/scanner" className="navbar-link">Encontrar</a>
-              <a href="/mapa"    className="navbar-link">Mapa</a>
-              <a href="/coleccion" className="navbar-link">Mi Recorrido</a>
-            </div>
-          </div>
-        </nav>
+        <NavbarWrapper />
 
         <main>{children}</main>
 

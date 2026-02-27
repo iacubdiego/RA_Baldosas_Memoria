@@ -115,19 +115,6 @@ button:active, .btn:active {
 
 /* ==================== NAVBAR ==================== */
 
-/* Animación de entrada de navbar — solo en la home */
-@keyframes navbarEntrada {
-  0%   { transform: translateY(-100%); opacity: 0; }
-  100% { transform: translateY(0);     opacity: 1; }
-}
-
-/* Cuando la home agrega esta clase al body, la navbar arranca oculta */
-body.home-navbar-oculta .navbar {
-  animation: navbarEntrada 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  animation-delay: 2.5s;  /* exactamente cuando termina levantarBaldosa */
-  opacity: 0;             /* oculta hasta que empieza la animación */
-}
-
 .navbar {
   background: var(--color-stone);
   color: var(--color-parchment);
@@ -557,7 +544,7 @@ body.home-navbar-oculta .navbar {
 }
 
 .baldosa-img {
-  position: absolute;
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -672,12 +659,12 @@ body.home-navbar-oculta .navbar {
   left: 50%;
   transform: translateX(-50%);
   font-family: var(--font-display);
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: 2.6rem;
+  font-weight: 900;
   color: #1a1a1a;
   opacity: 0;
   white-space: nowrap;
-  text-shadow: 0 1px 2px rgba(255,255,255,0.3);
+  text-shadow: 0 1px 3px rgba(255,255,255,0.4);
   animation: apareceTexto 0.8s ease-out forwards;
   animation-delay: 2.4s;
 }
@@ -692,20 +679,18 @@ body.home-navbar-oculta .navbar {
   .baldosa-texto-inferior  { font-size: clamp(1rem, 4vw, 1.6rem); }
 }
 
-/* ── Imagen central Nunca Más ── */
+/* ── Logo central ── */
 .nuncamas-centro {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 90px;
-  height: 90px;
-  object-fit: cover;
-  border-radius: 50%;
+  width: 180px;
+  height: 180px;
+  object-fit: contain;
+  border-radius: 0;
   opacity: 0;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-  border: none;
-  filter: blur(0.5px);
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.25));
   animation: apareceNuncaMas 0.8s ease-out forwards;
   animation-delay: 2s;
 }
@@ -718,8 +703,8 @@ body.home-navbar-oculta .navbar {
 
 @media (max-width: 768px) {
   .nuncamas-centro {
-    width: clamp(50px, 15vw, 75px);
-    height: clamp(50px, 15vw, 75px);
+    width: clamp(100px, 30vw, 150px);
+    height: clamp(100px, 30vw, 150px);
   }
 }
 

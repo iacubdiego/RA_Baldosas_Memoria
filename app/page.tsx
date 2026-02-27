@@ -21,42 +21,31 @@ function generarVenecitas(cantidad: number) {
       // Elegir un lado del perímetro (0: arriba, 1: abajo, 2: izquierda, 3: derecha)
       lado = Math.floor(Math.random() * 4);
       
-      if (lado === 0) { // Arriba - solo en las esquinas, evitando el texto superior
-        const esIzquierda = Math.random() > 0.5;
-        if (esIzquierda) {
-          x = Math.random() * 20 + 3; // 3% a 23%
-        } else {
-          x = Math.random() * 20 + 77; // 77% a 97%
-        }
-        y = Math.random() * 12 + 3; // 3% a 15%
-      } else if (lado === 1) { // Abajo - solo en las esquinas, evitando el texto de fecha
-        const esIzquierda = Math.random() > 0.5;
-        if (esIzquierda) {
-          x = Math.random() * 20 + 3; // 3% a 23%
-        } else {
-          x = Math.random() * 20 + 77; // 77% a 97%
-        }
-        y = Math.random() * 12 + 83; // 83% a 95%
+      if (lado === 0) { // Arriba — toda la franja superior
+        x = Math.random() * 90 + 5; // 5% a 95% (cubre todo el ancho)
+        y = Math.random() * 10 + 2; // 2% a 12%
+      } else if (lado === 1) { // Abajo — toda la franja inferior
+        x = Math.random() * 90 + 5; // 5% a 95%
+        y = Math.random() * 10 + 86; // 86% a 96%
       } else if (lado === 2) { // Izquierda
         x = Math.random() * 10 + 3; // 3% a 13%
-        y = Math.random() * 40 + 30; // 30% a 70%
+        y = Math.random() * 60 + 20; // 20% a 80%
       } else { // Derecha
         x = Math.random() * 10 + 87; // 87% a 97%
-        y = Math.random() * 40 + 30; // 30% a 70%
+        y = Math.random() * 60 + 20; // 20% a 80%
       }
       
-      // Verificar que no se superponga con ninguna existente
-      posicionValida = !usados.some(u => Math.abs(u.x - x) < 7 && Math.abs(u.y - y) < 10);
+      // Separación mínima reducida a la mitad (antes: 15x20)
+      posicionValida = !usados.some(u => Math.abs(u.x - x) < 7.5 && Math.abs(u.y - y) < 10);
       intentos++;
     } while (!posicionValida && intentos < 50);
     
-    // Solo agregar si encontramos una posición válida
     if (posicionValida) {
       usados.push({x, y});
       
-      const rotacion = Math.random() * 30 - 15; // -15 a 15 grados
-      const delay = 2.1 + Math.random() * 0.8; // 2.1s a 2.9s
-      const imgNum = (i % 8) + 1; // Ciclar entre 1-8
+      const rotacion = Math.random() * 30 - 15;
+      const delay = 2.1 + Math.random() * 0.8;
+      const imgNum = (i % 8) + 1;
       
       venecitas.push({
         id: i,
@@ -76,8 +65,15 @@ export default function Home() {
   const [venecitas, setVenecitas] = useState<any[]>([]);
   
   useEffect(() => {
-    setVenecitas(generarVenecitas(16)); // 16 venecitas (el doble)
+    setVenecitas(generarVenecitas(16));
   }, []);
+
+  // Animación de navbar: manejada por NavbarWrapper — solo limpiamos por si acaso
+  useEffect(() => {
+    return () => {
+      document.body.classList.remove('home-navbar-oculta')
+    }
+  }, [])
 
   return (
     <div className="hero-background">
@@ -91,10 +87,16 @@ export default function Home() {
         minHeight: 'calc(100vh - 200px)',
         padding: 'var(--space-lg)',
       }}>
-        <div className="container" style={{ textAlign: 'center', maxWidth: '900px' }}>
+        <div className="container" style={{ textAlign: 'center', maxWidth: '900px', width: '100%' }}>
           
           {/* Logo con animación de baldosa que se levanta */}
           <div className="logo-baldosa-container">
+
+            {/* Pañuelo izquierdo */}
+            <div className="lateral-panuelo lateral-panuelo-izq">
+              <img src="/images/logo_flores.png" alt="" className="lateral-panuelo-img" />
+            </div>
+
             {/* Baldosa que se levanta desde el piso */}
             <div className="baldosa-animada">
               <img 
@@ -128,8 +130,8 @@ export default function Home() {
               
               {/* Imagen central - Nunca Más */}
               <img 
-                src="/nuncamas-avatar.jpg" 
-                alt="Nunca Más"
+                src="/images/logo_flores.png" 
+                alt="Logo"
                 className="nuncamas-centro"
               />
               
@@ -142,6 +144,12 @@ export default function Home() {
                 }).replace(/\//g, '-')}
               </span>
             </div>
+
+            {/* Pañuelo derecho */}
+            <div className="lateral-panuelo lateral-panuelo-der">
+              <img src="/images/logo_flores.png" alt="" className="lateral-panuelo-img" />
+            </div>
+
           </div>
 
           {/* Título principal */}
