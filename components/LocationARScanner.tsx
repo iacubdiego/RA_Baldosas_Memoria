@@ -110,7 +110,26 @@ export default function LocationARScanner() {
     fetchBaldosas()
   }, [])
 
-  // ── 2. Pedir permisos y arrancar watcher GPS ───────────────────────────────
+  // ── 2. Verificar permisos al montar — si ya están otorgados, arrancar directo
+  useEffect(() => {
+    if (!navigator.geolocation) return
+
+    // Permissions API: disponible en la mayoría de browsers modernos
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' }).then(result => {
+        if (result.state === 'granted') {
+          // Permiso ya otorgado — arrancar sin mostrar pantalla de inicio
+          iniciarGPS()
+        }
+        // 'prompt' o 'denied' → quedarse en 'iniciando' para que el usuario decida
+      }).catch(() => {
+        // Permissions API no disponible — mantener flujo normal
+      })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ── 3. Pedir permisos y arrancar watcher GPS ───────────────────────────────
   const iniciarGPS = useCallback(async () => {
     if (!navigator.geolocation) {
       setErrorMsg('Tu navegador no soporta geolocalización')
@@ -224,10 +243,17 @@ export default function LocationARScanner() {
     contenedor.innerHTML = ''
     setArListo(false)
 
+    // Precargar la imagen para que esté en caché cuando A-Frame la solicite
+    await new Promise<void>(resolve => {
+      const preload = new Image()
+      preload.onload  = () => resolve()
+      preload.onerror = () => resolve()  // continuar aunque falle
+      preload.src = '/images/logo_flores.png'
+    })
+
     const { nombre, mensajeAR } = baldosaActiva
     const nombreSafe  = nombre.replace(/"/g, '&quot;')
     const mensajeSafe = mensajeAR.replace(/"/g, '&quot;')
-
     // ── Video cámara real como fondo ──────────────────────────────────────────
     const video = document.createElement('video')
     video.id = 'camara-bg'
@@ -273,7 +299,7 @@ export default function LocationARScanner() {
       '  loading-screen="enabled: false"',
       '>',
       '  <a-assets timeout="20000">',
-      '    <img id="panuelo-img" src="/images/panuelo_sin_fondo.png" crossorigin="anonymous">',
+      '    <img id="panuelo-img" src="/images/logo_flores.png" crossorigin="anonymous">',
       '  </a-assets>',
       '',
       '  <a-camera',
@@ -446,19 +472,28 @@ export default function LocationARScanner() {
     const onLoaded = () => {
       aplicarAlpha()
       setArListo(true)
-      // Aplicar offsets guardados
       const pos = getPosicion()
       setPosicion(pos.x, -1.6 + offsetY, Z_BASE * zoom)
 
-      // Disparar evento para iniciar las animaciones de entrada
       const panuelo = document.getElementById('columnas-vmj') as any
       const txtN    = document.getElementById('txt-nombre')   as any
       const txtM    = document.getElementById('txt-mensaje')  as any
-      setTimeout(() => {
+
+      const dispararAnimaciones = () => {
         panuelo?.emit('escena-lista')
         txtN?.emit('escena-lista')
         txtM?.emit('escena-lista')
-      }, 300)
+      }
+
+      // Esperar a que el asset de imagen esté completamente cargado en WebGL
+      const imgEl = document.getElementById('panuelo-img') as HTMLImageElement | null
+      if (imgEl && !imgEl.complete) {
+        imgEl.addEventListener('load', () => setTimeout(dispararAnimaciones, 200), { once: true })
+      } else {
+        // La imagen ya está en caché o cargó — dar un tick extra para que
+        // Three.js suba la textura a la GPU antes de mostrarla
+        setTimeout(dispararAnimaciones, 500)
+      }
     }
     scene.addEventListener('loaded', onLoaded)
 
