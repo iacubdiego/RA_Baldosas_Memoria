@@ -74,6 +74,7 @@ export default function LocationARScanner() {
   const [guardado, setGuardado] = useState(false)
   const [capturando, setCapturando] = useState(false)
   const [capturaOk, setCapturaOk] = useState(false)
+  const [flash, setFlash] = useState(false)
 
   // Controles AR — persisten en localStorage
   const [offsetY,  setOffsetY]  = useState<number>(() => {
@@ -95,6 +96,22 @@ export default function LocationARScanner() {
 
   // Mantener ref sincronizada
   useEffect(() => { baldosasRef.current = baldosas }, [baldosas])
+
+  // Inyectar keyframe shutterFlash una sola vez
+  useEffect(() => {
+    const id = 'shutter-flash-style'
+    if (!document.getElementById(id)) {
+      const s = document.createElement('style')
+      s.id = id
+      s.textContent = `
+        @keyframes shutterFlash {
+          0%   { opacity: 1; }
+          100% { opacity: 0; }
+        }
+      `
+      document.head.appendChild(s)
+    }
+  }, [])
 
   // ── 1. Cargar todas las baldosas al montar ─────────────────────────────────
   useEffect(() => {
@@ -670,6 +687,10 @@ export default function LocationARScanner() {
     if (!baldosaActiva || capturando || capturaOk) return
     setCapturando(true)
 
+    // Flash de pantalla — feedback inmediato al usuario
+    setFlash(true)
+    setTimeout(() => setFlash(false), 350)
+
     try {
       const aScene  = document.getElementById('escena-ar') as any
       const aCanvas = aScene?.canvas as HTMLCanvasElement | null
@@ -997,8 +1018,7 @@ export default function LocationARScanner() {
         })()}
 
         {/* ── Botón capturar — esquina inferior izquierda ──────────────── */}
-        {arListo && (
-          <button
+        {arListo && (\n          <button
             onClick={capturarYGuardar}
             disabled={capturando || capturaOk}
             style={{
@@ -1006,28 +1026,27 @@ export default function LocationARScanner() {
               bottom: '5rem',
               left: '1rem',
               zIndex: 200,
-              padding: '0.65rem 1rem',
+              width: '3.2rem',
+              height: '3.2rem',
               background: capturaOk
                 ? 'rgba(22, 101, 52, 0.92)'
                 : 'rgba(10, 18, 28, 0.82)',
               color: 'white',
               border: '1px solid rgba(255,255,255,0.22)',
-              borderRadius: '12px',
-              fontSize: '1.3rem',
+              borderRadius: '50%',
+              fontSize: '1.4rem',
               cursor: capturaOk ? 'default' : 'pointer',
               backdropFilter: 'blur(8px)',
               touchAction: 'manipulation',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.4rem',
+              justifyContent: 'center',
               opacity: capturando ? 0.6 : 1,
-              transition: 'all 0.2s',
+              transition: 'transform 0.1s, opacity 0.2s',
+              transform: capturando ? 'scale(0.92)' : 'scale(1)',
             }}
           >
-            <span>{capturaOk ? '✓' : capturando ? '⏳' : '📸'}</span>
-            <span style={{ fontSize: '0.78rem', fontWeight: 600 }}>
-              {capturaOk ? 'Guardado' : capturando ? 'Guardando…' : 'Capturar'}
-            </span>
+            {capturaOk ? '✓' : capturando ? '⏳' : '📸'}
           </button>
         )}
 
@@ -1036,6 +1055,18 @@ export default function LocationARScanner() {
           <div style={{ ...estilos.instruccionAR, fontSize: '0.75rem', lineHeight: 1.4 }}>
             1 dedo: rotar · Pinch: zoom · 2 dedos arriba/abajo: altura
           </div>
+        )}
+
+        {/* ── Flash de cámara ── */}
+        {flash && (
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'white',
+            zIndex: 300,
+            pointerEvents: 'none',
+            animation: 'shutterFlash 0.35s ease-out forwards',
+          }} />
         )}
 
       </div>
