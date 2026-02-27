@@ -46,7 +46,7 @@ function generarVenecitas(cantidad: number) {
       }
       
       // Verificar que no se superponga con ninguna existente
-      posicionValida = !usados.some(u => Math.abs(u.x - x) < 15 && Math.abs(u.y - y) < 20);
+      posicionValida = !usados.some(u => Math.abs(u.x - x) < 7 && Math.abs(u.y - y) < 10);
       intentos++;
     } while (!posicionValida && intentos < 50);
     

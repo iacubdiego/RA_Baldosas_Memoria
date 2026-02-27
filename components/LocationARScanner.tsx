@@ -1018,7 +1018,8 @@ export default function LocationARScanner() {
         })()}
 
         {/* ── Botón capturar — esquina inferior izquierda ──────────────── */}
-        {arListo && (\n          <button
+        {arListo && (
+          <button
             onClick={capturarYGuardar}
             disabled={capturando || capturaOk}
             style={{
