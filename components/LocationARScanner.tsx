@@ -626,7 +626,7 @@ export default function LocationARScanner() {
     setBaldosaCercana(null)
     setScriptsOk(false)
     setArListo(false)
-    setFase('caminando')
+    window.location.href = '/mapa'
   }, [])
 
   const guardarEnRecorrido = useCallback(async () => {
@@ -671,13 +671,21 @@ export default function LocationARScanner() {
     setCapturando(true)
 
     try {
-      // 1. Esperar al próximo frame renderizado antes de capturar
-      await new Promise<void>(resolve => requestAnimationFrame(() => setTimeout(resolve, 50)))
-
-      // 2. Capturar escena siempre, antes de verificar auth
-      const video   = document.getElementById('camara-bg') as HTMLVideoElement | null
       const aScene  = document.getElementById('escena-ar') as any
       const aCanvas = aScene?.canvas as HTMLCanvasElement | null
+
+      // 1. Forzar un render de A-Frame para que el buffer WebGL tenga el frame actual
+      if (aScene?.renderer) {
+        aScene.renderer.render(aScene.object3D, aScene.camera)
+      }
+
+      // 2. Esperar dos frames para asegurarse que WebGL terminó de dibujar
+      await new Promise<void>(resolve => requestAnimationFrame(() =>
+        requestAnimationFrame(() => resolve())
+      ))
+
+      // 3. Capturar video + canvas A-Frame
+      const video = document.getElementById('camara-bg') as HTMLVideoElement | null
 
       const W = window.innerWidth
       const H = window.innerHeight
