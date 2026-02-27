@@ -197,13 +197,6 @@ export default function LocationARScanner() {
         await loadScript('https://aframe.io/releases/1.4.1/aframe.min.js')
         await delay(600)
       }
-      // aframe-extras para animation-mixer (reproducir animación del GLB)
-      if (!(window as any).AFRAME?.systems?.['animation-mixer']) {
-        await loadScript(
-          'https://cdn.jsdelivr.net/npm/aframe-extras@7.2.0/dist/aframe-extras.min.js'
-        )
-        await delay(400)
-      }
       setScriptsOk(true)
     }
 
@@ -280,7 +273,7 @@ export default function LocationARScanner() {
       '  loading-screen="enabled: false"',
       '>',
       '  <a-assets timeout="20000">',
-      '    <a-asset-item id="panuelo-glb" src="/models/logo_flores.glb"></a-asset-item>',
+      '    <img id="panuelo-img" src="/images/panuelo_sin_fondo.png" crossorigin="anonymous">',
       '  </a-assets>',
       '',
       '  <a-camera',
@@ -292,16 +285,17 @@ export default function LocationARScanner() {
       '  ></a-camera>',
       '',
       // Pañuelo: empieza abajo pequeño, sube y se agranda
-      '  <a-entity',
+      '  <a-image',
       '    id="columnas-vmj"',
-      '    gltf-model="#panuelo-glb"',
+      '    src="#panuelo-img"',
+      '    width="2.4" height="2"',
       '    position="0 -3 ' + Z_BASE + '"',
       '    rotation="0 0 0"',
       '    scale="0.8 0.8 0.8"',
-      '    animation__subir="property: position; to: 0 0 ' + Z_BASE + '; dur: 1800; easing: easeOutCubic; startEvents: escena-lista"',
+      '    transparent="true"',
+      '    animation__subir="property: position; to: 0 0.2 ' + Z_BASE + '; dur: 1800; easing: easeOutCubic; startEvents: escena-lista"',
       '    animation__crecer="property: scale; to: 1.8 1.8 1.8; dur: 1800; easing: easeOutCubic; startEvents: escena-lista"',
-      '    animation-mixer="clip: *; loop: repeat;"',
-      '  ></a-entity>',
+      '  ></a-image>',
       '',
       // Nombre de la víctima
       '  <a-text id="txt-nombre"',

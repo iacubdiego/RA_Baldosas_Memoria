@@ -242,7 +242,7 @@ button:active, .btn:active {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: url('/panuelo-bg.jpeg');
+  background-image: url('/images/logo_flores');
   background-size: 150px 150px;
   background-repeat: space;
   opacity: 0.08;

@@ -128,7 +128,7 @@ export default function AuthPage() {
               marginBottom: 'var(--space-md)',
             }}>
               <img 
-                src="/panuelo-bg-sin-fondo.png" 
+                src="images/logo_flores.png"
                 alt="Pañuelo" 
                 className="panuelo-icon"
                 style={{ width: '80px', height: '80px' }}
