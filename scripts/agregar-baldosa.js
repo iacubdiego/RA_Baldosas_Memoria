@@ -33,8 +33,8 @@ function pregunta(prompt) {
 
 async function main() {
   console.log('╔══════════════════════════════════════════════╗');
-  console.log('║  AGREGAR NUEVA BALDOSA                      ║');
-  console.log('║  Baldosas por la Memoria                    ║');
+  console.log('║  AGREGAR NUEVA BALDOSA                       ║');
+  console.log('║  Recorremos Memoria                          ║');
   console.log('╚══════════════════════════════════════════════╝');
   console.log('');
   

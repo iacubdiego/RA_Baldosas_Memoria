@@ -201,7 +201,7 @@ export default function MapView({ initialLocation }:MapViewProps) {
       {/* Navbar superpuesta */}
       <div style={{position:'absolute',top:0,left:0,right:0,zIndex:400,background:'rgba(26,42,58,0.92)',backdropFilter:'blur(8px)',borderBottom:'1px solid rgba(255,255,255,0.1)',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 1rem',height:'48px'}}>
         <a href="/" style={{color:'white',textDecoration:'none',fontSize:'0.9rem',fontWeight:600,opacity:0.85}}>← Inicio</a>
-        <span style={{color:'white',fontSize:'0.85rem',fontWeight:500,opacity:0.7}}>Baldosas por la Memoria</span>
+        <span style={{color:'white',fontSize:'0.85rem',fontWeight:500,opacity:0.7}}>Recorremos Memoria</span>
         {!loadingPins&&<span style={{color:'white',fontSize:'0.78rem',opacity:0.6}}>{pins.length.toLocaleString('es-AR')} baldosas</span>}
       </div>
 

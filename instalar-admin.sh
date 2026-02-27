@@ -1,8 +1,8 @@
 #!/bin/bash
 
 echo "╔══════════════════════════════════════════════╗"
-echo "║  INSTALACIÓN: ADMIN AUTOMATIZADO            ║"
-echo "║  Baldosas por la Memoria                    ║"
+echo "║  INSTALACIÓN: ADMIN AUTOMATIZADO             ║"
+echo "║  Recorremos Memoria                          ║"
 echo "╚══════════════════════════════════════════════╝"
 echo ""
 

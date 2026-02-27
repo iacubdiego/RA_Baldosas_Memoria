@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Baldosas por la Memoria',
+  title: 'Recorremos Memoria',
   description: 'Descubre baldosas geolocalizadas a través de realidad aumentada',
   manifest: '/manifest.json',
 }
@@ -36,7 +36,7 @@ export default function RootLayout({
                   alt="Pañuelo"
                   className="navbar-logo"
                 />
-                <span className="navbar-title">Baldosas por la Memoria</span>
+                <span className="navbar-title">Recorremos Memoria</span>
               </a>
             </div>
 
@@ -73,7 +73,7 @@ export default function RootLayout({
               opacity:    0.6,
               color:     'var(--color-parchment)',
             }}>
-              © {new Date().getFullYear()} Baldosas por la Memoria
+              © {new Date().getFullYear()} Recorremos Memoria
             </p>
           </div>
         </footer>

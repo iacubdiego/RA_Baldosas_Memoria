@@ -787,7 +787,7 @@ export default function LocationARScanner() {
     return (
       <div style={estilos.pantallaCentrada}>
         <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🌎</div>
-        <h1 style={estilos.titulo}>Baldosas por la Memoria</h1>
+        <h1 style={estilos.titulo}>Recorremos Memoria</h1>
         <p style={estilos.subtitulo}>
           Caminá por Buenos Aires y descubrí las baldosas que honran a los desaparecidos.
           Cuando te acerques a una, verás su historia.

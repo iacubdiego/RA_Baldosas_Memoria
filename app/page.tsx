@@ -153,7 +153,7 @@ export default function Home() {
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
             }}>
-              Baldosas por la Memoria
+              Recorremos Memoria
             </h1>
           </div>
           
