@@ -237,19 +237,20 @@ export default function LocationARScanner() {
   useEffect(() => {
     if (!scriptsOk || fase !== 'ar' || !baldosaActiva) return
 
-    const contenedor = document.getElementById('ar-container')
-    if (!contenedor) return
+    const montar = async () => {
+      const contenedor = document.getElementById('ar-container')
+      if (!contenedor) return
 
-    contenedor.innerHTML = ''
-    setArListo(false)
+      contenedor.innerHTML = ''
+      setArListo(false)
 
-    // Precargar la imagen para que esté en caché cuando A-Frame la solicite
-    await new Promise<void>(resolve => {
-      const preload = new Image()
-      preload.onload  = () => resolve()
-      preload.onerror = () => resolve()  // continuar aunque falle
-      preload.src = '/images/logo_flores.png'
-    })
+      // Precargar la imagen para que esté en caché cuando A-Frame la solicite
+      await new Promise<void>(resolve => {
+        const preload = new Image()
+        preload.onload  = () => resolve()
+        preload.onerror = () => resolve()  // continuar aunque falle
+        preload.src = '/images/logo_flores.png'
+      })
 
     const { nombre, mensajeAR } = baldosaActiva
     const nombreSafe  = nombre.replace(/"/g, '&quot;')
@@ -497,14 +498,28 @@ export default function LocationARScanner() {
     }
     scene.addEventListener('loaded', onLoaded)
 
+    } // cierre de montar()
+
+    montar()
+
     return () => {
-      scene.removeEventListener('loaded', onLoaded)
-      wrapper.removeEventListener('touchstart',  onTouchStart as any)
-      wrapper.removeEventListener('touchmove',   onTouchMove  as any)
-      wrapper.removeEventListener('touchend',    onTouchEnd   as any)
-      wrapper.removeEventListener('touchcancel', onTouchEnd   as any)
-      if (streamActivo) streamActivo.getTracks().forEach(t => t.stop())
-      contenedor.innerHTML = ''
+      const contenedor = document.getElementById('ar-container')
+      const scene = document.getElementById('escena-ar') as any
+      if (scene) {
+        scene.removeEventListener('loaded', () => {})
+      }
+      const wrapper = contenedor?.querySelector('div') as HTMLElement | null
+      if (wrapper) {
+        wrapper.removeEventListener('touchstart',  () => {})
+        wrapper.removeEventListener('touchmove',   () => {})
+        wrapper.removeEventListener('touchend',    () => {})
+        wrapper.removeEventListener('touchcancel', () => {})
+      }
+      const bgVideo = document.getElementById('camara-bg') as HTMLVideoElement | null
+      if (bgVideo?.srcObject) {
+        (bgVideo.srcObject as MediaStream).getTracks().forEach(t => t.stop())
+      }
+      if (contenedor) contenedor.innerHTML = ''
       setArListo(false)
     }
   }, [scriptsOk, fase, baldosaActiva])
