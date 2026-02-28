@@ -72,8 +72,8 @@ export default function LocationARScanner() {
   const [scriptsOk, setScriptsOk] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [guardado, setGuardado] = useState(false)
-  const [capturando, setCapturando] = useState(false)
-  const [capturaOk, setCapturaOk] = useState(false)
+  const [escaneando, setEscaneando] = useState(false)
+  const [fotoOk, setFotoOk] = useState(false)
   const [flash, setFlash] = useState(false)
 
   // Controles AR — persisten en localStorage
@@ -615,8 +615,8 @@ export default function LocationARScanner() {
       setFase('ar')
     }, 50)
     setGuardado(false)
-    setCapturaOk(false)
-    setCapturando(false)
+    setFotoOk(false)
+    setEscaneando(false)
   }, [baldosaCercana])
 
   // Marca la baldosa como visitada en la DB y abre la AR
@@ -677,9 +677,9 @@ export default function LocationARScanner() {
   }, [])
 
 
-  const capturarYGuardar = useCallback(async () => {
-    if (!baldosaActiva || capturando || capturaOk) return
-    setCapturando(true)
+  const escanearYGuardar = useCallback(async () => {
+    if (!baldosaActiva || escaneando || fotoOk) return
+    setEscaneando(true)
 
     // Flash de pantalla — feedback inmediato al usuario
     setFlash(true)
@@ -699,7 +699,7 @@ export default function LocationARScanner() {
         requestAnimationFrame(() => resolve())
       ))
 
-      // 3. Capturar video + canvas A-Frame
+      // 3. Tomar foto del video + canvas A-Frame
       const video = document.getElementById('camara-bg') as HTMLVideoElement | null
 
       const W = window.innerWidth
@@ -721,7 +721,7 @@ export default function LocationARScanner() {
 
       const fotoBase64 = offscreen.toDataURL('image/jpeg', 0.82)
 
-      // 4. Guardar captura en localStorage y redirigir a vista de previsualización
+      // 4. Guardar foto en localStorage y redirigir a vista de previsualización
       const entrada = {
         id:        Date.now(),
         baldosaId: baldosaActiva.codigo || baldosaActiva.id,
@@ -733,19 +733,19 @@ export default function LocationARScanner() {
         fecha:     new Date().toISOString(),
       }
 
-      // Guardar la captura pendiente de confirmar
-      localStorage.setItem('recorremo_captura_pendiente', JSON.stringify(entrada))
+      // Guardar la foto pendiente de confirmar
+      localStorage.setItem('recorremo_foto_pendiente', JSON.stringify(entrada))
 
-      setCapturaOk(true)
+      setFotoOk(true)
 
-      // Redirigir inmediatamente a la vista de captura
-      window.location.href = '/scanner/captura'
+      // Redirigir inmediatamente a la vista de foto
+      window.location.href = '/scanner/foto'
     } catch {
       // Silencioso
     } finally {
-      setCapturando(false)
+      setEscaneando(false)
     }
-  }, [baldosaActiva, capturando, capturaOk])
+  }, [baldosaActiva, escaneando, fotoOk])
 
   // ── 6. Renders por fase ───────────────────────────────────────────────────
 
@@ -1005,11 +1005,11 @@ export default function LocationARScanner() {
 
 
 
-        {/* ── Botón capturar — esquina inferior izquierda ──────────────── */}
+        {/* ── Botón escanear — esquina inferior izquierda ──────────────── */}
         {arListo && (
           <button
-            onClick={capturarYGuardar}
-            disabled={capturando || capturaOk}
+            onClick={escanearYGuardar}
+            disabled={escaneando || fotoOk}
             style={{
               position: 'absolute',
               bottom: '5rem',
@@ -1017,25 +1017,25 @@ export default function LocationARScanner() {
               zIndex: 200,
               width: '3.2rem',
               height: '3.2rem',
-              background: capturaOk
+              background: fotoOk
                 ? 'rgba(22, 101, 52, 0.92)'
                 : 'rgba(10, 18, 28, 0.82)',
               color: 'white',
               border: '1px solid rgba(255,255,255,0.22)',
               borderRadius: '50%',
               fontSize: '1.4rem',
-              cursor: capturaOk ? 'default' : 'pointer',
+              cursor: fotoOk ? 'default' : 'pointer',
               backdropFilter: 'blur(8px)',
               touchAction: 'manipulation',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              opacity: capturando ? 0.6 : 1,
+              opacity: escaneando ? 0.6 : 1,
               transition: 'transform 0.1s, opacity 0.2s',
-              transform: capturando ? 'scale(0.92)' : 'scale(1)',
+              transform: escaneando ? 'scale(0.92)' : 'scale(1)',
             }}
           >
-            {capturaOk ? '✓' : capturando ? '⏳' : '📸'}
+            {fotoOk ? '✓' : escaneando ? '⏳' : '📸'}
           </button>
         )}
 

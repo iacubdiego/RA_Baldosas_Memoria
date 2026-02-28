@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-interface Captura {
+interface Foto {
   id: number
   baldosaId: string
   nombre: string
@@ -14,34 +14,34 @@ interface Captura {
   fecha: string
 }
 
-export default function CapturaPage() {
+export default function FotoPage() {
   const router = useRouter()
-  const [captura, setCaptura] = useState<Captura | null>(null)
+  const [foto, setFoto] = useState<Foto | null>(null)
   const [guardada, setGuardada] = useState(false)
   const [animando, setAnimando] = useState(false)
 
   useEffect(() => {
-    const raw = localStorage.getItem('recorremo_captura_pendiente')
+    const raw = localStorage.getItem('recorremo_foto_pendiente')
     if (!raw) { router.replace('/scanner'); return }
-    try { setCaptura(JSON.parse(raw)) }
+    try { setFoto(JSON.parse(raw)) }
     catch { router.replace('/scanner') }
   }, [router])
 
   const guardar = () => {
-    if (!captura || guardada) return
+    if (!foto || guardada) return
     setAnimando(true)
-    const existentes: Captura[] = JSON.parse(localStorage.getItem('recorremo_capturas') || '[]')
-    existentes.push(captura)
-    localStorage.setItem('recorremo_capturas', JSON.stringify(existentes))
-    localStorage.removeItem('recorremo_captura_pendiente')
+    const existentes: Foto[] = JSON.parse(localStorage.getItem('recorremo_fotos') || '[]')
+    existentes.push(foto)
+    localStorage.setItem('recorremo_fotos', JSON.stringify(existentes))
+    localStorage.removeItem('recorremo_foto_pendiente')
     setTimeout(() => { setGuardada(true); setAnimando(false) }, 500)
   }
 
   const descargar = () => {
-    if (!captura) return
+    if (!foto) return
     const a = document.createElement('a')
-    a.href = captura.foto
-    const fecha = new Date(captura.fecha).toLocaleDateString('es-AR').replace(/\//g, '-')
+    a.href = foto.foto
+    const fecha = new Date(foto.fecha).toLocaleDateString('es-AR').replace(/\//g, '-')
     a.download = `recorremos-memoria-${fecha}.jpg`
     a.click()
   }
@@ -51,11 +51,11 @@ export default function CapturaPage() {
   }
 
   const volver = () => {
-    localStorage.removeItem('recorremo_captura_pendiente')
+    localStorage.removeItem('recorremo_foto_pendiente')
     router.push('/mapa')
   }
 
-  if (!captura) {
+  if (!foto) {
     return (
       <div style={s.loading}>
         <div style={s.spinner} />
@@ -63,7 +63,7 @@ export default function CapturaPage() {
     )
   }
 
-  const fechaFormateada = new Date(captura.fecha).toLocaleDateString('es-AR', {
+  const fechaFormateada = new Date(foto.fecha).toLocaleDateString('es-AR', {
     day: '2-digit', month: 'long', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })
@@ -75,7 +75,7 @@ export default function CapturaPage() {
         @keyframes slideUp { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) } }
         @keyframes spin    { to { transform:rotate(360deg) } }
 
-        .captura-root {
+        .foto-root {
           position: fixed;
           inset: 0;
           background: #0a121c;
@@ -83,39 +83,39 @@ export default function CapturaPage() {
           flex-direction: column;
           font-family: Georgia, serif;
         }
-        .captura-foto-wrap {
+        .foto-wrap {
           position: relative;
           flex: 1 1 auto;
           min-height: 55dvh;
           overflow: hidden;
           animation: fadeIn 0.5s ease-out;
         }
-        .captura-foto {
+        .foto-img {
           width: 100%;
           height: 100%;
           object-fit: cover;
           object-position: center;
           display: block;
         }
-        .captura-foto-overlay {
+        .foto-overlay {
           position: absolute;
           inset: 0;
           background: linear-gradient(to top, rgba(10,18,28,0.9) 0%, rgba(10,18,28,0.1) 50%, transparent 100%);
         }
-        .captura-foto-info {
+        .foto-info {
           position: absolute;
           bottom: 1.25rem;
           left: 1.25rem;
           right: 1.25rem;
         }
-        .captura-panel {
+        .foto-panel {
           flex-shrink: 0;
           background: #0f1923;
           border-top: 1px solid rgba(255,255,255,0.08);
           padding: 1.5rem 1.5rem env(safe-area-inset-bottom, 1.5rem);
           animation: slideUp 0.5s ease-out 0.1s both;
         }
-        .captura-panel-inner {
+        .foto-panel-inner {
           max-width: 480px;
           margin: 0 auto;
           display: flex;
@@ -126,20 +126,20 @@ export default function CapturaPage() {
 
         /* Desktop: layout horizontal */
         @media (min-width: 768px) {
-          .captura-root {
+          .foto-root {
             flex-direction: row;
           }
-          .captura-foto-wrap {
+          .foto-wrap {
             flex: 1 1 60%;
             min-height: 100dvh;
           }
-          .captura-foto-overlay {
+          .foto-overlay {
             background: linear-gradient(to right, transparent 60%, rgba(10,18,28,0.95) 100%);
           }
-          .captura-foto-info {
+          .foto-info {
             display: none;
           }
-          .captura-panel {
+          .foto-panel {
             flex: 0 0 380px;
             border-top: none;
             border-left: 1px solid rgba(255,255,255,0.08);
@@ -148,7 +148,7 @@ export default function CapturaPage() {
             padding: 2.5rem 2rem;
             overflow-y: auto;
           }
-          .captura-panel-inner {
+          .foto-panel-inner {
             max-width: 100%;
             width: 100%;
           }
@@ -162,25 +162,25 @@ export default function CapturaPage() {
         }
       `}</style>
 
-      <div className="captura-root">
+      <div className="foto-root">
 
-        <div className="captura-foto-wrap">
-          <img src={captura.foto} alt="Captura AR" className="captura-foto" />
-          <div className="captura-foto-overlay" />
-          <div className="captura-foto-info">
-            <p style={s.ubicacion}>📍 {captura.ubicacion}</p>
+        <div className="foto-wrap">
+          <img src={foto.foto} alt="Foto AR" className="foto-img" />
+          <div className="foto-overlay" />
+          <div className="foto-info">
+            <p style={s.ubicacion}>📍 {foto.ubicacion}</p>
             <p style={s.fechaMobile}>{fechaFormateada}</p>
           </div>
         </div>
 
-        <div className="captura-panel">
-          <div className="captura-panel-inner">
+        <div className="foto-panel">
+          <div className="foto-panel-inner">
 
             <p className="fecha-desktop">{fechaFormateada}</p>
 
             <div style={s.nombreWrap}>
               <p style={s.etiqueta}>En memoria de</p>
-              <h1 style={s.nombre}>{captura.nombre}</h1>
+              <h1 style={s.nombre}>{foto.nombre}</h1>
               <div style={s.linea} />
               <p style={s.tagline}>Recorremos Memoria · Nunca Más</p>
             </div>
