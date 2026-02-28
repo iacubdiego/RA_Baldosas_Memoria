@@ -92,7 +92,7 @@ export default function LocationARScanner() {
 
   const watchIdRef   = useRef<number | null>(null)
   const sceneRef     = useRef<HTMLElement | null>(null)
-  const baldosasRef  = useRef<Baldosa[]>([])   // ref sincronizado para el callback del watcher
+  const baldosasRef      = useRef<Baldosa[]>([])   // ref sincronizado para el callback del watcher
 
   // Mantener ref sincronizada
   useEffect(() => { baldosasRef.current = baldosas }, [baldosas])
@@ -202,10 +202,17 @@ export default function LocationARScanner() {
 
         if (masProxima && minDist <= RADIO_ACTIVACION_M) {
           // Solo cambiar de fase si no estamos ya en AR o ficha
-          setBaldosaCercana(masProxima)
+          // Preservar vecesEscaneada si la baldosa es la misma
+          setBaldosaCercana(prev => {
+            const mismaId = prev && (prev.codigo || prev.id) === (masProxima.codigo || masProxima.id)
+            return mismaId
+              ? { ...masProxima, vecesEscaneada: prev!.vecesEscaneada }
+              : masProxima
+          })
           setFase(prev =>
             prev === 'ar' || prev === 'ficha' ? prev : 'cerca'
           )
+
         } else {
           // Solo volver a "caminando" si no estamos en escena activa
           setFase(prev =>
@@ -222,6 +229,21 @@ export default function LocationARScanner() {
       WATCH_OPTIONS
     )
   }, [])
+
+  // Fetch vecesEscaneada cuando cambia la baldosa cercana
+  useEffect(() => {
+    if (!baldosaCercana) return
+    const id = baldosaCercana.codigo || baldosaCercana.id
+    fetch(`/api/baldosas/${id}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.baldosa?.vecesEscaneada !== undefined) {
+          setBaldosaCercana(b => b ? { ...b, vecesEscaneada: data.baldosa.vecesEscaneada } : b)
+        }
+      })
+      .catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baldosaCercana?.codigo, baldosaCercana?.id])
 
   // Limpiar watcher al desmontar
   useEffect(() => {
@@ -870,12 +892,30 @@ export default function LocationARScanner() {
         <div className="modal-cerca-card" style={estilos.cardNotificacion}>
           {/* Banner superior */}
           <div className="modal-cerca-banner" style={estilos.bannerDeteccion}>
-            <span style={{ fontSize: '1.4rem' }}>🌎</span>
-            <span>Baldosa encontrada</span>
-            {distancia !== null && (
-              <span className="modal-cerca-badge" style={estilos.badgeDistancia}>
-                Estás a {formatearDistancia(distancia)} de la baldosa
-              </span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', flex: 1 }}>
+              <span style={{ fontWeight: 700, fontSize: '1rem', color: '#f0f4f8' }}>Baldosa encontrada</span>
+              {distancia !== null && (
+                <span className="modal-cerca-badge" style={{ ...estilos.badgeDistancia, padding: 0, background: 'none', color: '#90b4ce', fontSize: '0.78rem' }}>
+                  Estás a {formatearDistancia(distancia)} de la baldosa
+                </span>
+              )}
+            </div>
+            {baldosaCercana.vecesEscaneada !== undefined && (
+              <div style={{
+                textAlign: 'center',
+                padding: '0.35rem 0.85rem',
+                background: 'rgba(37,99,235,0.2)',
+                borderRadius: '8px',
+                border: '1px solid rgba(37,99,235,0.35)',
+                flexShrink: 0,
+              }}>
+                <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#60a5fa', lineHeight: 1 }}>
+                  {baldosaCercana.vecesEscaneada.toLocaleString('es-AR')}
+                </div>
+                <div style={{ fontSize: '0.62rem', color: '#90b4ce', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '0.15rem' }}>
+                  {baldosaCercana.vecesEscaneada === 1 ? 'visita' : 'visitas'}
+                </div>
+              </div>
             )}
           </div>
 
@@ -894,12 +934,6 @@ export default function LocationARScanner() {
 
             <h2 className="modal-cerca-nombre" style={estilos.nombreBaldosa}>{baldosaCercana.nombre}</h2>
 
-            {/* Contador de veces escaneada */}
-            {(baldosaCercana.vecesEscaneada !== undefined && baldosaCercana.vecesEscaneada > 0) && (
-              <p style={{ ...estilos.subtitulo, fontSize: '0.82rem', marginTop: '0.25rem' }}>
-                👁 Visitada {baldosaCercana.vecesEscaneada.toLocaleString('es-AR')} {baldosaCercana.vecesEscaneada === 1 ? 'vez' : 'veces'}
-              </p>
-            )}
 
             {baldosaCercana.direccion && (
               <p style={estilos.direccion}>🌎 {baldosaCercana.direccion}</p>
@@ -965,57 +999,7 @@ export default function LocationARScanner() {
           </div>
         )}
 
-        {/* ── Controles AR ─────────────────────────────────────────────── */}
-        {arListo && (() => {
-          const s: React.CSSProperties = {
-            width: '2.8rem', height: '2.8rem',
-            background: 'rgba(10,18,28,0.78)',
-            border: '1px solid rgba(255,255,255,0.18)',
-            borderRadius: '10px', color: 'white',
-            fontSize: '1.1rem', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            backdropFilter: 'blur(8px)', touchAction: 'manipulation',
-          }
-          const getE = () => document.getElementById('columnas-vmj') as any
-          const getTN = () => document.getElementById('txt-nombre')  as any
-          const getTM = () => document.getElementById('txt-mensaje') as any
-          const getPos = () => {
-            const e = getE(); if (!e) return {x:0,y:-1.6,z:-12}
-            const p = e.getAttribute('position') as any
-            return {x:+p.x,y:+p.y,z:+p.z}
-          }
-          const setPos = (x:number,y:number,z:number) => {
-            const e=getE(),n=getTN(),m=getTM(); if(!e) return
-            e.setAttribute('position',`${x.toFixed(2)} ${y.toFixed(2)} ${z.toFixed(2)}`)
-            if(n) n.setAttribute('position',`0 ${(y+6.4).toFixed(2)} ${z.toFixed(2)}`)
-            if(m) m.setAttribute('position',`0 ${(y+5.7).toFixed(2)} ${z.toFixed(2)}`)
-          }
-          const getRot = () => { const e=getE(); if(!e) return 0; return +(e.getAttribute('rotation') as any)?.y||0 }
 
-          return (
-            <div style={{ position:'absolute', bottom:'5rem', right:'1rem', zIndex:200, display:'flex', flexDirection:'column', gap:'0.4rem', alignItems:'center' }}>
-              {/* Altura */}
-              <button style={s} onPointerDown={()=>{ const p=getPos(); setPos(p.x,Math.min(p.y+0.3,6),p.z); setOffsetY(v=>Math.min(v+0.3,6)) }} title="Subir">↑</button>
-              {/* Zoom acercar */}
-              <button style={s} onPointerDown={()=>{ const p=getPos(); setPos(p.x,p.y,Math.max(p.z+1.5,-4)); setZoom(v=>Math.max(v-0.15,0.3)) }} title="Acercar">🔍+</button>
-              {/* Reset */}
-              <button style={{...s, fontSize:'0.7rem', color:'#90b4ce'}} onPointerDown={()=>{
-                setPos(0,-1.6,-12); setOffsetY(0); setZoom(1)
-                const e=getE(); if(e) e.setAttribute('rotation','0 0 0')
-                // Centrar cámara
-                const cam=document.getElementById('camara-ar') as any
-                if(cam?.components?.['look-controls']) {
-                  cam.components['look-controls'].pitchObject.rotation.x=0
-                  cam.components['look-controls'].yawObject.rotation.y=0
-                }
-              }} title="Reset">⊙</button>
-              {/* Zoom alejar */}
-              <button style={s} onPointerDown={()=>{ const p=getPos(); setPos(p.x,p.y,Math.min(p.z-1.5,-4)); setZoom(v=>Math.min(v+0.15,3)) }} title="Alejar">🔍−</button>
-              {/* Bajar */}
-              <button style={s} onPointerDown={()=>{ const p=getPos(); setPos(p.x,Math.max(p.y-0.3,-8),p.z); setOffsetY(v=>Math.max(v-0.3,-8)) }} title="Bajar">↓</button>
-            </div>
-          )
-        })()}
 
         {/* ── Botón capturar — esquina inferior izquierda ──────────────── */}
         {arListo && (
