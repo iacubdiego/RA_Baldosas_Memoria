@@ -94,7 +94,7 @@ export default function Home() {
 
             {/* Pañuelo izquierdo */}
             <div className="lateral-panuelo lateral-panuelo-izq">
-              <img src="/images/logo_flores.png" alt="" className="lateral-panuelo-img" />
+              <img src="/images/logo_solo_flores.png" alt="" className="lateral-panuelo-img" />
             </div>
 
             {/* Baldosa que se levanta desde el piso */}
@@ -147,7 +147,7 @@ export default function Home() {
 
             {/* Pañuelo derecho */}
             <div className="lateral-panuelo lateral-panuelo-der">
-              <img src="/images/logo_flores.png" alt="" className="lateral-panuelo-img" />
+              <img src="/images/logo_solo_flores.png" alt="" className="lateral-panuelo-img" />
             </div>
 
           </div>
