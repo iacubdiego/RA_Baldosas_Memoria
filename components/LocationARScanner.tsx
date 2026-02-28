@@ -584,7 +584,6 @@ export default function LocationARScanner() {
     setScriptsOk(false)
     setArListo(false)
     setBaldosaActiva(null)
-    // Pequeño delay para que React procese el null antes de setear el valor real
     setTimeout(() => {
       setBaldosaActiva(baldosaCercana)
       setFase('ar')
@@ -592,11 +591,16 @@ export default function LocationARScanner() {
     setGuardado(false)
     setCapturaOk(false)
     setCapturando(false)
+  }, [baldosaCercana])
 
-    // Incrementar contador — fire & forget, no bloquea la UX
+  // Marca la baldosa como visitada en la DB y abre la AR
+  const marcarVisitadaYVerAR = useCallback(() => {
+    if (!baldosaCercana) return
+    // PATCH al clickear — no al sacar la foto
     const id = baldosaCercana.codigo || baldosaCercana.id
     fetch(`/api/baldosas/${id}`, { method: 'PATCH' }).catch(() => {})
-  }, [baldosaCercana])
+    verEscenaAR()
+  }, [baldosaCercana, verEscenaAR])
 
   const cerrarAR = useCallback(() => {
     // Detener stream de cámara
@@ -814,27 +818,72 @@ export default function LocationARScanner() {
   if (fase === 'cerca' && baldosaCercana) {
     return (
       <div style={estilos.pantallaOscura}>
+        <style>{`
+          @media (min-width: 768px) {
+            .modal-cerca-wrap {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-height: calc(100vh - 60px);
+            }
+            .modal-cerca-card {
+              width: 420px !important;
+              margin: 1.5rem auto !important;
+            }
+            .modal-cerca-foto img {
+              width: 80px !important;
+              height: 100px !important;
+            }
+            .modal-cerca-nombre {
+              font-size: 1.2rem !important;
+            }
+            .modal-cerca-banner {
+              font-size: 0.82rem !important;
+              padding: 0.65rem 1rem !important;
+            }
+            .modal-cerca-badge {
+              font-size: 0.75rem !important;
+            }
+            .modal-cerca-body {
+              padding: 1.1rem !important;
+            }
+            .modal-cerca-desc {
+              font-size: 0.82rem !important;
+            }
+            .modal-cerca-btn-primario {
+              padding: 0.65rem !important;
+              font-size: 0.9rem !important;
+            }
+            .modal-cerca-btn-secundario {
+              padding: 0.5rem !important;
+              font-size: 0.82rem !important;
+            }
+          }
+        `}</style>
         <div style={estilos.navBar}>
           <a href="/" style={estilos.navLink}>← Inicio</a>
           <a href="/mapa" style={estilos.navLink}>🗺️ Mapa</a>
         </div>
 
+        <div className="modal-cerca-wrap">
         {/* Tarjeta de notificación */}
-        <div style={estilos.cardNotificacion}>
+        <div className="modal-cerca-card" style={estilos.cardNotificacion}>
           {/* Banner superior */}
-          <div style={estilos.bannerDeteccion}>
+          <div className="modal-cerca-banner" style={estilos.bannerDeteccion}>
             <span style={{ fontSize: '1.4rem' }}>🌎</span>
-            <span>Baldosa detectada</span>
+            <span>Baldosa encontrada</span>
             {distancia !== null && (
-              <span style={estilos.badgeDistancia}>{formatearDistancia(distancia)}</span>
+              <span className="modal-cerca-badge" style={estilos.badgeDistancia}>
+                Estás a {formatearDistancia(distancia)} de la baldosa
+              </span>
             )}
           </div>
 
           {/* Contenido */}
-          <div style={{ padding: '1.5rem' }}>
+          <div className="modal-cerca-body" style={{ padding: '1.5rem' }}>
             {/* Foto si existe */}
             {baldosaCercana.fotoUrl && (
-              <div style={estilos.contenedorFoto}>
+              <div className="modal-cerca-foto" style={estilos.contenedorFoto}>
                 <img
                   src={baldosaCercana.fotoUrl}
                   alt={baldosaCercana.nombre}
@@ -843,18 +892,21 @@ export default function LocationARScanner() {
               </div>
             )}
 
-            <div style={estilos.chipCategoria}>
-              {(baldosaCercana.categoria ?? 'histórico').toUpperCase()}
-            </div>
+            <h2 className="modal-cerca-nombre" style={estilos.nombreBaldosa}>{baldosaCercana.nombre}</h2>
 
-            <h2 style={estilos.nombreBaldosa}>{baldosaCercana.nombre}</h2>
+            {/* Contador de veces escaneada */}
+            {(baldosaCercana.vecesEscaneada !== undefined && baldosaCercana.vecesEscaneada > 0) && (
+              <p style={{ ...estilos.subtitulo, fontSize: '0.82rem', marginTop: '0.25rem' }}>
+                👁 Visitada {baldosaCercana.vecesEscaneada.toLocaleString('es-AR')} {baldosaCercana.vecesEscaneada === 1 ? 'vez' : 'veces'}
+              </p>
+            )}
 
             {baldosaCercana.direccion && (
               <p style={estilos.direccion}>🌎 {baldosaCercana.direccion}</p>
             )}
 
             {baldosaCercana.descripcion && (
-              <p style={estilos.descripcionCorta}>
+              <p className="modal-cerca-desc" style={estilos.descripcionCorta}>
                 {baldosaCercana.descripcion.slice(0, 120)}
                 {baldosaCercana.descripcion.length > 120 ? '…' : ''}
               </p>
@@ -866,10 +918,11 @@ export default function LocationARScanner() {
 
             {/* Acciones */}
             <div style={estilos.botonesAccion}>
-              <button onClick={verEscenaAR} style={estilos.btnPrimario}>
-                ✨ Ver en AR
+              <button className="modal-cerca-btn-primario" onClick={marcarVisitadaYVerAR} style={estilos.btnPrimario}>
+                Marcar como visitada
               </button>
               <button
+                className="modal-cerca-btn-secundario"
                 onClick={volverACaminar}
                 style={estilos.btnSecundario}
               >
@@ -877,6 +930,7 @@ export default function LocationARScanner() {
               </button>
             </div>
           </div>
+        </div>
         </div>
       </div>
     )
@@ -1049,7 +1103,7 @@ export default function LocationARScanner() {
             </div>
           )}
 
-          <div style={estilos.chipCategoria}>{(baldosaActiva.categoria ?? 'histórico').toUpperCase()}</div>
+
           <h1 style={{ ...estilos.nombreBaldosa, fontSize: '2rem', marginTop: '0.5rem' }}>
             {baldosaActiva.nombre}
           </h1>
