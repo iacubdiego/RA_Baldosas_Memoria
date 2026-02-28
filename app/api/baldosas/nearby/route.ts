@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Baldosa from '@/models/Baldosa';
-import Cluster from '@/models/Cluster';
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,19 +38,6 @@ export async function GET(request: NextRequest) {
       },
     }).limit(50);
 
-    const clusters = await Cluster.find({
-      activo: true,
-      centro: {
-        $near: {
-          $geometry: {
-            type: 'Point',
-            coordinates: [lng, lat],
-          },
-          $maxDistance: radius * 2,
-        },
-      },
-    }).limit(10);
-
     const baldosasWithDistance = baldosas.map(baldosa => {
       const [bLng, bLat] = baldosa.ubicacion.coordinates;
       const R = 6371e3;
@@ -77,31 +63,13 @@ export async function GET(request: NextRequest) {
         mensajeAR: baldosa.mensajeAR,
         imagenUrl: baldosa.imagenUrl,
         fotoUrl: baldosa.fotoUrl,
-        clusterId: baldosa.clusterId,
-        targetIndex: baldosa.targetIndex,
-        mindFileUrl: baldosa.mindFileUrl,
-        vecesEscaneada: baldosa.vecesEscaneada ?? 0,  // ← nuevo
+        vecesEscaneada: baldosa.vecesEscaneada ?? 0,
         distancia: Math.round(distance),
       };
     });
 
-    const clusterMap = new Map();
-    clusters.forEach(cluster => {
-      const [cLng, cLat] = cluster.centro.coordinates;
-      clusterMap.set(cluster._id.toString(), {
-        id: cluster._id.toString(),
-        codigo: cluster.codigo,
-        mindFileUrl: cluster.mindFileUrl,
-        lat: cLat,
-        lng: cLng,
-        baldosasCount: cluster.baldosasCount,
-        version: cluster.version,
-      });
-    });
-
     return NextResponse.json({
       baldosas: baldosasWithDistance,
-      clusters: Array.from(clusterMap.values()),
       total: baldosasWithDistance.length,
       userLocation: { lat, lng },
       radius,
