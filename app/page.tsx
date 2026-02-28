@@ -44,7 +44,7 @@ function generarVenecitas(cantidad: number) {
       usados.push({x, y});
       
       const rotacion = Math.random() * 30 - 15;
-      const delay = 2.1 + Math.random() * 0.8;
+      const delay = 3.0 + Math.random() * 1.5; // Aumentado el delay para la aparición paulatina post-baldosa
       const imgNum = (i % 8) + 1;
       
       venecitas.push({
@@ -94,7 +94,7 @@ export default function Home() {
 
             {/* Pañuelo izquierdo */}
             <div className="lateral-panuelo lateral-panuelo-izq">
-              <img src="/images/logo_solo_flores.png" alt="" className="lateral-panuelo-img" />
+              <img src="/images/logo_solo_flores.png" alt="" className="lateral-panuelo-img" loading="eager" />
             </div>
 
             {/* Baldosa que se levanta desde el piso */}
@@ -103,6 +103,7 @@ export default function Home() {
                 src="/baldoson.jpg" 
                 alt="Baldosa"
                 className="baldosa-img"
+                loading="eager"
               />
               
               {/* Venecitas que aparecen en el perímetro */}
@@ -113,6 +114,7 @@ export default function Home() {
                     src={`/venecitas/venecita0${v.imgNum}.png`}
                     alt="" 
                     className="venecita"
+                    loading="eager"
                     style={{
                       left: `${v.x}%`,
                       top: `${v.y}%`,
@@ -123,16 +125,12 @@ export default function Home() {
                 ))}
               </div>
               
-              {/* Texto superior - Memoria, Verdad y Justicia */}
-              {/* <span className="baldosa-texto-superior">
-                Memoria, Verdad y Justicia
-              </span> */}
-              
               {/* Imagen central - Nunca Más */}
               <img 
                 src="/images/logo_flores.png" 
                 alt="Logo"
                 className="nuncamas-centro"
+                loading="eager"
               />
               
               {/* Texto inferior - Fecha dinámica */}
@@ -147,19 +145,16 @@ export default function Home() {
 
             {/* Pañuelo derecho */}
             <div className="lateral-panuelo lateral-panuelo-der">
-              <img src="/images/logo_solo_flores.png" alt="" className="lateral-panuelo-img" />
+              <img src="/images/logo_solo_flores.png" alt="" className="lateral-panuelo-img" loading="eager" />
             </div>
 
           </div>
 
-          {/* Título principal */}
+          {/* Título principal - Sin gradientes, más institucional */}
           <div className="animate-fade-in-up delay-100">
             <h1 style={{
               marginBottom: 'var(--space-md)',
-              background: 'linear-gradient(135deg, var(--color-stone) 0%, var(--color-primary) 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
+              color: 'var(--color-stone)',
             }}>
               Recorremos Memoria
             </h1>
@@ -181,9 +176,9 @@ export default function Home() {
 
           <ContadorBaldosas />
 
-          {/* Memorial Statement - Solo "Nunca Más" */}
+          {/* Memorial Statement - Solo "Nunca Más", fade in elegante */}
           <div className="memorial-statement animate-fade-in-scale delay-300">
-            <div className="memorial-statement-text animate-pulse">
+            <div className="memorial-statement-text">
               Nunca Más
             </div>
             <div className="memorial-statement-label">
@@ -193,7 +188,7 @@ export default function Home() {
 
           {/* Botones de acción */}
           <div className="animate-fade-in-up delay-400" style={{ marginTop: 'var(--space-xl)' }}>
-            <div className="cluster" style={{ justifyContent: 'center', marginBottom: 'var(--space-lg)' }}>
+            <div className="stack" style={{ alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
               <Link href="/scanner" className="btn hover-lift hover-glow" style={{
                 background: 'var(--color-primary)',
                 color: 'var(--color-parchment)',
@@ -205,10 +200,19 @@ export default function Home() {
               }}>
                 Encontrar Baldosa
               </Link>
+              {/* Microcopy para prevenir al usuario sobre la RA */}
+              <p style={{
+                fontSize: '0.85rem',
+                color: 'var(--color-dust)',
+                marginTop: 'var(--space-xs)',
+                marginBottom: 0
+              }}>
+                *Se requerirá acceso a tu cámara y ubicación
+              </p>
             </div>
           </div>
 
-          {/* Pasos - con animaciones escalonadas */}
+          {/* Pasos - Diseño más sobrio, monocromático para los números */}
           <div className="animate-fade-in delay-500" style={{
             marginTop: 'var(--space-xl)',
             padding: 'var(--space-lg)',
@@ -234,11 +238,11 @@ export default function Home() {
                   width: '50px',
                   height: '50px',
                   borderRadius: '50%',
-                  background: 'var(--color-primary)',
+                  background: 'var(--color-stone)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'white',
+                  color: 'var(--color-parchment)',
                   fontSize: '1.5rem',
                   fontWeight: 'bold',
                   marginBottom: 'var(--space-sm)',
@@ -263,11 +267,11 @@ export default function Home() {
                   width: '50px',
                   height: '50px',
                   borderRadius: '50%',
-                  background: 'var(--color-primary-light)',
+                  background: 'var(--color-stone)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'white',
+                  color: 'var(--color-parchment)',
                   fontSize: '1.5rem',
                   fontWeight: 'bold',
                   marginBottom: 'var(--space-sm)',
@@ -292,11 +296,11 @@ export default function Home() {
                   width: '50px',
                   height: '50px',
                   borderRadius: '50%',
-                  background: 'var(--color-accent)',
+                  background: 'var(--color-stone)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'white',
+                  color: 'var(--color-parchment)',
                   fontSize: '1.5rem',
                   fontWeight: 'bold',
                   marginBottom: 'var(--space-sm)',

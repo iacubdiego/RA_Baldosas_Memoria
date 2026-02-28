@@ -42,17 +42,17 @@ export default function RootLayout({
           <div className="container" style={{ textAlign: 'center' }}>
             <p style={{
               fontFamily: 'var(--font-display)',
-              fontSize:   '0.9rem',
+              fontSize:   '0.95rem',
               margin:      0,
               color:      'var(--color-parchment)',
-              opacity:     0.9,
+              opacity:     1, /* Mayor contraste para accesibilidad */
             }}>
               Un proyecto de memoria colectiva y cooperativismo
             </p>
             <p style={{
               fontSize:  '0.85rem',
               marginTop: 'var(--space-xs)',
-              opacity:    0.6,
+              opacity:    0.8, /* Subida la opacidad base */
               color:     'var(--color-parchment)',
             }}>
               © {new Date().getFullYear()} Recorremos Memoria
