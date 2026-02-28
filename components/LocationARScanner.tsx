@@ -90,7 +90,8 @@ export default function LocationARScanner() {
     return parseFloat(localStorage.getItem('ar_zoom') || '1')
   })
 
-  const watchIdRef   = useRef<number | null>(null)
+  const watchIdRef      = useRef<number | null>(null)
+  const iniciarGPSRef   = useRef<(() => void) | null>(null)
   const sceneRef     = useRef<HTMLElement | null>(null)
   const baldosasRef      = useRef<Baldosa[]>([])   // ref sincronizado para el callback del watcher
 
@@ -135,23 +136,22 @@ export default function LocationARScanner() {
       return
     }
 
-    if (navigator.permissions) {
-      navigator.permissions.query({ name: 'geolocation' }).then(result => {
-        if (result.state === 'granted') {
-          // Permiso ya otorgado — arrancar sin mostrar pantalla de inicio
-          iniciarGPS()
-        } else {
-          // 'prompt' o 'denied' → mostrar pantalla con botón
-          setFase('iniciando')
-        }
-      }).catch(() => {
-        // Permissions API no disponible — mostrar pantalla normal
+    // Intentar posición silenciosa con timeout muy corto.
+    // Si el permiso ya estaba concedido → responde al instante → arrancamos directo.
+    // Si requiere diálogo o está denegado → el timeout o el error lleva a 'iniciando'.
+    const fallback = setTimeout(() => setFase('iniciando'), 1500)
+
+    navigator.geolocation.getCurrentPosition(
+      () => {
+        clearTimeout(fallback)
+        iniciarGPSRef.current?.()
+      },
+      () => {
+        clearTimeout(fallback)
         setFase('iniciando')
-      })
-    } else {
-      // Browser sin Permissions API — mostrar pantalla normal
-      setFase('iniciando')
-    }
+      },
+      { enableHighAccuracy: false, timeout: 1000, maximumAge: 60000 }
+    )
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -230,6 +230,9 @@ export default function LocationARScanner() {
     )
   }, [])
 
+  // Ref siempre actualizado — permite que el check de permisos lo llame sin dependencia circular
+  iniciarGPSRef.current = iniciarGPS
+
   // Fetch vecesEscaneada cuando cambia la baldosa cercana
   useEffect(() => {
     if (!baldosaCercana) return
@@ -241,6 +244,7 @@ export default function LocationARScanner() {
           setBaldosaCercana(b => b ? { ...b, vecesEscaneada: data.baldosa.vecesEscaneada } : b)
         }
       })
+
       .catch(() => {})
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [baldosaCercana?.codigo, baldosaCercana?.id])

@@ -83,6 +83,7 @@ export default function MapView({ initialLocation }:MapViewProps) {
   const [loadingDetalle,setLoadingDetalle]=useState(false)
   const [ruta,setRuta]=useState<[number,number][]>([])
   const [loadingRuta,setLoadingRuta]=useState(false)
+  const [pidiendo,setPidiendo]=useState(false)
 
   useEffect(()=>{
     if(!navigator.geolocation){setLoadingLocation(false);return}
@@ -96,6 +97,18 @@ export default function MapView({ initialLocation }:MapViewProps) {
   useEffect(()=>{
     fetch('/api/baldosas/pins').then(r=>r.json()).then(d=>setPins(d.pins||[])).catch(console.error).finally(()=>setLoadingPins(false))
   },[])
+
+  const pedirUbicacion=()=>{
+    if(!navigator.geolocation)return
+    setPidiendo(true)
+    navigator.geolocation.getCurrentPosition(
+      pos=>{ setUserLocation({lat:pos.coords.latitude,lng:pos.coords.longitude}); setLoadingLocation(false); setPidiendo(false) },
+      ()=>setPidiendo(false),
+      {enableHighAccuracy:true,timeout:10000}
+    )
+  }
+  // Exponer en window para que el popup de Leaflet pueda llamarla (Leaflet bloquea eventos React)
+  ;(window as any).__mapPedirUbicacion = pedirUbicacion
 
   const abrirPanel=()=>{
     setPanelAbierto(true)
@@ -181,13 +194,17 @@ export default function MapView({ initialLocation }:MapViewProps) {
           return(
             <Marker key={pin.id} position={[pin.lat,pin.lng]} icon={baldosaIcon}>
               <Popup>
-                <div style={{fontFamily:'sans-serif',minWidth:'190px'}}>
+                <div style={{fontFamily:'sans-serif',minWidth:'200px',maxWidth:'240px'}}>
                   <h3 style={{fontSize:'0.95rem',color:'#1a2a3a',margin:'0 0 4px'}}>{pin.nombre}</h3>
-                  {pin.direccion&&<p style={{fontSize:'0.8rem',color:'#4a6b7c',margin:'0 0 6px'}}>📍 {pin.direccion}</p>}
-                  {dist!==null&&<p style={{fontSize:'0.8rem',fontWeight:600,color:cerca?'#166534':'#4b5563',margin:'0 0 8px'}}>{cerca?'✓ Estás cerca':`📏 ${formatearDistancia(dist)}`}</p>}
-                  <div style={{display:'flex',gap:'6px',marginTop:'4px'}}>
+                  {pin.direccion&&<p style={{fontSize:'0.78rem',color:'#4a6b7c',margin:'0 0 4px'}}>{pin.direccion}</p>}
+                  {dist!==null&&<p style={{fontSize:'0.78rem',fontWeight:600,color:cerca?'#166534':'#4b5563',margin:'0 0 4px'}}>{cerca?'✓ Estás cerca':`Estás a ${formatearDistancia(dist)}`}</p>}
+                  {pin.vecesEscaneada!==undefined&&pin.vecesEscaneada>0&&<p style={{fontSize:'0.72rem',color:'#6b7280',margin:'0 0 8px'}}>{pin.vecesEscaneada.toLocaleString('es-AR')} {pin.vecesEscaneada===1?'visita':'visitas'}</p>}
+                  <div style={{display:'flex',gap:'6px',marginTop:'6px'}}>
                     <button onClick={()=>verDetalle(pin.id,pin)} style={{flex:1,padding:'7px',background:'#2563eb',color:'white',border:'none',borderRadius:'6px',fontSize:'0.82rem',fontWeight:600,cursor:'pointer'}}>Ver detalle</button>
-                    {userLocation&&<button onClick={()=>iniciarRecorrido({...pin,mensajeAR:''})} style={{flex:1,padding:'7px',background:'#f0f4f8',color:'#1a2a3a',border:'1px solid #e5e7eb',borderRadius:'6px',fontSize:'0.82rem',fontWeight:600,cursor:'pointer'}}>Ir →</button>}
+                    {userLocation
+                      ?<button onClick={()=>iniciarRecorrido({...pin,mensajeAR:''})} style={{flex:1,padding:'7px',background:'#f0f4f8',color:'#1a2a3a',border:'1px solid #e5e7eb',borderRadius:'6px',fontSize:'0.82rem',fontWeight:600,cursor:'pointer'}}>Ir →</button>
+                      :<button onMouseDown={e=>{e.stopPropagation();(window as any).__mapPedirUbicacion?.()}} style={{flex:1,padding:'7px',background:'#1a2a3a',color:'white',border:'none',borderRadius:'6px',fontSize:'0.75rem',fontWeight:600,cursor:'pointer'}}>Activar GPS</button>
+                    }
                   </div>
                 </div>
               </Popup>
@@ -304,8 +321,9 @@ export default function MapView({ initialLocation }:MapViewProps) {
 
       {/* ── Panel de detalle de baldosa ──────────────────────────────── */}
       {detalle&&(
-        <div style={{position:'absolute',inset:0,zIndex:500,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'flex-end'}} onClick={()=>setDetalle(null)}>
-          <div onClick={e=>e.stopPropagation()} style={{width:'100%',background:'white',borderRadius:'20px 20px 0 0',boxShadow:'0 -8px 40px rgba(0,0,0,0.2)',maxHeight:'80vh',display:'flex',flexDirection:'column',overflow:'hidden'}}>
+        <div style={{position:'absolute',inset:0,zIndex:500,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'flex-end',justifyContent:'center'}} onClick={()=>setDetalle(null)}>
+          <style>{`@media(min-width:768px){.detalle-panel{border-radius:16px!important;margin-bottom:2rem!important}}`}</style>
+          <div className="detalle-panel" onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:'520px',background:'white',borderRadius:'20px 20px 0 0',boxShadow:'0 -8px 40px rgba(0,0,0,0.2)',maxHeight:'82vh',display:'flex',flexDirection:'column',overflow:'hidden'}}>
             {/* Header */}
             <div style={{flexShrink:0,padding:'16px 20px 12px',borderBottom:'1px solid #f0f0f0',position:'relative'}}>
               <div style={{width:'40px',height:'4px',background:'#e5e7eb',borderRadius:'2px',margin:'0 auto 12px'}}/>
@@ -315,7 +333,7 @@ export default function MapView({ initialLocation }:MapViewProps) {
               </h2>
               {('direccion' in detalle && detalle.direccion)&&(
                 <p style={{fontSize:'0.85rem',color:'#4a6b7c',margin:'4px 0 0'}}>
-                  📍 {detalle.direccion}{'barrio' in detalle && detalle.barrio ? ` · ${detalle.barrio}` : ''}
+                  {detalle.direccion}{'barrio' in detalle && detalle.barrio ? ` · ${detalle.barrio}` : ''}
                 </p>
               )}
             </div>
@@ -332,12 +350,7 @@ export default function MapView({ initialLocation }:MapViewProps) {
                   {('fotoUrl' in detalle && detalle.fotoUrl)&&(
                     <img src={detalle.fotoUrl as string} alt={'nombre' in detalle ? detalle.nombre : ''} style={{width:'100%',borderRadius:'10px',marginBottom:'16px',objectFit:'cover',maxHeight:'200px'}}/>
                   )}
-                  {/* Codigo */}
-                  {('codigo' in detalle && detalle.codigo)&&(
-                    <div style={{display:'inline-block',background:'rgba(37,99,235,0.08)',borderRadius:'6px',padding:'3px 10px',fontSize:'0.78rem',fontWeight:600,color:'#2563eb',marginBottom:'12px'}}>
-                      {detalle.codigo}
-                    </div>
-                  )}
+
                   {/* Descripción */}
                   {('descripcion' in detalle && (detalle as any).descripcion)&&(
                     <p style={{fontSize:'0.95rem',color:'#374151',lineHeight:1.6,marginBottom:'14px'}}>
@@ -366,7 +379,7 @@ export default function MapView({ initialLocation }:MapViewProps) {
                     </p>
                   )}
                   {/* Botón recorrido */}
-                  {userLocation&&(
+                  {userLocation?(
                     <button
                       onClick={()=>{
                         const b={...detalle,mensajeAR:('mensajeAR' in detalle?detalle.mensajeAR:'')} as BaldosaCercana
@@ -376,6 +389,19 @@ export default function MapView({ initialLocation }:MapViewProps) {
                     >
                       Cómo llegar
                     </button>
+                  ):(
+                    <div style={{marginTop:'16px',padding:'12px 14px',background:'#f8fafc',borderRadius:'12px',border:'1px solid #e5e7eb'}}>
+                      <p style={{fontSize:'0.85rem',color:'#4a6b7c',margin:'0 0 10px',lineHeight:1.5}}>
+                        Activá tu ubicación para obtener indicaciones hacia esta baldosa
+                      </p>
+                      <button
+                        onClick={pedirUbicacion}
+                        disabled={pidiendo}
+                        style={{width:'100%',padding:'10px',background:pidiendo?'#e5e7eb':'#1a2a3a',color:pidiendo?'#9ca3af':'white',border:'none',borderRadius:'8px',fontSize:'0.9rem',fontWeight:600,cursor:pidiendo?'default':'pointer',transition:'all 0.2s'}}
+                      >
+                        {pidiendo?'Obteniendo ubicación…':'Activar ubicación'}
+                      </button>
+                    </div>
                   )}
                 </>
               )}
