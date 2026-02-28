@@ -205,15 +205,6 @@ export default function Home() {
               }}>
                 Encontrar Baldosa
               </Link>
-
-              <Link href="/coleccion" className="btn hover-lift" style={{
-                padding: 'var(--space-md) var(--space-lg)',
-                fontSize: '1rem',
-                borderColor: 'var(--color-primary)',
-                color: 'var(--color-primary)',
-              }}>
-                Mi Recorrido
-              </Link>
             </div>
           </div>
 
@@ -316,7 +307,7 @@ export default function Home() {
                   Mantén Viva la Memoria
                 </h3>
                 <p style={{ color: 'var(--color-dust)', fontSize: '0.95rem', marginBottom: 0 }}>
-                  Recorre las distintas baldosas y guarda fotos de donde estuviste y lo que viste
+                  Recorre las distintas baldosas y contribuí a mantener viva la memoria de cada persona
                 </p>
               </div>
             </div>

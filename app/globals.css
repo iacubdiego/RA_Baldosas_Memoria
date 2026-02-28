@@ -404,6 +404,17 @@ button:active, .btn:active {
   to { transform: rotate(360deg); }
 }
 
+@keyframes fadeSlideDown {
+  0%   { opacity: 0; transform: translateY(-12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeSlideUp {
+  0%   { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+
 /* Hover effects mejorados */
 .hover-lift {
   transition: transform var(--transition-base), box-shadow var(--transition-base);

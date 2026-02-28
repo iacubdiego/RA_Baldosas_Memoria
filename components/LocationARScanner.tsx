@@ -646,42 +646,6 @@ export default function LocationARScanner() {
     window.location.href = '/mapa'
   }, [])
 
-  const guardarEnRecorrido = useCallback(async () => {
-    if (!baldosaActiva || guardando) return
-    setGuardando(true)
-
-    try {
-      const authRes = await fetch('/api/auth/me')
-      if (!authRes.ok) {
-        window.location.href = `/login?redirect=/scanner`
-        return
-      }
-
-      const res = await fetch('/api/recorridos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          baldosaId:         baldosaActiva.codigo || baldosaActiva.id,
-          nombreVictima:     baldosaActiva.nombre,
-          fechaDesaparicion: '',
-          fotoBase64:        baldosaActiva.imagenUrl || '',
-          ubicacion:         baldosaActiva.direccion || baldosaActiva.barrio || 'Buenos Aires',
-          lat:               baldosaActiva.lat,
-          lng:               baldosaActiva.lng,
-          notas:             '',
-        }),
-      })
-
-      const data = await res.json()
-      if (res.ok || data.error?.includes('Ya has escaneado')) {
-        setGuardado(true)
-      }
-    } catch {
-      // Silencioso — no es crítico
-    } finally {
-      setGuardando(false)
-    }
-  }, [baldosaActiva, guardando])
 
   const capturarYGuardar = useCallback(async () => {
     if (!baldosaActiva || capturando || capturaOk) return
@@ -727,43 +691,25 @@ export default function LocationARScanner() {
 
       const fotoBase64 = offscreen.toDataURL('image/jpeg', 0.82)
 
-      // 3. Verificar auth
-      const authRes = await fetch('/api/auth/me')
-      if (!authRes.ok) {
-        sessionStorage.setItem('captura_pendiente', JSON.stringify({
-          baldosaId:     baldosaActiva.codigo || baldosaActiva.id,
-          nombreVictima: baldosaActiva.nombre,
-          fotoBase64,
-          ubicacion:     baldosaActiva.direccion || baldosaActiva.barrio || 'Buenos Aires',
-          lat:           baldosaActiva.lat,
-          lng:           baldosaActiva.lng,
-        }))
-        window.location.href = `/auth?redirect=/scanner&pendiente=captura`
-        return
+      // 4. Guardar captura en localStorage y redirigir a vista de previsualización
+      const entrada = {
+        id:        Date.now(),
+        baldosaId: baldosaActiva.codigo || baldosaActiva.id,
+        nombre:    baldosaActiva.nombre,
+        ubicacion: baldosaActiva.direccion || baldosaActiva.barrio || 'Buenos Aires',
+        lat:       baldosaActiva.lat,
+        lng:       baldosaActiva.lng,
+        foto:      fotoBase64,
+        fecha:     new Date().toISOString(),
       }
 
-      // 4. Guardar en BD
-      const res = await fetch('/api/recorridos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          baldosaId:         baldosaActiva.codigo || baldosaActiva.id,
-          nombreVictima:     baldosaActiva.nombre,
-          fechaDesaparicion: '',
-          fotoBase64,
-          ubicacion:         baldosaActiva.direccion || baldosaActiva.barrio || 'Buenos Aires',
-          lat:               baldosaActiva.lat,
-          lng:               baldosaActiva.lng,
-          notas:             'Captura AR',
-        }),
-      })
+      // Guardar la captura pendiente de confirmar
+      localStorage.setItem('recorremo_captura_pendiente', JSON.stringify(entrada))
 
-      const data = await res.json()
-      if (res.ok || data.error?.includes('Ya has escaneado')) {
-        setCapturaOk(true)
-        setGuardado(true)
-        setTimeout(() => { window.location.href = '/coleccion' }, 1200)
-      }
+      setCapturaOk(true)
+
+      // Redirigir inmediatamente a la vista de captura
+      window.location.href = '/scanner/captura'
     } catch {
       // Silencioso
     } finally {
@@ -787,7 +733,7 @@ export default function LocationARScanner() {
     return (
       <div style={estilos.pantallaCentrada}>
         <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🌎</div>
-        <h1 style={estilos.titulo}>Recorremos Memoria</h1>
+        <h1 style={estilos.titulo}>Baldosas por la Memoria</h1>
         <p style={estilos.subtitulo}>
           Caminá por Buenos Aires y descubrí las baldosas que honran a los desaparecidos.
           Cuando te acerques a una, verás su historia.
@@ -1132,18 +1078,6 @@ export default function LocationARScanner() {
 
           {/* Acciones */}
           <div style={{ ...estilos.botonesAccion, marginTop: '2rem' }}>
-            <button
-              onClick={guardarEnRecorrido}
-              disabled={guardando || guardado}
-              style={{
-                ...estilos.btnPrimario,
-                opacity: guardado ? 0.7 : 1,
-                background: guardado ? '#166534' : undefined,
-              }}
-            >
-              {guardado ? '✓ Guardado en tu recorrido' : guardando ? 'Guardando…' : '📌 Guardar en mi recorrido'}
-            </button>
-
             <button onClick={verEscenaAR} style={estilos.btnSecundario}>
               ✨ Ver AR de nuevo
             </button>

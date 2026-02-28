@@ -37,7 +37,6 @@ export default function NavbarWrapper() {
         <div className="navbar-links">
           <a href="/scanner"   className="navbar-link">Encontrar</a>
           <a href="/mapa"      className="navbar-link">Mapa</a>
-          <a href="/coleccion" className="navbar-link">Mi Recorrido</a>
         </div>
       </div>
     </nav>
