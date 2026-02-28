@@ -100,7 +100,7 @@ export default function Home() {
             {/* Baldosa que se levanta desde el piso */}
             <div className="baldosa-animada">
               <img 
-                src="/baldoson.jpg" 
+                src="/images/baldoson.jpg" 
                 alt="Baldosa"
                 className="baldosa-img"
                 loading="eager"
