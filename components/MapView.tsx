@@ -42,7 +42,7 @@ const userIcon = new L.Icon({
 const RADIO_MAXIMO   = 100
 const LIMIT_CERCANAS = 20
 
-interface Pin { id:string; codigo:string; nombre:string; direccion:string; barrio:string; lat:number; lng:number }
+interface Pin { id:string; codigo:string; nombre:string; direccion:string; barrio:string; lat:number; lng:number; vecesEscaneada?:number }
 interface BaldosaCercana { id:string; codigo:string; nombre:string; lat:number; lng:number; direccion:string; barrio:string; mensajeAR:string; distancia?:number; vecesEscaneada?:number }
 interface MapViewProps { initialLocation: { lat:number; lng:number } }
 
