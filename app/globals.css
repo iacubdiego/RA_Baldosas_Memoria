@@ -243,10 +243,10 @@ button:active, .btn:active {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: url('/images/logo_flores.png'); /* Corregida la extensión de la imagen */
-  background-size: 150px 150px;
-  background-repeat: space;
-  opacity: 0.08;
+  background-image: url('/images/Fondoblanco.png');
+  background-size: 500px 500px;
+  background-repeat: repeat;
+  opacity: 0.65;
   pointer-events: none;
   z-index: 0;
 }
@@ -279,6 +279,17 @@ button:active, .btn:active {
 }
 
 /* ==================== ANIMACIONES ==================== */
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -422,7 +433,7 @@ button:active, .btn:active {
   }
   
   .hero-background::before {
-    background-size: 100px 100px;
+    background-size: 350px 300px;
   }
 }
 
@@ -602,22 +613,6 @@ button:active, .btn:active {
   animation-delay: 2.5s;
 }
 
-.baldosa-texto-inferior {
-  position: absolute;
-  bottom: 8%;
-  left: 50%;
-  transform: translateX(-50%);
-  font-family: var(--font-display);
-  font-size: 2.6rem;
-  font-weight: 900;
-  color: #1a1a1a;
-  opacity: 0;
-  white-space: nowrap;
-  text-shadow: 0 1px 3px rgba(255,255,255,0.4);
-  animation: apareceTexto 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-  animation-delay: 2.7s;
-}
-
 @keyframes apareceTexto {
   0%   { opacity: 0; transform: translateX(-50%) translateY(10px); }
   100% { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -625,7 +620,6 @@ button:active, .btn:active {
 
 @media (max-width: 768px) {
   .baldosa-texto-superior { font-size: clamp(0.9rem, 3.5vw, 1.4rem); }
-  .baldosa-texto-inferior  { font-size: clamp(1rem, 4vw, 1.6rem); }
 }
 
 /* ── Logo central ── */

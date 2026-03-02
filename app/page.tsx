@@ -133,14 +133,6 @@ export default function Home() {
                 loading="eager"
               />
               
-              {/* Texto inferior - Fecha dinámica */}
-              <span className="baldosa-texto-inferior">
-                {new Date().toLocaleDateString('es-AR', { 
-                  day: '2-digit', 
-                  month: '2-digit', 
-                  year: 'numeric' 
-                }).replace(/\//g, '-')}
-              </span>
             </div>
 
             {/* Pañuelo derecho */}
@@ -150,8 +142,164 @@ export default function Home() {
 
           </div>
 
-          {/* Título principal - Sin gradientes, más institucional */}
-          <div className="animate-fade-in-up delay-100">
+          {/* Botones de acción — debajo del baldosón */}
+          <div style={{
+            display: 'flex',
+            gap: '1rem',
+            justifyContent: 'center',
+            margin: '0 auto var(--space-lg)',
+            opacity: 0,
+            animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 2.5s forwards',
+          }}>
+            {/* Botón Escanear */}
+            <Link href="/scanner" style={{
+              minWidth: '180px',
+              height: '174px',
+              display: 'inline-flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1.25rem 1.5rem',
+              background: 'linear-gradient(to top, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.2) 100%)',
+              color: 'var(--color-dust)',
+              border: 'none',
+              borderRadius: '12px',
+              textDecoration: 'none',
+              boxShadow: '0 4px 20px rgba(74,107,124,0.12)',
+              backdropFilter: 'blur(4px)',
+              transition: 'all var(--transition-base)',
+              gap: '0.4rem',
+            }}
+            onMouseEnter={e => {
+              const el = e.currentTarget as HTMLAnchorElement
+              el.style.background = 'linear-gradient(to top, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0.35) 100%)'
+              el.style.boxShadow = '0 6px 28px rgba(74,107,124,0.22)'
+              el.style.transform = 'translateY(-2px)'
+            }}
+            onMouseLeave={e => {
+              const el = e.currentTarget as HTMLAnchorElement
+              el.style.background = 'linear-gradient(to top, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.2) 100%)'
+              el.style.boxShadow = '0 4px 20px rgba(74,107,124,0.12)'
+              el.style.transform = 'translateY(0)'
+            }}>
+              <span style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: '1.1rem',
+                fontWeight: 700,
+                letterSpacing: '0.18em',
+                textTransform: 'uppercase',
+                color: 'var(--color-dust)',
+              }}>Escanear</span>
+              <span style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: '0.8rem',
+                fontWeight: 500,
+                letterSpacing: '0.04em',
+                color: 'var(--color-dust)',
+                opacity: 0.85,
+                textAlign: 'center',
+                lineHeight: 1.3,
+              }}>Descubrí la Realidad Aumentada</span>
+              <span style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: '0.65rem',
+                fontWeight: 400,
+                letterSpacing: '0.02em',
+                color: 'var(--color-dust)',
+                opacity: 0.6,
+                textAlign: 'center',
+                lineHeight: 1.35,
+                marginTop: '0.25rem',
+              }}>Vamos a necesitar permiso para tu cámara y ubicación por un momento</span>
+            </Link>
+
+            {/* Botón Mapa */}
+            <Link href="/mapa" style={{
+              minWidth: '180px',
+              height: '174px',
+              display: 'inline-flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1.25rem 1.5rem',
+              background: 'linear-gradient(to top, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.2) 100%)',
+              color: 'var(--color-dust)',
+              border: 'none',
+              borderRadius: '12px',
+              textDecoration: 'none',
+              boxShadow: '0 4px 20px rgba(74,107,124,0.12)',
+              backdropFilter: 'blur(4px)',
+              transition: 'all var(--transition-base)',
+              gap: '0.4rem',
+            }}
+            onMouseEnter={e => {
+              const el = e.currentTarget as HTMLAnchorElement
+              el.style.background = 'linear-gradient(to top, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0.35) 100%)'
+              el.style.boxShadow = '0 6px 28px rgba(74,107,124,0.22)'
+              el.style.transform = 'translateY(-2px)'
+            }}
+            onMouseLeave={e => {
+              const el = e.currentTarget as HTMLAnchorElement
+              el.style.background = 'linear-gradient(to top, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.2) 100%)'
+              el.style.boxShadow = '0 4px 20px rgba(74,107,124,0.12)'
+              el.style.transform = 'translateY(0)'
+            }}>
+              <span style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: '1.1rem',
+                fontWeight: 700,
+                letterSpacing: '0.18em',
+                textTransform: 'uppercase',
+                color: 'var(--color-dust)',
+              }}>Mapa</span>
+              <span style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: '0.8rem',
+                fontWeight: 500,
+                letterSpacing: '0.04em',
+                color: 'var(--color-dust)',
+                opacity: 0.85,
+                textAlign: 'center',
+                lineHeight: 1.3,
+              }}>Conocé la ubicación de las baldosas</span>
+            </Link>
+          </div>
+
+          {/* Contador + Nunca Más lado a lado */}
+          <div style={{
+            display: 'flex',
+            gap: '1rem',
+            justifyContent: 'center',
+            alignItems: 'stretch',
+            margin: '0 auto var(--space-lg)',
+            opacity: 0,
+            animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 3.2s forwards',
+          }}>
+            {/* Contador */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <ContadorBaldosas />
+            </div>
+
+            {/* Memorial Statement */}
+            <div className="memorial-statement" style={{
+              flex: 1,
+              minWidth: 0,
+              margin: 0,
+            }}>
+              <div className="memorial-statement-text">
+                Nunca Más
+              </div>
+              <div className="memorial-statement-label">
+                Memoria, Verdad y Justicia
+              </div>
+            </div>
+          </div>
+
+          {/* Título principal */}
+          <div style={{
+            opacity: 0,
+            animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 3.8s forwards',
+          }}>
             <h1 style={{
               marginBottom: 'var(--space-md)',
               color: 'var(--color-stone)',
@@ -161,7 +309,10 @@ export default function Home() {
           </div>
           
           {/* Descripción */}
-          <div className="animate-fade-in-up delay-200">
+          <div style={{
+            opacity: 0,
+            animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 4.1s forwards',
+          }}>
             <p style={{
               fontSize: '1.25rem',
               color: 'var(--color-concrete)',
@@ -174,46 +325,10 @@ export default function Home() {
             </p>
           </div>
 
-          <ContadorBaldosas />
-
-          {/* Memorial Statement - Solo "Nunca Más", fade in elegante */}
-          <div className="memorial-statement animate-fade-in-scale delay-300">
-            <div className="memorial-statement-text">
-              Nunca Más
-            </div>
-            <div className="memorial-statement-label">
-              Memoria, Verdad y Justicia
-            </div>
-          </div>
-
-          {/* Botones de acción */}
-          <div className="animate-fade-in-up delay-400" style={{ marginTop: 'var(--space-xl)' }}>
-            <div className="stack" style={{ alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
-              <Link href="/scanner" className="btn hover-lift hover-glow" style={{
-                background: 'var(--color-primary)',
-                color: 'var(--color-parchment)',
-                border: 'none',
-                padding: 'var(--space-md) var(--space-lg)',
-                fontSize: '1rem',
-                fontWeight: 600,
-                boxShadow: 'var(--shadow-medium)',
-              }}>
-                Encontrar Baldosa
-              </Link>
-              {/* Microcopy para prevenir al usuario sobre la RA */}
-              <p style={{
-                fontSize: '0.85rem',
-                color: 'var(--color-dust)',
-                marginTop: 'var(--space-xs)',
-                marginBottom: 0
-              }}>
-                *Se requerirá acceso a tu cámara y ubicación
-              </p>
-            </div>
-          </div>
-
-          {/* Pasos - Diseño más sobrio, monocromático para los números */}
-          <div className="animate-fade-in delay-500" style={{
+          {/* Pasos */}
+          <div style={{
+            opacity: 0,
+            animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 4.4s forwards',
             marginTop: 'var(--space-xl)',
             padding: 'var(--space-lg)',
             borderTop: '1px solid rgba(37, 99, 235, 0.1)',
@@ -228,7 +343,7 @@ export default function Home() {
               gap: 'var(--space-lg)',
               textAlign: 'left',
             }}>
-              <div className="animate-slide-left delay-500 hover-lift" style={{
+              <div className="hover-lift" style={{
                 padding: 'var(--space-md)',
                 borderRadius: '8px',
                 background: 'rgba(255,255,255,0.5)',
@@ -257,7 +372,7 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="animate-fade-in-up delay-600 hover-lift" style={{
+              <div className="hover-lift" style={{
                 padding: 'var(--space-md)',
                 borderRadius: '8px',
                 background: 'rgba(255,255,255,0.5)',
@@ -286,7 +401,7 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="animate-slide-right delay-600 hover-lift" style={{
+              <div className="hover-lift" style={{
                 padding: 'var(--space-md)',
                 borderRadius: '8px',
                 background: 'rgba(255,255,255,0.5)',

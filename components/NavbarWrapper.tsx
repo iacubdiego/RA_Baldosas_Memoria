@@ -25,19 +25,26 @@ export default function NavbarWrapper() {
         transition: visible
           ? 'max-height 2.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.8s ease 0.2s'
           : 'none',
+        background: 'transparent',
+        backdropFilter: 'blur(3px)',
+        WebkitBackdropFilter: 'blur(3px)',
+        borderBottom: '1px solid rgba(255,255,255,0.15)',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
       } : undefined}
     >
       <div className="navbar-container">
         <div className="navbar-brand">
-          <a href="/" className="navbar-logo-link">
+          <a href="/" className="navbar-logo-link" style={esHome ? { color: 'var(--color-stone)' } : undefined}>
             <img src="/images/logo_flores.png" alt="Pañuelo" className="navbar-logo" />
-            <span className="navbar-title">Recorremos Memoria</span>
+            <span className="navbar-title" style={esHome ? { color: 'var(--color-stone)' } : undefined}>Recorremos Memoria</span>
           </a>
         </div>
-        <div className="navbar-links">
-          <a href="/scanner"   className="navbar-link">Encontrar</a>
-          <a href="/mapa"      className="navbar-link">Mapa</a>
-        </div>
+        {!esHome && (
+          <div className="navbar-links">
+            <a href="/scanner" className="navbar-link">Encontrar</a>
+            <a href="/mapa"    className="navbar-link">Mapa</a>
+          </div>
+        )}
       </div>
     </nav>
   )
