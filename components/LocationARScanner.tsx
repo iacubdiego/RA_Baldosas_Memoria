@@ -135,10 +135,6 @@ export default function LocationARScanner() {
       setFase('iniciando')
       return
     }
-
-    // Intentar posición silenciosa con timeout muy corto.
-    // Si el permiso ya estaba concedido → responde al instante → arrancamos directo.
-    // Si requiere diálogo o está denegado → el timeout o el error lleva a 'iniciando'.
     const fallback = setTimeout(() => setFase('iniciando'), 1500)
 
     navigator.geolocation.getCurrentPosition(
@@ -286,6 +282,7 @@ export default function LocationARScanner() {
   //   1 dedo arrastra horizontal → rota grupo en Y
   //   2 dedos pinch              → zoom (cambia Z)
   //   2 dedos swipe vertical     → altura (cambia Y)
+
   useEffect(() => {
     if (!scriptsOk || fase !== 'ar' || !baldosaActiva) return
 
@@ -367,7 +364,7 @@ export default function LocationARScanner() {
       '  <a-image',
       '    id="columnas-vmj"',
       '    src="#panuelo-img"',
-      '    width="2.4" height="2"',
+      '    width="3.5" height="3"',
       '    position="0 -3 ' + Z_BASE + '"',
       '    rotation="0 0 0"',
       '    scale="0.8 0.8 0.8"',
@@ -376,11 +373,11 @@ export default function LocationARScanner() {
       '    animation__crecer="property: scale; to: 1.8 1.8 1.8; dur: 1800; easing: easeOutCubic; startEvents: escena-lista"',
       '  ></a-image>',
       '',
-      // Nombre de la víctima
+      // Texto de detalle
       '  <a-text id="txt-nombre"',
       '    value="' + nombreSafe + '"',
       '    position="0 3.5 ' + Z_BASE + '"',
-      '    align="center" width="6" color="#f0e6d3" wrap-count="22"',
+      '    align="center" width="8" color="#f0e6d3" wrap-count="22"',
       '    animation__aparecer="property: opacity; from: 0; to: 1; dur: 1200; delay: 1400; easing: easeInOutQuad; startEvents: escena-lista"',
       '    opacity="0"',
       '  ></a-text>',
@@ -389,7 +386,7 @@ export default function LocationARScanner() {
       '  <a-text id="txt-mensaje"',
       '    value="Verdad, Memoria y Justicia"',
       '    position="0 2.7 ' + Z_BASE + '"',
-      '    align="center" width="5" color="#90b4ce" wrap-count="30"',
+      '    align="center" width="12" color="#90b4ce" wrap-count="30"',
       '    animation__aparecer="property: opacity; from: 0; to: 1; dur: 1200; delay: 1600; easing: easeInOutQuad; startEvents: escena-lista"',
       '    opacity="0"',
       '  ></a-text>',
@@ -512,8 +509,7 @@ export default function LocationARScanner() {
       Array.from(ev.changedTouches).forEach(t => { delete touches[t.identifier] })
       if (Object.keys(touches).length < 2) { lastPinchDist = 0; lastTwoFingerY = 0 }
     }
-
-    // Adjuntar listeners al wrapper (no al canvas directamente)
+    
     wrapper.addEventListener('touchstart',  onTouchStart as any, { passive: false })
     wrapper.addEventListener('touchmove',   onTouchMove  as any, { passive: false })
     wrapper.addEventListener('touchend',    onTouchEnd   as any, { passive: true })
@@ -550,7 +546,7 @@ export default function LocationARScanner() {
     }
     scene.addEventListener('loaded', onLoaded)
 
-    } // cierre de montar()
+    }
 
     montar()
 
@@ -606,7 +602,6 @@ export default function LocationARScanner() {
 
   const verEscenaAR = useCallback(() => {
     if (!baldosaCercana) return
-    // Resetear estado AR para garantizar re-mount limpio de la escena
     setScriptsOk(false)
     setArListo(false)
     setBaldosaActiva(null)
@@ -622,7 +617,6 @@ export default function LocationARScanner() {
   // Marca la baldosa como visitada en la DB y abre la AR
   const marcarVisitadaYVerAR = useCallback(() => {
     if (!baldosaCercana) return
-    // PATCH al clickear — no al sacar la foto
     const id = baldosaCercana.codigo || baldosaCercana.id
     fetch(`/api/baldosas/${id}`, { method: 'PATCH' }).catch(() => {})
     verEscenaAR()
@@ -642,7 +636,6 @@ export default function LocationARScanner() {
     setArListo(false)
     setFase('ficha')
 
-    // Enriquecer baldosaActiva con vecesEscaneada actualizada
     setBaldosaActiva(prev => {
       if (!prev) return prev
       const id = prev.codigo || prev.id
@@ -681,7 +674,6 @@ export default function LocationARScanner() {
     if (!baldosaActiva || escaneando || fotoOk) return
     setEscaneando(true)
 
-    // Flash de pantalla — feedback inmediato al usuario
     setFlash(true)
     setTimeout(() => setFlash(false), 350)
 
@@ -699,7 +691,7 @@ export default function LocationARScanner() {
         requestAnimationFrame(() => resolve())
       ))
 
-      // 3. Tomar foto del video + canvas A-Frame
+      // 3. Tomar foto + canvas A-Frame
       const video = document.getElementById('camara-bg') as HTMLVideoElement | null
 
       const W = window.innerWidth
@@ -721,7 +713,6 @@ export default function LocationARScanner() {
 
       const fotoBase64 = offscreen.toDataURL('image/jpeg', 0.82)
 
-      // 4. Guardar foto en localStorage y redirigir a vista de previsualización
       const entrada = {
         id:        Date.now(),
         baldosaId: baldosaActiva.codigo || baldosaActiva.id,
@@ -738,7 +729,7 @@ export default function LocationARScanner() {
 
       setFotoOk(true)
 
-      // Redirigir inmediatamente a la vista de foto
+      // Redirigir a la vista de previsualización
       window.location.href = '/scanner/foto'
     } catch {
       // Silencioso

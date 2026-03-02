@@ -1,7 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600;700&family=Work+Sans:wght@300;400;500;600&display=swap');
 
 :root {
-  /* Paleta Memorial - Tonos azules */
   --color-stone: #1a2a3a;
   --color-concrete: #2d4a5e;
   --color-dust: #4a6b7c;
@@ -265,7 +264,6 @@ button:active, .btn:active {
   z-index: 0;
 }
 
-/* Overlay con textura suave */
 .grain-overlay {
   position: fixed;
   top: 0;
@@ -385,7 +383,6 @@ button:active, .btn:active {
 .delay-500 { animation-delay: 500ms; }
 .delay-600 { animation-delay: 600ms; }
 
-/* Hover effects mejorados */
 .hover-lift {
   transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
@@ -395,7 +392,6 @@ button:active, .btn:active {
   box-shadow: var(--shadow-strong);
 }
 
-/* Cambiado hover-glow a una sombra sobria y difusa */
 .hover-glow {
   transition: box-shadow var(--transition-base);
 }
@@ -404,7 +400,6 @@ button:active, .btn:active {
   box-shadow: 0 8px 30px rgba(26, 42, 58, 0.15);
 }
 
-/* Scrollbar */
 ::-webkit-scrollbar {
   width: 10px;
 }
@@ -437,7 +432,6 @@ button:active, .btn:active {
   }
 }
 
-/* Reduce motion for accessibility */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -489,7 +483,6 @@ button:active, .btn:active {
   flex-shrink: 0;
   transform-style: preserve-3d;
   perspective: 1200px;
-  /* Animación más lenta y elegante */
   animation: levantarBaldosa 3.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
@@ -511,44 +504,6 @@ button:active, .btn:active {
   object-fit: cover;
   border-radius: 8px;
   box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-}
-
-/* ── Pañuelos laterales ── */
-.lateral-panuelo {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-}
-
-.lateral-panuelo-izq {
-  animation: entradaDesdeIzq 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-  animation-delay: 2s;
-}
-
-.lateral-panuelo-der {
-  animation: entradaDesdeDer 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-  animation-delay: 2.1s;
-}
-
-.lateral-panuelo-img {
-  width: 110px;
-  height: auto;
-  object-fit: contain;
-  filter: drop-shadow(0 4px 14px rgba(0,0,0,0.18));
-}
-
-@media (max-width: 768px) {
-  .lateral-panuelo-img {
-    width: clamp(38px, 9vw, 72px);
-  }
-}
-
-@media (max-width: 380px) {
-  .lateral-panuelo {
-    display: none;
-  }
 }
 
 /* Transiciones laterales más suaves */
@@ -582,11 +537,9 @@ button:active, .btn:active {
   border-radius: 2px;
   opacity: 0;
   box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-  /* Animación tipo fade-in sutil, sin rebotes */
   animation: apareceVenecita 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
-/* El transform inline en React manejará la rotación/translación correcta, aquí solo manejamos la aparición del elemento base */
 @keyframes apareceVenecita {
   0%   { opacity: 0; margin-top: 5px; }
   100% { opacity: 1; margin-top: 0px; }
@@ -663,7 +616,7 @@ button:active, .btn:active {
 }
 
 /* Memorial statement centrado */
-.memorial-statement {
+.banner-box {
   text-align: center;
   padding: var(--space-lg);
   margin: var(--space-lg) auto;
@@ -673,16 +626,16 @@ button:active, .btn:active {
   border: 1px solid rgba(37, 99, 235, 0.1);
 }
 
-.memorial-statement-text {
+.banner-box-text {
   font-family: var(--font-display);
   font-size: clamp(2.5rem, 6vw, 4rem);
   font-weight: 700;
-  color: var(--color-stone); /* Cambiado de color primario a oscuro para más solemnidad */
+  color: var(--color-stone);
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
 
-.memorial-statement-label {
+.banner-box-label {
   font-size: 0.9rem;
   color: var(--color-dust);
   text-transform: uppercase;

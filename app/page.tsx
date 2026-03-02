@@ -35,8 +35,7 @@ function generarVenecitas(cantidad: number) {
         y = Math.random() * 60 + 20; // 20% a 80%
       }
       
-      // Separación mínima reducida a la mitad (antes: 15x20)
-      posicionValida = !usados.some(u => Math.abs(u.x - x) < 7.5 && Math.abs(u.y - y) < 10);
+      posicionValida = !usados.some(u => Math.abs(u.x - x) < 6 && Math.abs(u.y - y) < 7);
       intentos++;
     } while (!posicionValida && intentos < 50);
     
@@ -44,7 +43,7 @@ function generarVenecitas(cantidad: number) {
       usados.push({x, y});
       
       const rotacion = Math.random() * 30 - 15;
-      const delay = 3.0 + Math.random() * 1.5; // Aumentado el delay para la aparición paulatina post-baldosa
+      const delay = 3.0 + Math.random() * 1.5;
       const imgNum = (i % 8) + 1;
       
       venecitas.push({
@@ -68,7 +67,6 @@ export default function Home() {
     setVenecitas(generarVenecitas(16));
   }, []);
 
-  // Animación de navbar: manejada por NavbarWrapper — solo limpiamos por si acaso
   useEffect(() => {
     return () => {
       document.body.classList.remove('home-navbar-oculta')
@@ -91,11 +89,6 @@ export default function Home() {
           
           {/* Logo con animación de baldosa que se levanta */}
           <div className="logo-baldosa-container">
-
-            {/* Pañuelo izquierdo */}
-            <div className="lateral-panuelo lateral-panuelo-izq">
-              <img src="/images/logo_solo_flores.png" alt="" className="lateral-panuelo-img" loading="eager" />
-            </div>
 
             {/* Baldosa que se levanta desde el piso */}
             <div className="baldosa-animada">
@@ -133,11 +126,6 @@ export default function Home() {
                 loading="eager"
               />
               
-            </div>
-
-            {/* Pañuelo derecho */}
-            <div className="lateral-panuelo lateral-panuelo-der">
-              <img src="/images/logo_solo_flores.png" alt="" className="lateral-panuelo-img" loading="eager" />
             </div>
 
           </div>
@@ -281,15 +269,15 @@ export default function Home() {
             </div>
 
             {/* Memorial Statement */}
-            <div className="memorial-statement" style={{
+            <div className="banner-box" style={{
               flex: 1,
               minWidth: 0,
               margin: 0,
             }}>
-              <div className="memorial-statement-text">
+              <div className="banner-box-text">
                 Nunca Más
               </div>
-              <div className="memorial-statement-label">
+              <div className="banner-box-label">
                 Memoria, Verdad y Justicia
               </div>
             </div>

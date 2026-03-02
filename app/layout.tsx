@@ -45,14 +45,14 @@ export default function RootLayout({
               fontSize:   '0.95rem',
               margin:      0,
               color:      'var(--color-parchment)',
-              opacity:     1, /* Mayor contraste para accesibilidad */
+              opacity:     1,
             }}>
               Un proyecto de memoria colectiva y cooperativismo
             </p>
             <p style={{
               fontSize:  '0.85rem',
               marginTop: 'var(--space-xs)',
-              opacity:    0.8, /* Subida la opacidad base */
+              opacity:    0.8,
               color:     'var(--color-parchment)',
             }}>
               © {new Date().getFullYear()} Recorremos Memoria

@@ -6,7 +6,7 @@
  *
  *   import ContadorBaldosas from '@/components/ContadorBaldosas'
  *   ...
- *   </div>  ← cierre del memorial-statement
+ *   </div>  ← cierre del banner-box
  *   <ContadorBaldosas />
  *   {/* Botones de acción *\/}
  */

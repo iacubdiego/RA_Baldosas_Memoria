@@ -148,7 +148,7 @@ export default function MapView({ initialLocation }:MapViewProps) {
 
   // Carga el detalle completo de una baldosa desde la API
   const verDetalle=async(id:string,datosBasicos:Pin|BaldosaCercana)=>{
-    setDetalle(datosBasicos)  // mostrar inmediatamente con datos básicos
+    setDetalle(datosBasicos)
     setLoadingDetalle(true)
     try {
       const res=await fetch(`/api/baldosas/${id}`)
@@ -237,7 +237,6 @@ export default function MapView({ initialLocation }:MapViewProps) {
       {!panelAbierto&&(
         <button onClick={abrirPanel} style={{
           position:'absolute',
-          // env(safe-area-inset-bottom) cubre la barra de Android/iOS
           bottom:'calc(env(safe-area-inset-bottom, 0px) + 5rem)',
           left:'1rem', right:'1rem',
           zIndex:400,
@@ -248,7 +247,6 @@ export default function MapView({ initialLocation }:MapViewProps) {
           cursor:'pointer',
           boxShadow:'0 6px 24px rgba(0,0,0,0.35)',
           textAlign:'center',
-          // anchura completa con márgenes laterales
           width:'calc(100% - 2rem)',
           maxWidth:'480px',
           marginLeft:'auto', marginRight:'auto',
