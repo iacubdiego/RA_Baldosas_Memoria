@@ -64,7 +64,7 @@ export default function Home() {
   const [venecitas, setVenecitas] = useState<any[]>([]);
   
   useEffect(() => {
-    setVenecitas(generarVenecitas(16));
+    setVenecitas(generarVenecitas(32));
   }, []);
 
   useEffect(() => {
@@ -118,11 +118,11 @@ export default function Home() {
                 ))}
               </div>
               
-              {/* Imagen central - Nunca Más */}
+              {/* Imagen central */}
               <img 
                 src="/images/logo_flores.png" 
                 alt="Logo"
-                className="nuncamas-centro"
+                className="logo-centro"
                 loading="eager"
               />
               

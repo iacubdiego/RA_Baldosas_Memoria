@@ -576,13 +576,13 @@ button:active, .btn:active {
 }
 
 /* ── Logo central ── */
-.nuncamas-centro {
+.logo-centro {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 180px;
-  height: 180px;
+  width: 200px;
+  height: 200px;
   object-fit: contain;
   border-radius: 0;
   opacity: 0;
@@ -597,7 +597,7 @@ button:active, .btn:active {
 }
 
 @media (max-width: 768px) {
-  .nuncamas-centro {
+  .logo-centro {
     width: clamp(100px, 30vw, 150px);
     height: clamp(100px, 30vw, 150px);
   }

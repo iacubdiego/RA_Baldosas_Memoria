@@ -1114,13 +1114,6 @@ export default function LocationARScanner() {
             <button onClick={verEscenaAR} style={estilos.btnSecundario}>
               ✨ Ver AR de nuevo
             </button>
-
-            <a
-              href={`/baldosas/${baldosaActiva.codigo}`}
-              style={{ ...estilos.btnSecundario, display: 'block', textAlign: 'center' }}
-            >
-              📖 Más información
-            </a>
           </div>
         </div>
       </div>
