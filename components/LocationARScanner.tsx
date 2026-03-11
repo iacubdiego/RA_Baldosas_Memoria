@@ -293,13 +293,14 @@ export default function LocationARScanner() {
       contenedor.innerHTML = ''
       setArListo(false)
 
-      // Precargar la imagen para que esté en caché cuando A-Frame la solicite
-      await new Promise<void>(resolve => {
-        const preload = new Image()
-        preload.onload  = () => resolve()
-        preload.onerror = () => resolve()  // continuar aunque falle
-        preload.src = '/images/logo_flores.png'
-      })
+    // Precargar video para que esté en caché cuando A-Frame la solicite
+    await new Promise<void>(resolve => {
+      const preload = document.createElement('video')
+      preload.oncanplay = () => resolve()
+      preload.onerror   = () => resolve()
+      preload.src = '/videos/panuelo.webm'
+      setTimeout(resolve, 3000) // fallback por si el evento no dispara
+    })
 
     const { nombre, mensajeAR } = baldosaActiva
     const nombreSafe  = nombre.replace(/"/g, '&quot;')
@@ -349,7 +350,7 @@ export default function LocationARScanner() {
       '  loading-screen="enabled: false"',
       '>',
       '  <a-assets timeout="20000">',
-      '    <img id="panuelo-img" src="/images/logo_flores.png" crossorigin="anonymous">',
+      '    <video id="panuelo-vid" src="/videos/panuelo.webm"  autoplay loop muted playsinline  crossorigin="anonymous" preload="auto"></video>',
       '  </a-assets>',
       '',
       '  <a-camera',
@@ -361,17 +362,17 @@ export default function LocationARScanner() {
       '  ></a-camera>',
       '',
       // Pañuelo: empieza abajo pequeño, sube y se agranda
-      '  <a-image',
+      '  <a-video',
       '    id="columnas-vmj"',
-      '    src="#panuelo-img"',
+      '    src="#panuelo-vid"',
       '    width="3.5" height="3"',
       '    position="0 -3 ' + Z_BASE + '"',
       '    rotation="0 0 0"',
       '    scale="0.8 0.8 0.8"',
-      '    transparent="true"',
+      '    material="transparent: true; alphaTest: 0.01; side: double"',
       '    animation__subir="property: position; to: 0 0.2 ' + Z_BASE + '; dur: 1800; easing: easeOutCubic; startEvents: escena-lista"',
       '    animation__crecer="property: scale; to: 1.8 1.8 1.8; dur: 1800; easing: easeOutCubic; startEvents: escena-lista"',
-      '  ></a-image>',
+      '  ></a-video>',
       '',
       // Texto de detalle
       '  <a-text id="txt-nombre"',
@@ -535,12 +536,10 @@ export default function LocationARScanner() {
       }
 
       // Esperar a que el asset de imagen esté completamente cargado en WebGL
-      const imgEl = document.getElementById('panuelo-img') as HTMLImageElement | null
-      if (imgEl && !imgEl.complete) {
-        imgEl.addEventListener('load', () => setTimeout(dispararAnimaciones, 200), { once: true })
+      const vidEl = document.getElementById('panuelo-vid') as HTMLVideoElement | null
+      if (vidEl && vidEl.readyState < 3) {
+        vidEl.addEventListener('canplay', () => setTimeout(dispararAnimaciones, 200), { once: true })
       } else {
-        // La imagen ya está en caché o cargó — dar un tick extra para que
-        // Three.js suba la textura a la GPU antes de mostrarla
         setTimeout(dispararAnimaciones, 500)
       }
     }
