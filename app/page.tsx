@@ -419,6 +419,74 @@ export default function Home() {
               </div>
             </div>
           </div>
+
+          {/* ── Colaborá con el mapa ── */}
+          <div style={{
+            opacity: 0,
+            animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 4.7s forwards',
+            marginTop: 'var(--space-xl)',
+            padding: 'var(--space-lg)',
+            borderTop: '1px solid rgba(37, 99, 235, 0.1)',
+          }}>
+            <h2 style={{ fontSize: '1.5rem', marginBottom: 'var(--space-sm)', color: 'var(--color-stone)' }}>
+              ¿Conocés una baldosa que no está en el mapa?
+            </h2>
+            <p style={{
+              color: 'var(--color-concrete)',
+              fontSize: '1rem',
+              lineHeight: 1.7,
+              maxWidth: '560px',
+              margin: '0 auto var(--space-md)',
+            }}>
+              Si querés agregar una baldosa nueva, corregir información existente o simplemente
+              contarnos algo, escribinos. Cada dato ayuda a mantener viva la memoria.
+            </p>
+
+            <a
+              href="mailto:baldosas@recorremosmemoria.org"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.85rem 1.75rem',
+                background: 'var(--color-stone)',
+                color: 'var(--color-parchment)',
+                borderRadius: '10px',
+                textDecoration: 'none',
+                fontSize: '0.95rem',
+                fontWeight: 600,
+                letterSpacing: '0.03em',
+                transition: 'all var(--transition-base)',
+                boxShadow: '0 4px 16px rgba(26,42,58,0.15)',
+              }}
+              onMouseEnter={e => {
+                const el = e.currentTarget as HTMLAnchorElement
+                el.style.background = 'var(--color-concrete)'
+                el.style.transform = 'translateY(-2px)'
+                el.style.boxShadow = '0 6px 24px rgba(26,42,58,0.25)'
+              }}
+              onMouseLeave={e => {
+                const el = e.currentTarget as HTMLAnchorElement
+                el.style.background = 'var(--color-stone)'
+                el.style.transform = 'translateY(0)'
+                el.style.boxShadow = '0 4px 16px rgba(26,42,58,0.15)'
+              }}
+            >
+              ✉️ baldosas@recorremosmemoria.org
+            </a>
+
+            <p style={{
+              marginTop: 'var(--space-sm)',
+              color: 'var(--color-dust)',
+              fontSize: '0.8rem',
+              letterSpacing: '0.03em',
+              margin: 'var(--space-sm) auto 0',
+              maxWidth: '480px',
+            }}>
+              También podés usar el botón "Colaborar" cuando estés cerca de una baldosa en el mapa o en el escáner.
+            </p>
+          </div>
+
         </div>
       </div>
     </div>
