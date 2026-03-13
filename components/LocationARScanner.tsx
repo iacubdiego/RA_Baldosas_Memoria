@@ -76,6 +76,13 @@ export default function LocationARScanner() {
   const [fotoOk, setFotoOk] = useState(false)
   const [flash, setFlash] = useState(false)
 
+  // ── Panel de info AR — alterna con el botón ℹ️ ────────────────────────────
+  // panelVisible controla si el panel A-Frame está visible en la escena.
+  // Al cambiar, se emite el evento 'panel-mostrar' o 'panel-ocultar' hacia
+  // el entity #panel-baldosa en A-Frame, que dispara las animaciones de
+  // opacidad y escala (efecto materialize).
+  const [panelVisible, setPanelVisible] = useState(false)
+
   // Controles AR — persisten en localStorage
   const [offsetY,  setOffsetY]  = useState<number>(() => {
     if (typeof window === 'undefined') return 0
@@ -92,8 +99,8 @@ export default function LocationARScanner() {
 
   const watchIdRef      = useRef<number | null>(null)
   const iniciarGPSRef   = useRef<(() => void) | null>(null)
-  const sceneRef     = useRef<HTMLElement | null>(null)
-  const baldosasRef      = useRef<Baldosa[]>([])   // ref sincronizado para el callback del watcher
+  const sceneRef        = useRef<HTMLElement | null>(null)
+  const baldosasRef     = useRef<Baldosa[]>([])
 
   // Mantener ref sincronizada
   useEffect(() => { baldosasRef.current = baldosas }, [baldosas])
@@ -160,7 +167,6 @@ export default function LocationARScanner() {
     }
 
     try {
-      // Primer fix para validar permiso
       await new Promise<GeolocationPosition>((res, rej) =>
         navigator.geolocation.getCurrentPosition(res, rej, WATCH_OPTIONS)
       )
@@ -176,13 +182,11 @@ export default function LocationARScanner() {
 
     setFase('caminando')
 
-    // Watcher continuo
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
         const { latitude: userLat, longitude: userLng } = pos.coords
         const lista = baldosasRef.current
 
-        // Buscar baldosa más cercana
         let minDist = Infinity
         let masProxima: Baldosa | null = null
 
@@ -197,8 +201,6 @@ export default function LocationARScanner() {
         setDistancia(minDist < Infinity ? Math.round(minDist) : null)
 
         if (masProxima && minDist <= RADIO_ACTIVACION_M) {
-          // Solo cambiar de fase si no estamos ya en AR o ficha
-          // Preservar vecesEscaneada si la baldosa es la misma
           setBaldosaCercana(prev => {
             const mismaId = prev && (prev.codigo || prev.id) === (masProxima.codigo || masProxima.id)
             return mismaId
@@ -208,9 +210,7 @@ export default function LocationARScanner() {
           setFase(prev =>
             prev === 'ar' || prev === 'ficha' ? prev : 'cerca'
           )
-
         } else {
-          // Solo volver a "caminando" si no estamos en escena activa
           setFase(prev =>
             prev === 'ar' || prev === 'ficha' ? prev : 'caminando'
           )
@@ -226,7 +226,6 @@ export default function LocationARScanner() {
     )
   }, [])
 
-  // Ref siempre actualizado — permite que el check de permisos lo llame sin dependencia circular
   iniciarGPSRef.current = iniciarGPS
 
   // Fetch vecesEscaneada cuando cambia la baldosa cercana
@@ -240,7 +239,6 @@ export default function LocationARScanner() {
           setBaldosaCercana(b => b ? { ...b, vecesEscaneada: data.baldosa.vecesEscaneada } : b)
         }
       })
-
       .catch(() => {})
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [baldosaCercana?.codigo, baldosaCercana?.id])
@@ -254,8 +252,7 @@ export default function LocationARScanner() {
     }
   }, [])
 
-  // ── 3. Cargar A-Frame cuando el usuario elige ver la escena ──────────────────
-  // Modo: cámara web pura, objetos fijos frente a la cámara (sin GPS)
+  // ── 4. Cargar A-Frame cuando el usuario elige ver la escena ──────────────────
   useEffect(() => {
     if (fase !== 'ar' || scriptsOk) return
 
@@ -274,7 +271,7 @@ export default function LocationARScanner() {
     })
   }, [fase, scriptsOk])
 
-  // ── 4. Montar escena A-Frame ────────────────────────────────────────────────
+  // ── 5. Montar escena A-Frame ────────────────────────────────────────────────
   // Composición:
   //   z-index 0 → <video> cámara trasera, fondo real
   //   z-index 1 → canvas A-Frame con alpha:true (transparente)
@@ -292,259 +289,416 @@ export default function LocationARScanner() {
 
       contenedor.innerHTML = ''
       setArListo(false)
+      setPanelVisible(false)   // resetear panel al remontar la escena
 
-    // Precargar video para que esté en caché cuando A-Frame la solicite
-    await new Promise<void>(resolve => {
-      const preload = document.createElement('video')
-      preload.oncanplay = () => resolve()
-      preload.onerror   = () => resolve()
-      preload.src = '/videos/panuelo.webm'
-      setTimeout(resolve, 3000) // fallback por si el evento no dispara
-    })
-
-    const { nombre, mensajeAR } = baldosaActiva
-    const nombreSafe  = nombre.replace(/"/g, '&quot;')
-    const mensajeSafe = mensajeAR.replace(/"/g, '&quot;')
-    // ── Video cámara real como fondo ──────────────────────────────────────────
-    const video = document.createElement('video')
-    video.id = 'camara-bg'
-    video.setAttribute('autoplay', '')
-    video.setAttribute('muted', '')
-    video.setAttribute('playsinline', '')
-    Object.assign(video.style, {
-      position: 'absolute', inset: '0',
-      width: '100%', height: '100%',
-      objectFit: 'cover', zIndex: '0',
-    })
-    contenedor.appendChild(video)
-
-    let streamActivo: MediaStream | null = null
-    navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
-      audio: false,
-    }).then(stream => {
-      streamActivo = stream
-      video.srcObject = stream
-      return video.play()
-    }).catch(e => console.warn('Cámara no disponible:', e))
-
-    // ── Canvas A-Frame encima, transparente ───────────────────────────────────
-    const wrapper = document.createElement('div')
-    Object.assign(wrapper.style, {
-      position: 'absolute', inset: '0',
-      width: '100%', height: '100%',
-      zIndex: '1',
-    })
-    contenedor.appendChild(wrapper)
-
-    const Z_BASE  = -12   // distancia base en metros
-    const Y_OJOS  = 1.6
-
-    wrapper.innerHTML = [
-      '<a-scene',
-      '  id="escena-ar"',
-      '  embedded',
-      '  renderer="antialias: true; alpha: true; colorManagement: true; preserveDrawingBuffer: true;"',
-      '  background="transparent: true"',
-      '  vr-mode-ui="enabled: false"',
-      '  loading-screen="enabled: false"',
-      '>',
-      '  <a-assets timeout="20000">',
-      '    <video id="panuelo-vid" src="/videos/panuelo.webm"  autoplay loop muted playsinline  crossorigin="anonymous" preload="auto"></video>',
-      '  </a-assets>',
-      '',
-      '  <a-camera',
-      '    id="camara-ar"',
-      '    position="0 ' + Y_OJOS + ' 0"',
-      '    look-controls="enabled: true; magicWindowTrackingEnabled: true; touchEnabled: false; reverseMouseDrag: false"',
-      '    wasd-controls="enabled: false"',
-      '    fov="70"',
-      '  ></a-camera>',
-      '',
-      // Pañuelo: empieza abajo pequeño, sube y se agranda
-      '  <a-video',
-      '    id="columnas-vmj"',
-      '    src="#panuelo-vid"',
-      '    width="3.5" height="3"',
-      '    position="0 -3 ' + Z_BASE + '"',
-      '    rotation="0 0 0"',
-      '    scale="0.8 0.8 0.8"',
-      '    material="transparent: true; alphaTest: 0.01; side: double"',
-      '    animation__subir="property: position; to: 0 0.2 ' + Z_BASE + '; dur: 1800; easing: easeOutCubic; startEvents: escena-lista"',
-      '    animation__crecer="property: scale; to: 1.8 1.8 1.8; dur: 1800; easing: easeOutCubic; startEvents: escena-lista"',
-      '  ></a-video>',
-      '',
-      // Texto de detalle
-      '  <a-text id="txt-nombre"',
-      '    value="' + nombreSafe + '"',
-      '    position="0 3.5 ' + Z_BASE + '"',
-      '    align="center" width="8" color="#f0e6d3" wrap-count="22"',
-      '    animation__aparecer="property: opacity; from: 0; to: 1; dur: 1200; delay: 1400; easing: easeInOutQuad; startEvents: escena-lista"',
-      '    opacity="0"',
-      '  ></a-text>',
-      '',
-      // Texto fijo: Verdad, Memoria y Justicia
-      '  <a-text id="txt-mensaje"',
-      '    value="Verdad, Memoria y Justicia"',
-      '    position="0 2.7 ' + Z_BASE + '"',
-      '    align="center" width="12" color="#90b4ce" wrap-count="30"',
-      '    animation__aparecer="property: opacity; from: 0; to: 1; dur: 1200; delay: 1600; easing: easeInOutQuad; startEvents: escena-lista"',
-      '    opacity="0"',
-      '  ></a-text>',
-      '',
-      '</a-scene>',
-    ].join('\n')
-
-    // Canvas transparente
-    const aplicarAlpha = () => {
-      const canvas = wrapper.querySelector('canvas') as HTMLCanvasElement | null
-      if (canvas) Object.assign(canvas.style, {
-        background: 'transparent', position: 'absolute',
-        inset: '0', width: '100%', height: '100%',
+      // Precargar video
+      await new Promise<void>(resolve => {
+        const preload = document.createElement('video')
+        preload.oncanplay = () => resolve()
+        preload.onerror   = () => resolve()
+        preload.src = '/videos/panuelo.webm'
+        setTimeout(resolve, 3000)
       })
-    }
-    setTimeout(aplicarAlpha, 100)
-    setTimeout(aplicarAlpha, 600)
 
-    // ── Gestos touch ──────────────────────────────────────────────────────────
-    // Estado local de gestos (no necesita re-render de React)
-    let touches: Record<number, {x:number, y:number}> = {}
-    let lastPinchDist  = 0
-    let lastTwoFingerY = 0
+      const { nombre, mensajeAR, descripcion, direccion, fotoUrl } = baldosaActiva
 
-    const getEntity = () => document.getElementById('columnas-vmj') as any
-    const getTxtN   = () => document.getElementById('txt-nombre')   as any
-    const getTxtM   = () => document.getElementById('txt-mensaje')  as any
+      const nombreSafe      = nombre.replace(/"/g, '&quot;')
+      const mensajeSafe     = mensajeAR.replace(/"/g, '&quot;')
+      // ── Datos del panel ────────────────────────────────────────────────────
+      // Para agregar más campos al panel, extendé las variables siguientes y
+      // agregá más <a-text> dentro del entity #panel-baldosa más abajo.
+      // Campos disponibles en baldosaActiva: categoria, infoExtendida, vecesEscaneada, barrio, audioUrl
+      const descripcionSafe = (descripcion || '').replace(/"/g, '&quot;').slice(0, 120)
+      const direccionSafe   = (direccion   || '').replace(/"/g, '&quot;')
 
-    // Lee posición actual del entity como objeto {x,y,z}
-    const getPosicion = () => {
-      const e = getEntity()
-      if (!e) return { x: 0, y: -1.6, z: Z_BASE }
-      const p = e.getAttribute('position') as any
-      return { x: parseFloat(p?.x ?? 0), y: parseFloat(p?.y ?? -1.6), z: parseFloat(p?.z ?? Z_BASE) }
-    }
-
-    // Lee rotación actual del entity
-    const getRotacion = () => {
-      const e = getEntity()
-      if (!e) return { x: 0, y: 0, z: 0 }
-      const r = e.getAttribute('rotation') as any
-      return { x: parseFloat(r?.x ?? 0), y: parseFloat(r?.y ?? 0), z: parseFloat(r?.z ?? 0) }
-    }
-
-    const setPosicion = (x: number, y: number, z: number) => {
-      const e = getEntity(); const n = getTxtN(); const m = getTxtM()
-      if (!e) return
-      e.setAttribute('position', `${x.toFixed(2)} ${y.toFixed(2)} ${z.toFixed(2)}`)
-      if (n) n.setAttribute('position', `0 ${(y + 6.4).toFixed(2)} ${z.toFixed(2)}`)
-      if (m) m.setAttribute('position', `0 ${(y + 5.7).toFixed(2)} ${z.toFixed(2)}`)
-    }
-
-    const setRotacion = (y: number) => {
-      const e = getEntity()
-      if (e) e.setAttribute('rotation', `0 ${y.toFixed(1)} 0`)
-    }
-
-    const onTouchStart = (ev: TouchEvent) => {
-      Array.from(ev.changedTouches).forEach(t => {
-        touches[t.identifier] = { x: t.clientX, y: t.clientY }
+      // ── Video cámara real como fondo ──────────────────────────────────────────
+      const video = document.createElement('video')
+      video.id = 'camara-bg'
+      video.setAttribute('autoplay', '')
+      video.setAttribute('muted', '')
+      video.setAttribute('playsinline', '')
+      Object.assign(video.style, {
+        position: 'absolute', inset: '0',
+        width: '100%', height: '100%',
+        objectFit: 'cover', zIndex: '0',
       })
-      if (Object.keys(touches).length === 2) {
-        const ids  = Object.keys(touches).map(Number)
-        const t0   = touches[ids[0]], t1 = touches[ids[1]]
-        lastPinchDist  = Math.hypot(t1.x - t0.x, t1.y - t0.y)
-        lastTwoFingerY = (t0.y + t1.y) / 2
+      contenedor.appendChild(video)
+
+      let streamActivo: MediaStream | null = null
+      navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      }).then(stream => {
+        streamActivo = stream
+        video.srcObject = stream
+        return video.play()
+      }).catch(e => console.warn('Cámara no disponible:', e))
+
+      // ── Canvas A-Frame encima, transparente ───────────────────────────────────
+      const wrapper = document.createElement('div')
+      Object.assign(wrapper.style, {
+        position: 'absolute', inset: '0',
+        width: '100%', height: '100%',
+        zIndex: '1',
+      })
+      contenedor.appendChild(wrapper)
+
+      const Z_BASE  = -12
+      const Y_OJOS  = 1.6
+
+      // ── Posición del panel ─────────────────────────────────────────────────
+      // El panel queda fijo a la derecha del centro de la escena, a la misma
+      // profundidad que el pañuelo (Z_BASE).
+      // Para moverlo: cambiá PANEL_X (horizontal) y PANEL_Y (vertical).
+      // Para que siga al pañuelo en vez de quedar fijo, mové el entity
+      // #panel-baldosa dentro del mismo entity padre que #columnas-vmj.
+      const PANEL_X =  5.5   // unidades A-Frame a la derecha del centro
+      const PANEL_Y =  1.2   // altura en la escena
+      const PANEL_Z = Z_BASE // misma profundidad que el pañuelo
+
+      // Construir asset de foto solo si existe fotoUrl
+      // Para cambiar la foto mostrada (ej: foto de la persona en lugar de la baldosa),
+      // reemplazá fotoUrl por el campo correspondiente de baldosaActiva (ej: imagenUrl).
+      const assetFoto = fotoUrl
+        ? `<img id="foto-baldosa" src="${fotoUrl}" crossorigin="anonymous">`
+        : ''
+
+      const entityFoto = fotoUrl
+        ? [
+            '    <a-image',
+            '      id="panel-foto"',
+            '      src="#foto-baldosa"',
+            `      width="2" height="2.5"`,
+            `      position="0 0.6 0.01"`,
+            '      material="transparent: false"',
+            '    ></a-image>',
+          ].join('\n')
+        : [
+            // Placeholder cuando no hay foto
+            '    <a-plane',
+            '      width="2" height="2.5"',
+            `      position="0 0.6 0.01"`,
+            '      color="#1a2a3a"',
+            '    ></a-plane>',
+            '    <a-text',
+            '      value="Sin foto"',
+            '      align="center" width="3" color="#4a6b7c"',
+            `      position="0 0.6 0.02"`,
+            '    ></a-text>',
+          ].join('\n')
+
+      wrapper.innerHTML = [
+        '<a-scene',
+        '  id="escena-ar"',
+        '  embedded',
+        '  renderer="antialias: true; alpha: true; colorManagement: true; preserveDrawingBuffer: true;"',
+        '  background="transparent: true"',
+        '  vr-mode-ui="enabled: false"',
+        '  loading-screen="enabled: false"',
+        '>',
+        '  <a-assets timeout="20000">',
+        '    <video id="panuelo-vid" src="/videos/panuelo.webm" muted playsinline crossorigin="anonymous" preload="auto"></video>',
+        assetFoto ? `    ${assetFoto}` : '',
+        '  </a-assets>',
+        '',
+        `  <a-camera id="camara-ar" position="0 ${Y_OJOS} 0"`,
+        '    look-controls="enabled: true; magicWindowTrackingEnabled: true; touchEnabled: false; reverseMouseDrag: false"',
+        '    wasd-controls="enabled: false"',
+        '    fov="70"',
+        '  ></a-camera>',
+        '',
+        // ── Pañuelo ──────────────────────────────────────────────────────────
+        '  <a-video',
+        '    id="columnas-vmj"',
+        '    src="#panuelo-vid"',
+        '    width="3.5" height="3"',
+        `    position="0 -3 ${Z_BASE}"`,
+        '    rotation="0 0 0"',
+        '    scale="0.8 0.8 0.8"',
+        '    material="transparent: true; alphaTest: 0.01; side: double"',
+        `    animation__subir="property: position; to: 0 0.2 ${Z_BASE}; dur: 1800; easing: easeOutCubic; startEvents: escena-lista"`,
+        '    animation__crecer="property: scale; to: 1.8 1.8 1.8; dur: 1800; easing: easeOutCubic; startEvents: escena-lista"',
+        '  ></a-video>',
+        '',
+        // ── Textos fijos ──────────────────────────────────────────────────────
+        `  <a-text id="txt-nombre"`,
+        `    value="${nombreSafe}"`,
+        `    position="0 3.5 ${Z_BASE}"`,
+        '    align="center" width="8" color="#f0e6d3" wrap-count="22"',
+        '    animation__aparecer="property: opacity; from: 0; to: 1; dur: 1200; delay: 1400; easing: easeInOutQuad; startEvents: escena-lista"',
+        '    opacity="0"',
+        '  ></a-text>',
+        '',
+        `  <a-text id="txt-mensaje"`,
+        '    value="Verdad, Memoria y Justicia"',
+        `    position="0 2.7 ${Z_BASE}"`,
+        '    align="center" width="12" color="#90b4ce" wrap-count="30"',
+        '    animation__aparecer="property: opacity; from: 0; to: 1; dur: 1200; delay: 1600; easing: easeInOutQuad; startEvents: escena-lista"',
+        '    opacity="0"',
+        '  ></a-text>',
+        '',
+        // ── Panel de información ──────────────────────────────────────────────
+        // El panel arranca invisible (opacity 0, scale 0.85) y fuera del flujo.
+        // Al emitir 'panel-mostrar' se materializa con fade + grow suave.
+        // Al emitir 'panel-ocultar' se desvanece con fade + shrink.
+        //
+        // POSICIÓN FIJA: el panel no sigue al pañuelo porque está como entidad
+        // raíz de la escena. Para que lo acompañe, envolvé tanto #columnas-vmj
+        // como #panel-baldosa dentro de un <a-entity> padre.
+        //
+        // CAMPOS MOSTRADOS: nombre, dirección, descripción y foto.
+        // Para agregar más campos (ej: vecesEscaneada, infoExtendida), agregá
+        // más entidades <a-text> con los valores correspondientes de baldosaActiva,
+        // ajustando la posición Y para no superponer.
+        `  <a-entity`,
+        `    id="panel-baldosa"`,
+        `    position="${PANEL_X} ${PANEL_Y} ${PANEL_Z}"`,
+        `    scale="0.85 0.85 0.85"`,
+        `    opacity="0"`,
+        // Materialize entrada: opacity 0→1 + scale 0.85→1
+        `    animation__aparecer="property: opacity; from: 0; to: 1; dur: 700; easing: easeOutCubic; startEvents: panel-mostrar"`,
+        `    animation__crecer="property: scale; from: 0.85 0.85 0.85; to: 1 1 1; dur: 700; easing: easeOutCubic; startEvents: panel-mostrar"`,
+        // Materialize salida: opacity 1→0 + scale 1→0.85
+        `    animation__desaparecer="property: opacity; from: 1; to: 0; dur: 400; easing: easeInCubic; startEvents: panel-ocultar"`,
+        `    animation__achicar="property: scale; from: 1 1 1; to: 0.85 0.85 0.85; dur: 400; easing: easeInCubic; startEvents: panel-ocultar"`,
+        '  >',
+        // Fondo del panel
+        '    <a-plane',
+        '      id="panel-fondo"',
+        '      width="3.2" height="5.5"',
+        '      position="0 0 0"',
+        '      color="#0a121c"',
+        '      material="opacity: 0.88; transparent: true; side: double"',
+        '    ></a-plane>',
+        // Borde sutil
+        '    <a-plane',
+        '      width="3.25" height="5.55"',
+        '      position="0 0 -0.01"',
+        '      color="#2563eb"',
+        '      material="opacity: 0.35; transparent: true; side: double"',
+        '    ></a-plane>',
+        // Foto o placeholder
+        entityFoto,
+        // Línea separadora
+        '    <a-plane',
+        '      width="2.6" height="0.02"',
+        `      position="0 -1.2 0.01"`,
+        '      color="#2563eb"',
+        '      material="opacity: 0.5; transparent: true"',
+        '    ></a-plane>',
+        // Nombre
+        `    <a-text`,
+        `      id="panel-txt-nombre"`,
+        `      value="${nombreSafe}"`,
+        `      position="0 -1.55 0.02"`,
+        '      align="center" width="4.5" color="#f0e6d3" wrap-count="20"',
+        '      font="https://cdn.aframe.io/fonts/DejaVu-sdf.fnt"',
+        '    ></a-text>',
+        // Dirección
+        direccionSafe ? [
+          `    <a-text`,
+          `      id="panel-txt-dir"`,
+          `      value="${direccionSafe}"`,
+          `      position="0 -2.15 0.02"`,
+          '      align="center" width="4" color="#6b8fa6" wrap-count="24"',
+          '    ></a-text>',
+        ].join('\n') : '',
+        // Descripción
+        descripcionSafe ? [
+          `    <a-text`,
+          `      id="panel-txt-desc"`,
+          `      value="${descripcionSafe}"`,
+          `      position="0 -2.9 0.02"`,
+          '      align="center" width="4" color="#90b4ce" wrap-count="28"',
+          '    ></a-text>',
+        ].join('\n') : '',
+        '  </a-entity>',
+        '',
+        '</a-scene>',
+      ].join('\n')
+
+      // Canvas transparente
+      const aplicarAlpha = () => {
+        const canvas = wrapper.querySelector('canvas') as HTMLCanvasElement | null
+        if (canvas) Object.assign(canvas.style, {
+          background: 'transparent', position: 'absolute',
+          inset: '0', width: '100%', height: '100%',
+        })
       }
-    }
+      setTimeout(aplicarAlpha, 100)
+      setTimeout(aplicarAlpha, 600)
 
-    const onTouchMove = (ev: TouchEvent) => {
-      ev.preventDefault()
-      const ids = Object.keys(touches).length
+      // ── Gestos touch ──────────────────────────────────────────────────────────
+      let touches: Record<number, {x:number, y:number}> = {}
+      let lastPinchDist  = 0
+      let lastTwoFingerY = 0
 
-      if (ids === 1) {
-        // ── 1 dedo: rotar grupo en Y ──────────────────────────────────────────
-        const t    = ev.changedTouches[0]
-        const prev = touches[t.identifier]
-        if (!prev) return
-        const dx = t.clientX - prev.x
-        touches[t.identifier] = { x: t.clientX, y: t.clientY }
+      const getEntity = () => document.getElementById('columnas-vmj') as any
+      const getTxtN   = () => document.getElementById('txt-nombre')   as any
+      const getTxtM   = () => document.getElementById('txt-mensaje')  as any
 
-        const rot = getRotacion()
-        setRotacion(rot.y + dx * 0.5)          // 0.5° por pixel
-        setOffsetY(v => { return v })           // no-op para no re-render innecesario
+      const getPosicion = () => {
+        const e = getEntity()
+        if (!e) return { x: 0, y: -1.6, z: Z_BASE }
+        const p = e.getAttribute('position') as any
+        return { x: parseFloat(p?.x ?? 0), y: parseFloat(p?.y ?? -1.6), z: parseFloat(p?.z ?? Z_BASE) }
+      }
 
-      } else if (ids === 2) {
-        // ── 2 dedos: pinch = zoom, swipe vertical = altura ────────────────────
-        const tList = Array.from(ev.changedTouches)
-        tList.forEach(t => { if (touches[t.identifier]) touches[t.identifier] = { x: t.clientX, y: t.clientY } })
+      const getRotacion = () => {
+        const e = getEntity()
+        if (!e) return { x: 0, y: 0, z: 0 }
+        const r = e.getAttribute('rotation') as any
+        return { x: parseFloat(r?.x ?? 0), y: parseFloat(r?.y ?? 0), z: parseFloat(r?.z ?? 0) }
+      }
 
-        const tIds  = Object.keys(touches).map(Number)
-        const t0    = touches[tIds[0]], t1 = touches[tIds[1]]
-        const dist  = Math.hypot(t1.x - t0.x, t1.y - t0.y)
-        const midY  = (t0.y + t1.y) / 2
+      const setPosicion = (x: number, y: number, z: number) => {
+        const e = getEntity(); const n = getTxtN(); const m = getTxtM()
+        if (!e) return
+        e.setAttribute('position', `${x.toFixed(2)} ${y.toFixed(2)} ${z.toFixed(2)}`)
+        if (n) n.setAttribute('position', `0 ${(y + 6.4).toFixed(2)} ${z.toFixed(2)}`)
+        if (m) m.setAttribute('position', `0 ${(y + 5.7).toFixed(2)} ${z.toFixed(2)}`)
+      }
 
-        // Pinch zoom: cambia Z
-        if (lastPinchDist > 0) {
-          const deltaDist = dist - lastPinchDist
-          const pos = getPosicion()
-          const newZ = Math.max(-25, Math.min(-4, pos.z - deltaDist * 0.04))
-          setPosicion(pos.x, pos.y, newZ)
-          // Sincronizar estado React para localStorage
-          setZoom(Math.abs(newZ / Z_BASE))
+      const setRotacion = (y: number) => {
+        const e = getEntity()
+        if (e) e.setAttribute('rotation', `0 ${y.toFixed(1)} 0`)
+      }
+
+      const onTouchStart = (ev: TouchEvent) => {
+        Array.from(ev.changedTouches).forEach(t => {
+          touches[t.identifier] = { x: t.clientX, y: t.clientY }
+        })
+        if (Object.keys(touches).length === 2) {
+          const ids  = Object.keys(touches).map(Number)
+          const t0   = touches[ids[0]], t1 = touches[ids[1]]
+          lastPinchDist  = Math.hypot(t1.x - t0.x, t1.y - t0.y)
+          lastTwoFingerY = (t0.y + t1.y) / 2
         }
-        lastPinchDist = dist
+      }
 
-        // Swipe vertical dos dedos: cambia altura
-        if (lastTwoFingerY > 0) {
-          const deltaY = lastTwoFingerY - midY   // invertido: arriba = sube
-          const pos = getPosicion()
-          const newY = Math.max(-8, Math.min(6, pos.y + deltaY * 0.012))
-          setPosicion(pos.x, newY, pos.z)
-          setOffsetY(newY + 1.6)   // sincronizar estado React
+      const onTouchMove = (ev: TouchEvent) => {
+        ev.preventDefault()
+        const ids = Object.keys(touches).length
+
+        if (ids === 1) {
+          const t    = ev.changedTouches[0]
+          const prev = touches[t.identifier]
+          if (!prev) return
+          const dx = t.clientX - prev.x
+          touches[t.identifier] = { x: t.clientX, y: t.clientY }
+          const rot = getRotacion()
+          setRotacion(rot.y + dx * 0.5)
+          setOffsetY(v => { return v })
+
+        } else if (ids === 2) {
+          const tList = Array.from(ev.changedTouches)
+          tList.forEach(t => { if (touches[t.identifier]) touches[t.identifier] = { x: t.clientX, y: t.clientY } })
+
+          const tIds  = Object.keys(touches).map(Number)
+          const t0    = touches[tIds[0]], t1 = touches[tIds[1]]
+          const dist  = Math.hypot(t1.x - t0.x, t1.y - t0.y)
+          const midY  = (t0.y + t1.y) / 2
+
+          if (lastPinchDist > 0) {
+            const deltaDist = dist - lastPinchDist
+            const pos = getPosicion()
+            const newZ = Math.max(-25, Math.min(-4, pos.z - deltaDist * 0.04))
+            setPosicion(pos.x, pos.y, newZ)
+            setZoom(Math.abs(newZ / Z_BASE))
+          }
+          lastPinchDist = dist
+
+          if (lastTwoFingerY > 0) {
+            const deltaY = lastTwoFingerY - midY
+            const pos = getPosicion()
+            const newY = Math.max(-8, Math.min(6, pos.y + deltaY * 0.012))
+            setPosicion(pos.x, newY, pos.z)
+            setOffsetY(newY + 1.6)
+          }
+          lastTwoFingerY = midY
         }
-        lastTwoFingerY = midY
-      }
-    }
-
-    const onTouchEnd = (ev: TouchEvent) => {
-      Array.from(ev.changedTouches).forEach(t => { delete touches[t.identifier] })
-      if (Object.keys(touches).length < 2) { lastPinchDist = 0; lastTwoFingerY = 0 }
-    }
-    
-    wrapper.addEventListener('touchstart',  onTouchStart as any, { passive: false })
-    wrapper.addEventListener('touchmove',   onTouchMove  as any, { passive: false })
-    wrapper.addEventListener('touchend',    onTouchEnd   as any, { passive: true })
-    wrapper.addEventListener('touchcancel', onTouchEnd   as any, { passive: true })
-
-    const scene = document.getElementById('escena-ar') as any
-    sceneRef.current = scene
-
-    const onLoaded = () => {
-      aplicarAlpha()
-      setArListo(true)
-      const pos = getPosicion()
-      setPosicion(pos.x, -1.6 + offsetY, Z_BASE * zoom)
-
-      const panuelo = document.getElementById('columnas-vmj') as any
-      const txtN    = document.getElementById('txt-nombre')   as any
-      const txtM    = document.getElementById('txt-mensaje')  as any
-
-      const dispararAnimaciones = () => {
-        panuelo?.emit('escena-lista')
-        txtN?.emit('escena-lista')
-        txtM?.emit('escena-lista')
       }
 
-      // Esperar a que el asset de imagen esté completamente cargado en WebGL
-      const vidEl = document.getElementById('panuelo-vid') as HTMLVideoElement | null
-      if (vidEl && vidEl.readyState < 3) {
-        vidEl.addEventListener('canplay', () => setTimeout(dispararAnimaciones, 200), { once: true })
-      } else {
-        setTimeout(dispararAnimaciones, 500)
+      const onTouchEnd = (ev: TouchEvent) => {
+        Array.from(ev.changedTouches).forEach(t => { delete touches[t.identifier] })
+        if (Object.keys(touches).length < 2) { lastPinchDist = 0; lastTwoFingerY = 0 }
       }
-    }
-    scene.addEventListener('loaded', onLoaded)
 
+      wrapper.addEventListener('touchstart',  onTouchStart as any, { passive: false })
+      wrapper.addEventListener('touchmove',   onTouchMove  as any, { passive: false })
+      wrapper.addEventListener('touchend',    onTouchEnd   as any, { passive: true })
+      wrapper.addEventListener('touchcancel', onTouchEnd   as any, { passive: true })
+
+      const scene = document.getElementById('escena-ar') as any
+      sceneRef.current = scene
+
+      // ── onLoaded: animaciones de entrada + loop del pañuelo ──────────────────
+      const onLoaded = () => {
+        aplicarAlpha()
+        setArListo(true)
+        const pos = getPosicion()
+        setPosicion(pos.x, -1.6 + offsetY, Z_BASE * zoom)
+
+        const panuelo = document.getElementById('columnas-vmj') as any
+        const txtN    = document.getElementById('txt-nombre')   as any
+        const txtM    = document.getElementById('txt-mensaje')  as any
+
+        // ── Posiciones disponibles para el pañuelo (x, z) ──────────────────
+        // Para agregar más spots o cambiar la distribución espacial, editá este array.
+        // Y siempre arranca en -3 y sube a 0.2 via animation__subir.
+        const SPOTS = [
+          { x:  0,  z: -12 },
+          { x: -4,  z: -12 },
+          { x:  4,  z: -12 },
+          { x:  0,  z: -15 },
+          { x: -3,  z: -10 },
+          { x:  3,  z: -10 },
+          { x: -2,  z: -14 },
+          { x:  2,  z: -14 },
+        ]
+
+        let spotActual = 0
+
+        const animarEnSpot = (idx: number, evento: string) => {
+          const { x, z } = SPOTS[idx]
+          if (!panuelo) return
+          panuelo.setAttribute('position', `${x} -3 ${z}`)
+          panuelo.setAttribute('scale', '0.8 0.8 0.8')
+          panuelo.setAttribute('animation__subir',  `property: position; to: ${x} 0.2 ${z}; dur: 1800; easing: easeOutCubic; startEvents: ${evento}`)
+          panuelo.setAttribute('animation__crecer', `property: scale;    to: 1.8 1.8 1.8;    dur: 1800; easing: easeOutCubic; startEvents: ${evento}`)
+          setTimeout(() => panuelo.emit(evento), 50)
+        }
+
+        const vidEl = document.getElementById('panuelo-vid') as HTMLVideoElement | null
+
+        const onEnded = () => {
+          let siguiente: number
+          do {
+            siguiente = Math.floor(Math.random() * SPOTS.length)
+          } while (siguiente === spotActual)
+          spotActual = siguiente
+          animarEnSpot(siguiente, 'siguiente-entrada')
+          vidEl?.play()
+        }
+
+        vidEl?.addEventListener('ended', onEnded)
+
+        const iniciarPrimera = () => {
+          // Emitir animaciones de textos fijos solo en la primera entrada
+          txtN?.emit('escena-lista')
+          txtM?.emit('escena-lista')
+          animarEnSpot(0, 'escena-lista')
+          vidEl?.play()
+        }
+
+        if (vidEl && vidEl.readyState < 3) {
+          vidEl.addEventListener('canplay', () => setTimeout(iniciarPrimera, 200), { once: true })
+        } else {
+          setTimeout(iniciarPrimera, 500)
+        }
+      }
+
+      scene.addEventListener('loaded', onLoaded)
     }
 
     montar()
@@ -552,9 +706,7 @@ export default function LocationARScanner() {
     return () => {
       const contenedor = document.getElementById('ar-container')
       const scene = document.getElementById('escena-ar') as any
-      if (scene) {
-        scene.removeEventListener('loaded', () => {})
-      }
+      if (scene) scene.removeEventListener('loaded', () => {})
       const wrapper = contenedor?.querySelector('div') as HTMLElement | null
       if (wrapper) {
         wrapper.removeEventListener('touchstart',  () => {})
@@ -562,6 +714,8 @@ export default function LocationARScanner() {
         wrapper.removeEventListener('touchend',    () => {})
         wrapper.removeEventListener('touchcancel', () => {})
       }
+      const vid = document.getElementById('panuelo-vid') as HTMLVideoElement | null
+      if (vid) vid.onended = null
       const bgVideo = document.getElementById('camara-bg') as HTMLVideoElement | null
       if (bgVideo?.srcObject) {
         (bgVideo.srcObject as MediaStream).getTracks().forEach(t => t.stop())
@@ -571,21 +725,16 @@ export default function LocationARScanner() {
     }
   }, [scriptsOk, fase, baldosaActiva])
 
-
-
-  // ── 5. Aplicar controles AR en tiempo real ───────────────────────────────────
+  // ── 6. Aplicar controles AR en tiempo real ───────────────────────────────────
   useEffect(() => {
     if (fase !== 'ar' || !arListo) return
 
-    // Altura
     const entidad = document.getElementById('columnas-vmj') as any
     if (entidad) {
-      const Z_DIST = -12 * zoom           // zoom acerca/aleja cambiando Z
+      const Z_DIST = -12 * zoom
       const posY   = -1.6 + offsetY
       entidad.setAttribute('position', '0 ' + posY.toFixed(2) + ' ' + Z_DIST.toFixed(2))
-      // Rotación del grupo de columnas (eje Y)
       entidad.setAttribute('rotation', '0 ' + rotY.toFixed(1) + ' 0')
-      // Texto sigue al grupo
       const txtNombre  = document.getElementById('txt-nombre')  as any
       const txtMensaje = document.getElementById('txt-mensaje') as any
       if (txtNombre)  txtNombre.setAttribute('position',  '0 ' + (posY + 6.5).toFixed(2) + ' ' + Z_DIST.toFixed(2))
@@ -597,7 +746,25 @@ export default function LocationARScanner() {
     localStorage.setItem('ar_zoom',     zoom.toString())
   }, [offsetY, rotY, zoom, fase, arListo])
 
-  // ── 6. Handlers de acciones del usuario ───────────────────────────────────
+  // ── 7. Toggle del panel de información ───────────────────────────────────────
+  // Emite el evento correspondiente al entity A-Frame #panel-baldosa,
+  // que dispara las animaciones de materialize / desmaterialize.
+  const togglePanel = useCallback(() => {
+    const panel = document.getElementById('panel-baldosa') as any
+    if (!panel) return
+
+    setPanelVisible(prev => {
+      const siguiente = !prev
+      if (siguiente) {
+        panel.emit('panel-mostrar')
+      } else {
+        panel.emit('panel-ocultar')
+      }
+      return siguiente
+    })
+  }, [])
+
+  // ── 8. Handlers de acciones del usuario ───────────────────────────────────
 
   const verEscenaAR = useCallback(() => {
     if (!baldosaCercana) return
@@ -613,7 +780,6 @@ export default function LocationARScanner() {
     setEscaneando(false)
   }, [baldosaCercana])
 
-  // Marca la baldosa como visitada en la DB y abre la AR
   const marcarVisitadaYVerAR = useCallback(() => {
     if (!baldosaCercana) return
     const id = baldosaCercana.codigo || baldosaCercana.id
@@ -622,7 +788,6 @@ export default function LocationARScanner() {
   }, [baldosaCercana, verEscenaAR])
 
   const cerrarAR = useCallback(() => {
-    // Detener stream de cámara
     const bgVideo = document.getElementById('camara-bg') as HTMLVideoElement | null
     if (bgVideo && bgVideo.srcObject) {
       (bgVideo.srcObject as MediaStream).getTracks().forEach(t => t.stop())
@@ -651,13 +816,11 @@ export default function LocationARScanner() {
   }, [])
 
   const volverACaminar = useCallback(() => {
-    // Detener stream de cámara AR si quedó activo
     const bgVideo = document.getElementById('camara-bg') as HTMLVideoElement | null
     if (bgVideo && bgVideo.srcObject) {
       (bgVideo.srcObject as MediaStream).getTracks().forEach(t => t.stop())
       bgVideo.srcObject = null
     }
-    // Limpiar el contenedor AR por si acaso
     const arContainer = document.getElementById('ar-container')
     if (arContainer) arContainer.innerHTML = ''
 
@@ -667,7 +830,6 @@ export default function LocationARScanner() {
     setArListo(false)
     window.location.href = '/mapa'
   }, [])
-
 
   const escanearYGuardar = useCallback(async () => {
     if (!baldosaActiva || escaneando || fotoOk) return
@@ -680,19 +842,15 @@ export default function LocationARScanner() {
       const aScene  = document.getElementById('escena-ar') as any
       const aCanvas = aScene?.canvas as HTMLCanvasElement | null
 
-      // 1. Forzar un render de A-Frame para que el buffer WebGL tenga el frame actual
       if (aScene?.renderer) {
         aScene.renderer.render(aScene.object3D, aScene.camera)
       }
 
-      // 2. Esperar dos frames para asegurarse que WebGL terminó de dibujar
       await new Promise<void>(resolve => requestAnimationFrame(() =>
         requestAnimationFrame(() => resolve())
       ))
 
-      // 3. Tomar foto + canvas A-Frame
       const video = document.getElementById('camara-bg') as HTMLVideoElement | null
-
       const W = window.innerWidth
       const H = window.innerHeight
       const offscreen = document.createElement('canvas')
@@ -723,12 +881,8 @@ export default function LocationARScanner() {
         fecha:     new Date().toISOString(),
       }
 
-      // Guardar la foto pendiente de confirmar
       localStorage.setItem('recorremo_foto_pendiente', JSON.stringify(entrada))
-
       setFotoOk(true)
-
-      // Redirigir a la vista de previsualización
       window.location.href = '/scanner/foto'
     } catch {
       // Silencioso
@@ -737,9 +891,8 @@ export default function LocationARScanner() {
     }
   }, [baldosaActiva, escaneando, fotoOk])
 
-  // ── 6. Renders por fase ───────────────────────────────────────────────────
+  // ── 9. Renders por fase ───────────────────────────────────────────────────
 
-  // Verificando permisos — loader silencioso, no muestra nada al usuario
   if (fase === 'verificando') {
     return (
       <div style={{ ...estilos.pantallaCentrada, background: 'var(--color-stone)' }}>
@@ -748,7 +901,6 @@ export default function LocationARScanner() {
     )
   }
 
-  // Pantalla de inicio / pedido de permisos
   if (fase === 'iniciando') {
     return (
       <div style={estilos.pantallaCentrada}>
@@ -758,10 +910,7 @@ export default function LocationARScanner() {
           Caminá por Buenos Aires y descubrí las baldosas que honran a los desaparecidos.
           Cuando te acerques a una, verás su historia.
         </p>
-        <button
-          onClick={iniciarGPS}
-          style={estilos.btnPrimario}
-        >
+        <button onClick={iniciarGPS} style={estilos.btnPrimario}>
           🌎 Activar ubicación
         </button>
         <a href="/mapa" style={estilos.btnSecundario}>
@@ -771,7 +920,6 @@ export default function LocationARScanner() {
     )
   }
 
-  // Error
   if (fase === 'error') {
     return (
       <div style={estilos.pantallaCentrada}>
@@ -786,42 +934,28 @@ export default function LocationARScanner() {
     )
   }
 
-  // Caminando — buscando baldosas
   if (fase === 'caminando') {
-    const proxima = baldosas.reduce<{ b: Baldosa | null; d: number }>(
-      (acc, b) => {
-        // No tenemos la posición del user acá, pero distancia en ref sí
-        return acc
-      },
-      { b: null, d: Infinity }
-    )
     return (
       <div style={estilos.pantallaOscura}>
-        {/* Navbar compacta */}
         <div style={estilos.navBar}>
           <a href="/" style={estilos.navLink}>← Inicio</a>
           <a href="/mapa" style={estilos.navLink}>🗺️ Mapa</a>
         </div>
-
         <div style={estilos.centradoVertical}>
-          {/* Radar animado */}
           <div style={estilos.radar}>
             <div style={estilos.radarPulso1} />
             <div style={estilos.radarPulso2} />
             <span style={{ fontSize: '2.5rem', position: 'relative', zIndex: 2 }}>🌎</span>
           </div>
-
           <h2 style={{ ...estilos.titulo, marginTop: '1.5rem' }}>Buscando baldosas</h2>
           <p style={estilos.subtitulo}>
             Caminá por el barrio. Te avisaremos cuando estés cerca de una baldosa de la memoria.
           </p>
-
           {distancia !== null && (
             <div style={estilos.chipDistancia}>
               Baldosa más cercana: <strong> {formatearDistancia(distancia)}</strong>
             </div>
           )}
-
           <div style={{ marginTop: '1.5rem', opacity: 0.6, fontSize: '0.85rem', color: '#90b4ce' }}>
             {baldosas.length} baldosas cargadas · radio de detección {RADIO_ACTIVACION_M}m
           </div>
@@ -830,7 +964,6 @@ export default function LocationARScanner() {
     )
   }
 
-  // Cerca — notificación de baldosa detectada
   if (fase === 'cerca' && baldosaCercana) {
     return (
       <div style={estilos.pantallaOscura}>
@@ -880,91 +1013,70 @@ export default function LocationARScanner() {
           <a href="/" style={estilos.navLink}>← Inicio</a>
           <a href="/mapa" style={estilos.navLink}>🗺️ Mapa</a>
         </div>
-
         <div className="modal-cerca-wrap">
-        {/* Tarjeta de notificación */}
-        <div className="modal-cerca-card" style={estilos.cardNotificacion}>
-          {/* Banner superior */}
-          <div className="modal-cerca-banner" style={estilos.bannerDeteccion}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', flex: 1 }}>
-              <span style={{ fontWeight: 700, fontSize: '1rem', color: '#f0f4f8' }}>Baldosa encontrada</span>
-              {distancia !== null && (
-                <span className="modal-cerca-badge" style={{ ...estilos.badgeDistancia, padding: 0, background: 'none', color: '#90b4ce', fontSize: '0.78rem' }}>
-                  Estás a {formatearDistancia(distancia)} de la baldosa
-                </span>
+          <div className="modal-cerca-card" style={estilos.cardNotificacion}>
+            <div className="modal-cerca-banner" style={estilos.bannerDeteccion}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', flex: 1 }}>
+                <span style={{ fontWeight: 700, fontSize: '1rem', color: '#f0f4f8' }}>Baldosa encontrada</span>
+                {distancia !== null && (
+                  <span className="modal-cerca-badge" style={{ ...estilos.badgeDistancia, padding: 0, background: 'none', color: '#90b4ce', fontSize: '0.78rem' }}>
+                    Estás a {formatearDistancia(distancia)} de la baldosa
+                  </span>
+                )}
+              </div>
+              {baldosaCercana.vecesEscaneada !== undefined && (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '0.35rem 0.85rem',
+                  background: 'rgba(37,99,235,0.2)',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(37,99,235,0.35)',
+                  flexShrink: 0,
+                }}>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#60a5fa', lineHeight: 1 }}>
+                    {baldosaCercana.vecesEscaneada.toLocaleString('es-AR')}
+                  </div>
+                  <div style={{ fontSize: '0.62rem', color: '#90b4ce', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '0.15rem' }}>
+                    {baldosaCercana.vecesEscaneada === 1 ? 'visita' : 'visitas'}
+                  </div>
+                </div>
               )}
             </div>
-            {baldosaCercana.vecesEscaneada !== undefined && (
-              <div style={{
-                textAlign: 'center',
-                padding: '0.35rem 0.85rem',
-                background: 'rgba(37,99,235,0.2)',
-                borderRadius: '8px',
-                border: '1px solid rgba(37,99,235,0.35)',
-                flexShrink: 0,
-              }}>
-                <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#60a5fa', lineHeight: 1 }}>
-                  {baldosaCercana.vecesEscaneada.toLocaleString('es-AR')}
+            <div className="modal-cerca-body" style={{ padding: '1.5rem' }}>
+              {baldosaCercana.fotoUrl && (
+                <div className="modal-cerca-foto" style={estilos.contenedorFoto}>
+                  <img src={baldosaCercana.fotoUrl} alt={baldosaCercana.nombre} style={estilos.fotoThumbnail} />
                 </div>
-                <div style={{ fontSize: '0.62rem', color: '#90b4ce', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '0.15rem' }}>
-                  {baldosaCercana.vecesEscaneada === 1 ? 'visita' : 'visitas'}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Contenido */}
-          <div className="modal-cerca-body" style={{ padding: '1.5rem' }}>
-            {/* Foto si existe */}
-            {baldosaCercana.fotoUrl && (
-              <div className="modal-cerca-foto" style={estilos.contenedorFoto}>
-                <img
-                  src={baldosaCercana.fotoUrl}
-                  alt={baldosaCercana.nombre}
-                  style={estilos.fotoThumbnail}
-                />
-              </div>
-            )}
-
-            <h2 className="modal-cerca-nombre" style={estilos.nombreBaldosa}>{baldosaCercana.nombre}</h2>
-
-
-            {baldosaCercana.direccion && (
-              <p style={estilos.direccion}>🌎 {baldosaCercana.direccion}</p>
-            )}
-
-            {baldosaCercana.descripcion && (
-              <p className="modal-cerca-desc" style={estilos.descripcionCorta}>
-                {baldosaCercana.descripcion.slice(0, 120)}
-                {baldosaCercana.descripcion.length > 120 ? '…' : ''}
+              )}
+              <h2 className="modal-cerca-nombre" style={estilos.nombreBaldosa}>{baldosaCercana.nombre}</h2>
+              {baldosaCercana.direccion && (
+                <p style={estilos.direccion}>🌎 {baldosaCercana.direccion}</p>
+              )}
+              {baldosaCercana.descripcion && (
+                <p className="modal-cerca-desc" style={estilos.descripcionCorta}>
+                  {baldosaCercana.descripcion.slice(0, 120)}
+                  {baldosaCercana.descripcion.length > 120 ? '…' : ''}
+                </p>
+              )}
+              <p style={{ ...estilos.subtitulo, fontSize: '0.9rem', marginTop: '1rem' }}>
+                {baldosaCercana.mensajeAR}
               </p>
-            )}
-
-            <p style={{ ...estilos.subtitulo, fontSize: '0.9rem', marginTop: '1rem' }}>
-              {baldosaCercana.mensajeAR}
-            </p>
-
-            {/* Acciones */}
-            <div style={estilos.botonesAccion}>
-              <button className="modal-cerca-btn-primario" onClick={marcarVisitadaYVerAR} style={estilos.btnPrimario}>
-                Marcar como visitada
-              </button>
-              <button
-                className="modal-cerca-btn-secundario"
-                onClick={volverACaminar}
-                style={estilos.btnSecundario}
-              >
-                Seguir caminando
-              </button>
+              <div style={estilos.botonesAccion}>
+                <button className="modal-cerca-btn-primario" onClick={marcarVisitadaYVerAR} style={estilos.btnPrimario}>
+                  Marcar como visitada
+                </button>
+                <button className="modal-cerca-btn-secundario" onClick={volverACaminar} style={estilos.btnSecundario}>
+                  Seguir caminando
+                </button>
+              </div>
             </div>
           </div>
-        </div>
         </div>
       </div>
     )
   }
 
-  // Escena AR activa
+  // ── Escena AR activa ──────────────────────────────────────────────────────
   if (fase === 'ar') {
     return (
       <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#000' }}>
@@ -993,9 +1105,7 @@ export default function LocationARScanner() {
           </div>
         )}
 
-
-
-        {/* ── Botón escanear — esquina inferior izquierda ──────────────── */}
+        {/* ── Botón escanear — esquina inferior izquierda ── */}
         {arListo && (
           <button
             onClick={escanearYGuardar}
@@ -1029,6 +1139,44 @@ export default function LocationARScanner() {
           </button>
         )}
 
+        {/* ── Botón panel de información — esquina inferior derecha ── */}
+        {/* Alterna la visibilidad del panel A-Frame #panel-baldosa.           */}
+        {/* Al activarse emite 'panel-mostrar'; al desactivarse 'panel-ocultar'. */}
+        {/* La animación es materialize suave: opacity + scale con easeOutCubic. */}
+        {arListo && (
+          <button
+            onClick={togglePanel}
+            style={{
+              position: 'absolute',
+              bottom: '5rem',
+              right: '1rem',
+              zIndex: 200,
+              width: '3.2rem',
+              height: '3.2rem',
+              background: panelVisible
+                ? 'rgba(37, 99, 235, 0.85)'
+                : 'rgba(10, 18, 28, 0.82)',
+              color: 'white',
+              border: panelVisible
+                ? '1px solid rgba(96, 165, 250, 0.6)'
+                : '1px solid rgba(255,255,255,0.22)',
+              borderRadius: '50%',
+              fontSize: '1.3rem',
+              cursor: 'pointer',
+              backdropFilter: 'blur(8px)',
+              touchAction: 'manipulation',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background 0.25s, border 0.25s, transform 0.1s',
+              transform: 'scale(1)',
+            }}
+            title={panelVisible ? 'Ocultar información' : 'Ver información de la baldosa'}
+          >
+            ℹ️
+          </button>
+        )}
+
         {/* Hint gestos — desaparece al primer toque */}
         {arListo && offsetY === 0 && zoom === 1 && (
           <div style={{ ...estilos.instruccionAR, fontSize: '0.75rem', lineHeight: 1.4 }}>
@@ -1036,7 +1184,7 @@ export default function LocationARScanner() {
           </div>
         )}
 
-        {/* ── Flash de cámara ── */}
+        {/* Flash de cámara */}
         {flash && (
           <div style={{
             position: 'absolute',
@@ -1047,7 +1195,6 @@ export default function LocationARScanner() {
             animation: 'shutterFlash 0.35s ease-out forwards',
           }} />
         )}
-
       </div>
     )
   }
@@ -1064,7 +1211,6 @@ export default function LocationARScanner() {
         </div>
 
         <div style={{ maxWidth: '500px', margin: '0 auto', padding: '1rem' }}>
-          {/* Header con foto */}
           {baldosaActiva.fotoUrl && (
             <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
               <img
@@ -1080,7 +1226,6 @@ export default function LocationARScanner() {
               />
             </div>
           )}
-
 
           <h1 style={{ ...estilos.nombreBaldosa, fontSize: '2rem', marginTop: '0.5rem' }}>
             {baldosaActiva.nombre}
@@ -1108,7 +1253,6 @@ export default function LocationARScanner() {
             </p>
           )}
 
-          {/* Acciones */}
           <div style={{ ...estilos.botonesAccion, marginTop: '2rem' }}>
             <button onClick={verEscenaAR} style={estilos.btnSecundario}>
               ✨ Ver AR de nuevo
