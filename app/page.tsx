@@ -130,126 +130,63 @@ export default function Home() {
 
           </div>
 
-          {/* Botones de acción — debajo del baldosón */}
+          {/* CTA principal — Mapa como entrada a la experiencia */}
           <div style={{
             display: 'flex',
-            gap: '1rem',
             justifyContent: 'center',
             margin: '0 auto var(--space-lg)',
             opacity: 0,
             animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 2.5s forwards',
           }}>
-            {/* Botón Escanear */}
-            <Link href="/scanner" style={{
-              minWidth: '180px',
-              height: '174px',
-              display: 'inline-flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '1.25rem 1.5rem',
-              background: 'linear-gradient(to top, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.2) 100%)',
-              color: 'var(--color-dust)',
-              border: 'none',
-              borderRadius: '12px',
-              textDecoration: 'none',
-              boxShadow: '0 4px 20px rgba(74,107,124,0.12)',
-              backdropFilter: 'blur(4px)',
-              transition: 'all var(--transition-base)',
-              gap: '0.4rem',
-            }}
-            onMouseEnter={e => {
-              const el = e.currentTarget as HTMLAnchorElement
-              el.style.background = 'linear-gradient(to top, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0.35) 100%)'
-              el.style.boxShadow = '0 6px 28px rgba(74,107,124,0.22)'
-              el.style.transform = 'translateY(-2px)'
-            }}
-            onMouseLeave={e => {
-              const el = e.currentTarget as HTMLAnchorElement
-              el.style.background = 'linear-gradient(to top, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.2) 100%)'
-              el.style.boxShadow = '0 4px 20px rgba(74,107,124,0.12)'
-              el.style.transform = 'translateY(0)'
-            }}>
-              <span style={{
-                fontFamily: 'var(--font-body)',
-                fontSize: '1.1rem',
-                fontWeight: 700,
-                letterSpacing: '0.18em',
-                textTransform: 'uppercase',
-                color: 'var(--color-dust)',
-              }}>Escanear</span>
-              <span style={{
-                fontFamily: 'var(--font-body)',
-                fontSize: '0.8rem',
-                fontWeight: 500,
-                letterSpacing: '0.04em',
-                color: 'var(--color-dust)',
-                opacity: 0.85,
-                textAlign: 'center',
-                lineHeight: 1.3,
-              }}>Descubrí la Realidad Aumentada</span>
-              <span style={{
-                fontFamily: 'var(--font-body)',
-                fontSize: '0.65rem',
-                fontWeight: 400,
-                letterSpacing: '0.02em',
-                color: 'var(--color-dust)',
-                opacity: 0.6,
-                textAlign: 'center',
-                lineHeight: 1.35,
-                marginTop: '0.25rem',
-              }}>Vamos a necesitar permiso para tu cámara y ubicación por un momento</span>
-            </Link>
-
-            {/* Botón Mapa */}
             <Link href="/mapa" style={{
-              minWidth: '180px',
-              height: '174px',
               display: 'inline-flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '1.25rem 1.5rem',
-              background: 'linear-gradient(to top, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.2) 100%)',
-              color: 'var(--color-dust)',
+              padding: '1.5rem 2.5rem',
+              background: 'linear-gradient(135deg, var(--color-stone) 0%, var(--color-concrete) 100%)',
+              color: 'var(--color-parchment)',
               border: 'none',
-              borderRadius: '12px',
+              borderRadius: '16px',
               textDecoration: 'none',
-              boxShadow: '0 4px 20px rgba(74,107,124,0.12)',
-              backdropFilter: 'blur(4px)',
+              boxShadow: '0 8px 32px rgba(26,42,58,0.28)',
               transition: 'all var(--transition-base)',
-              gap: '0.4rem',
+              gap: '0.5rem',
+              maxWidth: '420px',
+              width: '100%',
             }}
             onMouseEnter={e => {
               const el = e.currentTarget as HTMLAnchorElement
-              el.style.background = 'linear-gradient(to top, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0.35) 100%)'
-              el.style.boxShadow = '0 6px 28px rgba(74,107,124,0.22)'
-              el.style.transform = 'translateY(-2px)'
+              el.style.transform = 'translateY(-3px)'
+              el.style.boxShadow = '0 12px 40px rgba(26,42,58,0.38)'
             }}
             onMouseLeave={e => {
               const el = e.currentTarget as HTMLAnchorElement
-              el.style.background = 'linear-gradient(to top, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.2) 100%)'
-              el.style.boxShadow = '0 4px 20px rgba(74,107,124,0.12)'
               el.style.transform = 'translateY(0)'
+              el.style.boxShadow = '0 8px 32px rgba(26,42,58,0.28)'
             }}>
               <span style={{
-                fontFamily: 'var(--font-body)',
-                fontSize: '1.1rem',
+                fontFamily: 'var(--font-display)',
+                fontSize: 'clamp(1.1rem, 3vw, 1.45rem)',
                 fontWeight: 700,
-                letterSpacing: '0.18em',
-                textTransform: 'uppercase',
-                color: 'var(--color-dust)',
-              }}>Mapa</span>
+                letterSpacing: '-0.01em',
+                color: 'var(--color-parchment)',
+                lineHeight: 1.25,
+                textAlign: 'center',
+              }}>
+                Viví la experiencia al acercarte a una baldosa
+              </span>
               <span style={{
                 fontFamily: 'var(--font-body)',
-                fontSize: '0.8rem',
-                fontWeight: 500,
-                letterSpacing: '0.04em',
-                color: 'var(--color-dust)',
-                opacity: 0.85,
+                fontSize: '0.82rem',
+                fontWeight: 400,
+                color: 'rgba(240,244,248,0.7)',
                 textAlign: 'center',
-                lineHeight: 1.3,
-              }}>Conocé la ubicación de las baldosas</span>
+                lineHeight: 1.4,
+                marginTop: '0.15rem',
+              }}>
+                Explorá el mapa y encontrá las baldosas más cercanas
+              </span>
             </Link>
           </div>
 

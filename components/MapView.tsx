@@ -427,8 +427,8 @@ export default function MapView({ initialLocation }:MapViewProps) {
                         <button onClick={()=>verDetalle(b.id,b)} style={{background:'#f0f4f8',border:'1px solid #e5e7eb',borderRadius:'8px',padding:'5px 8px',fontSize:'0.78rem',fontWeight:600,color:'#1a2a3a',cursor:'pointer',whiteSpace:'nowrap'}}>
                           Ver
                         </button>
-                        <button onClick={()=>iniciarRecorrido(b)} style={{background:activa?'#fee2e2':'#eff6ff',border:'none',borderRadius:'8px',padding:'5px 10px',fontSize:'0.78rem',fontWeight:600,color:activa?'#dc2626':'#2563eb',cursor:'pointer',whiteSpace:'nowrap',opacity:loadingRuta&&!activa?0.6:1}}>
-                          {activa?'Cancelar':'Ir →'}
+                        <button onClick={()=>iniciarRecorrido(b)} style={{background:activa?'#fee2e2':'#eff6ff',border:activa?'1px solid #fecaca':'none',borderRadius:'8px',padding:'5px 10px',fontSize:'0.78rem',fontWeight:600,color:activa?'#dc2626':'#2563eb',cursor:'pointer',whiteSpace:'nowrap',opacity:loadingRuta&&!activa?0.6:1}}>
+                          {activa?'Ir a otra':'Ir →'}
                         </button>
                       </div>
                     </div>

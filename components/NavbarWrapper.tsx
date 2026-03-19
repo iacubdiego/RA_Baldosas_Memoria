@@ -39,12 +39,7 @@ export default function NavbarWrapper() {
             <span className="navbar-title" style={esHome ? { color: 'var(--color-stone)' } : undefined}>Recorremos Memoria</span>
           </a>
         </div>
-        {!esHome && (
-          <div className="navbar-links">
-            <a href="/scanner" className="navbar-link">Encontrar</a>
-            <a href="/mapa"    className="navbar-link">Mapa</a>
-          </div>
-        )}
+        {/* Sin links: o estás en home o en el mapa — la navbar solo lleva de vuelta al inicio */}
       </div>
     </nav>
   )
