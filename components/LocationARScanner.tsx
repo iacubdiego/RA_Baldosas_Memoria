@@ -82,6 +82,7 @@ export default function LocationARScanner() {
   // el entity #panel-baldosa en A-Frame, que dispara las animaciones de
   // opacidad y escala (efecto materialize).
   const [panelVisible, setPanelVisible] = useState(false)
+  const [hudListo, setHudListo] = useState(false)
 
   // Controles AR — persisten en localStorage
   const [offsetY,  setOffsetY]  = useState<number>(() => {
@@ -115,6 +116,96 @@ export default function LocationARScanner() {
         @keyframes shutterFlash {
           0%   { opacity: 1; }
           100% { opacity: 0; }
+        }
+        @keyframes letraSprayAR {
+          0%   { opacity: 0; transform: scale(1.3); filter: blur(5px); }
+          45%  { opacity: 1; filter: blur(0.5px); }
+          100% { opacity: 1; transform: scale(1);  filter: blur(0px); }
+        }
+        .letra-hud-ar {
+          display: inline-block;
+          font-family: 'Oswald', 'Impact', 'Arial Black', sans-serif;
+          font-size: clamp(1.5rem, 5vw, 2rem);
+          font-weight: 700;
+          text-transform: uppercase;
+          color: transparent;
+          position: relative;
+          opacity: 0;
+          margin-right: 0.055em;
+        }
+        .espacio-hud-ar {
+          display: inline-block;
+          width: 0.45em;
+          height: 1px;
+        }
+        .letra-hud-ar::before {
+          content: attr(data-l);
+          position: absolute;
+          inset: 0;
+          font-family: inherit;
+          font-size: inherit;
+          font-weight: inherit;
+          text-transform: inherit;
+          white-space: pre;
+          background:
+            conic-gradient(
+              from 0deg at 20% 30%,
+              rgba(255,255,255,1) 0deg, transparent 2.5deg,
+              transparent 7deg, rgba(255,255,255,1) 8deg, transparent 11deg,
+              transparent 18deg, rgba(255,255,255,0.97) 19deg, transparent 22deg,
+              transparent 32deg, rgba(255,255,255,1) 33deg, transparent 37deg,
+              transparent 52deg, rgba(255,255,255,0.98) 53deg, transparent 57deg,
+              transparent 72deg, rgba(255,255,255,1) 73deg, transparent 77deg,
+              transparent 95deg, rgba(255,255,255,0.97) 96deg, transparent 100deg,
+              transparent 120deg, rgba(255,255,255,1) 121deg, transparent 126deg,
+              transparent 145deg, rgba(255,255,255,0.98) 146deg, transparent 151deg,
+              transparent 175deg, rgba(255,255,255,1) 176deg, transparent 181deg,
+              transparent 205deg, rgba(255,255,255,0.97) 206deg, transparent 211deg,
+              transparent 235deg, rgba(255,255,255,1) 236deg, transparent 241deg,
+              transparent 265deg, rgba(255,255,255,0.98) 266deg, transparent 271deg,
+              transparent 305deg, rgba(255,255,255,1) 306deg, transparent 311deg,
+              transparent 338deg, rgba(255,255,255,0.97) 339deg, transparent 344deg
+            ),
+            conic-gradient(
+              from 90deg at 70% 60%,
+              rgba(255,255,255,0.98) 0deg, transparent 3.5deg,
+              transparent 13deg, rgba(255,255,255,1) 14deg, transparent 19deg,
+              transparent 35deg, rgba(255,255,255,0.97) 36deg, transparent 41deg,
+              transparent 62deg, rgba(255,255,255,1) 63deg, transparent 68deg,
+              transparent 92deg, rgba(255,255,255,0.98) 93deg, transparent 98deg,
+              transparent 128deg, rgba(255,255,255,1) 129deg, transparent 134deg,
+              transparent 162deg, rgba(255,255,255,0.97) 163deg, transparent 168deg,
+              transparent 198deg, rgba(255,255,255,1) 199deg, transparent 204deg,
+              transparent 232deg, rgba(255,255,255,0.98) 233deg, transparent 238deg,
+              transparent 292deg, rgba(255,255,255,1) 293deg, transparent 298deg,
+              transparent 322deg, rgba(255,255,255,0.97) 323deg, transparent 328deg
+            );
+          background-size: 7px 7px, 10px 10px;
+          filter: blur(0.6px) contrast(220%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        .letra-hud-ar::after {
+          content: attr(data-l);
+          position: absolute;
+          inset: 0;
+          font-family: inherit;
+          font-size: inherit;
+          font-weight: inherit;
+          white-space: pre;
+          filter: blur(6px);
+          z-index: -1;
+          -webkit-text-fill-color: rgba(255,255,255,0.55);
+        }
+        .letra-hud-ar.pintada {
+          animation: letraSprayAR 0.55s cubic-bezier(0.22,1,0.36,1) forwards;
+        }
+        .consigna-hud-ar span {
+          display: inline-block;
+          white-space: pre;
+          opacity: 0;
+          transition: opacity 0.5s ease;
         }
       `
       document.head.appendChild(s)
@@ -289,7 +380,8 @@ export default function LocationARScanner() {
 
       contenedor.innerHTML = ''
       setArListo(false)
-      setPanelVisible(false)   // resetear panel al remontar la escena
+      setPanelVisible(false)
+      setHudListo(false)
 
       // Precargar video
       await new Promise<void>(resolve => {
@@ -302,14 +394,8 @@ export default function LocationARScanner() {
 
       const { nombre, mensajeAR, descripcion, direccion, fotoUrl } = baldosaActiva
 
-      const nombreSafe      = nombre.replace(/"/g, '&quot;')
-      const mensajeSafe     = mensajeAR.replace(/"/g, '&quot;')
-      // ── Datos del panel ────────────────────────────────────────────────────
-      // Para agregar más campos al panel, extendé las variables siguientes y
-      // agregá más <a-text> dentro del entity #panel-baldosa más abajo.
-      // Campos disponibles en baldosaActiva: categoria, infoExtendida, vecesEscaneada, barrio, audioUrl
-      const descripcionSafe = (descripcion || '').replace(/"/g, '&quot;').slice(0, 120)
-      const direccionSafe   = (direccion   || '').replace(/"/g, '&quot;')
+      const nombreSafe  = nombre.replace(/"/g, '&quot;')
+      const mensajeSafe = mensajeAR.replace(/"/g, '&quot;')
 
       // ── Video cámara real como fondo ──────────────────────────────────────────
       const video = document.createElement('video')
@@ -346,46 +432,10 @@ export default function LocationARScanner() {
       const Z_BASE  = -12
       const Y_OJOS  = 1.6
 
-      // ── Posición del panel ─────────────────────────────────────────────────
-      // El panel queda fijo a la derecha del centro de la escena, a la misma
-      // profundidad que el pañuelo (Z_BASE).
-      // Para moverlo: cambiá PANEL_X (horizontal) y PANEL_Y (vertical).
-      // Para que siga al pañuelo en vez de quedar fijo, mové el entity
-      // #panel-baldosa dentro del mismo entity padre que #columnas-vmj.
-      const PANEL_X =  5.5   // unidades A-Frame a la derecha del centro
-      const PANEL_Y =  1.2   // altura en la escena
-      const PANEL_Z = Z_BASE // misma profundidad que el pañuelo
-
-      // Construir asset de foto solo si existe fotoUrl
-      // Para cambiar la foto mostrada (ej: foto de la persona en lugar de la baldosa),
-      // reemplazá fotoUrl por el campo correspondiente de baldosaActiva (ej: imagenUrl).
+      // Asset foto — reservado para uso futuro
       const assetFoto = fotoUrl
         ? `<img id="foto-baldosa" src="${fotoUrl}" crossorigin="anonymous">`
         : ''
-
-      const entityFoto = fotoUrl
-        ? [
-            '    <a-image',
-            '      id="panel-foto"',
-            '      src="#foto-baldosa"',
-            `      width="2" height="2.5"`,
-            `      position="0 0.6 0.01"`,
-            '      material="transparent: false"',
-            '    ></a-image>',
-          ].join('\n')
-        : [
-            // Placeholder cuando no hay foto
-            '    <a-plane',
-            '      width="2" height="2.5"',
-            `      position="0 0.6 0.01"`,
-            '      color="#1a2a3a"',
-            '    ></a-plane>',
-            '    <a-text',
-            '      value="Sin foto"',
-            '      align="center" width="3" color="#4a6b7c"',
-            `      position="0 0.6 0.02"`,
-            '    ></a-text>',
-          ].join('\n')
 
       wrapper.innerHTML = [
         '<a-scene',
@@ -420,100 +470,8 @@ export default function LocationARScanner() {
         '    animation__crecer="property: scale; to: 1.8 1.8 1.8; dur: 1800; easing: easeOutCubic; startEvents: escena-lista"',
         '  ></a-video>',
         '',
-        // ── Textos fijos ──────────────────────────────────────────────────────
-        `  <a-text id="txt-nombre"`,
-        `    value="${nombreSafe}"`,
-        `    position="0 3.5 ${Z_BASE}"`,
-        '    align="center" width="8" color="#f0e6d3" wrap-count="22"',
-        '    animation__aparecer="property: opacity; from: 0; to: 1; dur: 1200; delay: 1400; easing: easeInOutQuad; startEvents: escena-lista"',
-        '    opacity="0"',
-        '  ></a-text>',
-        '',
-        `  <a-text id="txt-mensaje"`,
-        '    value="Verdad, Memoria y Justicia"',
-        `    position="0 2.7 ${Z_BASE}"`,
-        '    align="center" width="12" color="#90b4ce" wrap-count="30"',
-        '    animation__aparecer="property: opacity; from: 0; to: 1; dur: 1200; delay: 1600; easing: easeInOutQuad; startEvents: escena-lista"',
-        '    opacity="0"',
-        '  ></a-text>',
-        '',
-        // ── Panel de información ──────────────────────────────────────────────
-        // El panel arranca invisible (opacity 0, scale 0.85) y fuera del flujo.
-        // Al emitir 'panel-mostrar' se materializa con fade + grow suave.
-        // Al emitir 'panel-ocultar' se desvanece con fade + shrink.
-        //
-        // POSICIÓN FIJA: el panel no sigue al pañuelo porque está como entidad
-        // raíz de la escena. Para que lo acompañe, envolvé tanto #columnas-vmj
-        // como #panel-baldosa dentro de un <a-entity> padre.
-        //
-        // CAMPOS MOSTRADOS: nombre, dirección, descripción y foto.
-        // Para agregar más campos (ej: vecesEscaneada, infoExtendida), agregá
-        // más entidades <a-text> con los valores correspondientes de baldosaActiva,
-        // ajustando la posición Y para no superponer.
-        `  <a-entity`,
-        `    id="panel-baldosa"`,
-        `    position="${PANEL_X} ${PANEL_Y} ${PANEL_Z}"`,
-        `    scale="0.85 0.85 0.85"`,
-        `    opacity="0"`,
-        // Materialize entrada: opacity 0→1 + scale 0.85→1
-        `    animation__aparecer="property: opacity; from: 0; to: 1; dur: 700; easing: easeOutCubic; startEvents: panel-mostrar"`,
-        `    animation__crecer="property: scale; from: 0.85 0.85 0.85; to: 1 1 1; dur: 700; easing: easeOutCubic; startEvents: panel-mostrar"`,
-        // Materialize salida: opacity 1→0 + scale 1→0.85
-        `    animation__desaparecer="property: opacity; from: 1; to: 0; dur: 400; easing: easeInCubic; startEvents: panel-ocultar"`,
-        `    animation__achicar="property: scale; from: 1 1 1; to: 0.85 0.85 0.85; dur: 400; easing: easeInCubic; startEvents: panel-ocultar"`,
-        '  >',
-        // Fondo del panel
-        '    <a-plane',
-        '      id="panel-fondo"',
-        '      width="3.2" height="5.5"',
-        '      position="0 0 0"',
-        '      color="#0a121c"',
-        '      material="opacity: 0.88; transparent: true; side: double"',
-        '    ></a-plane>',
-        // Borde sutil
-        '    <a-plane',
-        '      width="3.25" height="5.55"',
-        '      position="0 0 -0.01"',
-        '      color="#2563eb"',
-        '      material="opacity: 0.35; transparent: true; side: double"',
-        '    ></a-plane>',
-        // Foto o placeholder
-        entityFoto,
-        // Línea separadora
-        '    <a-plane',
-        '      width="2.6" height="0.02"',
-        `      position="0 -1.2 0.01"`,
-        '      color="#2563eb"',
-        '      material="opacity: 0.5; transparent: true"',
-        '    ></a-plane>',
-        // Nombre
-        `    <a-text`,
-        `      id="panel-txt-nombre"`,
-        `      value="${nombreSafe}"`,
-        `      position="0 -1.55 0.02"`,
-        '      align="center" width="4.5" color="#f0e6d3" wrap-count="20"',
-        '      font="https://cdn.aframe.io/fonts/DejaVu-sdf.fnt"',
-        '    ></a-text>',
-        // Dirección
-        direccionSafe ? [
-          `    <a-text`,
-          `      id="panel-txt-dir"`,
-          `      value="${direccionSafe}"`,
-          `      position="0 -2.15 0.02"`,
-          '      align="center" width="4" color="#6b8fa6" wrap-count="24"',
-          '    ></a-text>',
-        ].join('\n') : '',
-        // Descripción
-        descripcionSafe ? [
-          `    <a-text`,
-          `      id="panel-txt-desc"`,
-          `      value="${descripcionSafe}"`,
-          `      position="0 -2.9 0.02"`,
-          '      align="center" width="4" color="#90b4ce" wrap-count="28"',
-          '    ></a-text>',
-        ].join('\n') : '',
-        '  </a-entity>',
-        '',
+        // ── Panel de información — desactivado temporalmente ─────────────────
+
         '</a-scene>',
       ].join('\n')
 
@@ -534,8 +492,6 @@ export default function LocationARScanner() {
       let lastTwoFingerY = 0
 
       const getEntity = () => document.getElementById('columnas-vmj') as any
-      const getTxtN   = () => document.getElementById('txt-nombre')   as any
-      const getTxtM   = () => document.getElementById('txt-mensaje')  as any
 
       const getPosicion = () => {
         const e = getEntity()
@@ -552,11 +508,9 @@ export default function LocationARScanner() {
       }
 
       const setPosicion = (x: number, y: number, z: number) => {
-        const e = getEntity(); const n = getTxtN(); const m = getTxtM()
+        const e = getEntity()
         if (!e) return
         e.setAttribute('position', `${x.toFixed(2)} ${y.toFixed(2)} ${z.toFixed(2)}`)
-        if (n) n.setAttribute('position', `0 ${(y + 6.4).toFixed(2)} ${z.toFixed(2)}`)
-        if (m) m.setAttribute('position', `0 ${(y + 5.7).toFixed(2)} ${z.toFixed(2)}`)
       }
 
       const setRotacion = (y: number) => {
@@ -640,12 +594,8 @@ export default function LocationARScanner() {
         setPosicion(pos.x, -1.6 + offsetY, Z_BASE * zoom)
 
         const panuelo = document.getElementById('columnas-vmj') as any
-        const txtN    = document.getElementById('txt-nombre')   as any
-        const txtM    = document.getElementById('txt-mensaje')  as any
 
         // ── Posiciones disponibles para el pañuelo (x, z) ──────────────────
-        // Para agregar más spots o cambiar la distribución espacial, editá este array.
-        // Y siempre arranca en -3 y sube a 0.2 via animation__subir.
         const SPOTS = [
           { x:  0,  z: -12 },
           { x: -4,  z: -12 },
@@ -684,11 +634,9 @@ export default function LocationARScanner() {
         vidEl?.addEventListener('ended', onEnded)
 
         const iniciarPrimera = () => {
-          // Emitir animaciones de textos fijos solo en la primera entrada
-          txtN?.emit('escena-lista')
-          txtM?.emit('escena-lista')
           animarEnSpot(0, 'escena-lista')
           vidEl?.play()
+          setHudListo(true)
         }
 
         if (vidEl && vidEl.readyState < 3) {
@@ -735,10 +683,6 @@ export default function LocationARScanner() {
       const posY   = -1.6 + offsetY
       entidad.setAttribute('position', '0 ' + posY.toFixed(2) + ' ' + Z_DIST.toFixed(2))
       entidad.setAttribute('rotation', '0 ' + rotY.toFixed(1) + ' 0')
-      const txtNombre  = document.getElementById('txt-nombre')  as any
-      const txtMensaje = document.getElementById('txt-mensaje') as any
-      if (txtNombre)  txtNombre.setAttribute('position',  '0 ' + (posY + 6.5).toFixed(2) + ' ' + Z_DIST.toFixed(2))
-      if (txtMensaje) txtMensaje.setAttribute('position', '0 ' + (posY + 5.8).toFixed(2) + ' ' + Z_DIST.toFixed(2))
     }
 
     localStorage.setItem('ar_offset_y', offsetY.toString())
@@ -746,9 +690,96 @@ export default function LocationARScanner() {
     localStorage.setItem('ar_zoom',     zoom.toString())
   }, [offsetY, rotY, zoom, fase, arListo])
 
+  // ── HUD aerosol: animar letras cuando la escena está lista ───────────────────
+  useEffect(() => {
+    if (!hudListo || !baldosaActiva) return
+
+    const COLORES_SUB = [
+      '#ff1a1a','#ff4400','#ffcc00',
+      '#00dd44','#0088ff','#cc00ff',
+      '#ff0066','#00ccff','#ff6600',
+    ]
+    const DELAY_TITULO   = 280
+    const DELAY_CONSIGNA = 190
+    const ESPERA_INICIAL = 400
+
+    const colorAleatorio = (excluir: string) => {
+      let c: string
+      do { c = COLORES_SUB[Math.floor(Math.random() * COLORES_SUB.length)] }
+      while (c === excluir)
+      return c
+    }
+
+    const wrap     = document.getElementById('hud-titulo-wrap')
+    const sep      = document.getElementById('hud-sep')
+    const consigna = document.getElementById('hud-consigna')
+    if (!wrap || !sep || !consigna) return
+
+    sep.style.opacity = '0'
+    consigna.innerHTML = ''
+    wrap.innerHTML = ''
+
+    const chars = baldosaActiva.nombre.split('')
+    const animables: HTMLElement[] = []
+
+    chars.forEach(ch => {
+      if (ch === ' ') {
+        const esp = document.createElement('span')
+        esp.className = 'espacio-hud-ar'
+        wrap.appendChild(esp)
+      } else {
+        const span = document.createElement('span')
+        span.className = 'letra-hud-ar'
+        span.setAttribute('data-l', ch)
+        span.textContent = ch
+        wrap.appendChild(span)
+        animables.push(span)
+      }
+    })
+
+    const timers: ReturnType<typeof setTimeout>[] = []
+
+    animables.forEach((el, i) => {
+      timers.push(setTimeout(() => {
+        el.classList.add('pintada')
+      }, ESPERA_INICIAL + i * DELAY_TITULO))
+    })
+
+    const finTitulo = ESPERA_INICIAL + animables.length * DELAY_TITULO + 600
+
+    timers.push(setTimeout(() => {
+      if (sep) { sep.style.transition = 'opacity 0.6s'; sep.style.opacity = '1' }
+    }, finTitulo - 100))
+
+    const CONSIGNA = 'Florecerán Pañuelos'
+    let colorPrev = ''
+    CONSIGNA.split('').forEach(ch => {
+      const span = document.createElement('span')
+      span.textContent = ch
+      if (ch.trim() !== '') {
+        const c = colorAleatorio(colorPrev)
+        colorPrev = c
+        span.style.color = c
+        span.style.textShadow = `0 0 6px ${c}99, 0 0 16px ${c}44`
+      }
+      consigna.appendChild(span)
+    })
+
+    CONSIGNA.split('').forEach((_, i) => {
+      timers.push(setTimeout(() => {
+        const spans = consigna.querySelectorAll('span')
+        if (spans[i]) (spans[i] as HTMLElement).style.opacity = '1'
+      }, finTitulo + 200 + i * DELAY_CONSIGNA))
+    })
+
+    return () => timers.forEach(clearTimeout)
+  }, [hudListo, baldosaActiva])
+
   // ── 7. Toggle del panel de información ───────────────────────────────────────
-  // Emite el evento correspondiente al entity A-Frame #panel-baldosa,
-  // que dispara las animaciones de materialize / desmaterialize.
+  // Maneja visible con setAttribute en lugar de opacity, porque A-Frame no
+  // propaga opacity a entidades hijas. Secuencia:
+  //   Mostrar: visible=true → reset scale → emit panel-mostrar (con delay mínimo)
+  //   Ocultar: emit panel-ocultar → visible=false después de que termina la animación (420ms)
   const togglePanel = useCallback(() => {
     const panel = document.getElementById('panel-baldosa') as any
     if (!panel) return
@@ -756,9 +787,12 @@ export default function LocationARScanner() {
     setPanelVisible(prev => {
       const siguiente = !prev
       if (siguiente) {
-        panel.emit('panel-mostrar')
+        panel.setAttribute('visible', 'true')
+        panel.setAttribute('scale', '0.85 0.85 0.85')
+        setTimeout(() => panel.emit('panel-mostrar'), 20)
       } else {
         panel.emit('panel-ocultar')
+        setTimeout(() => panel.setAttribute('visible', 'false'), 420)
       }
       return siguiente
     })
@@ -798,6 +832,7 @@ export default function LocationARScanner() {
 
     setScriptsOk(false)
     setArListo(false)
+    setHudListo(false)
     setFase('ficha')
 
     setBaldosaActiva(prev => {
@@ -828,6 +863,7 @@ export default function LocationARScanner() {
     setBaldosaCercana(null)
     setScriptsOk(false)
     setArListo(false)
+    setHudListo(false)
     window.location.href = '/mapa'
   }, [])
 
@@ -1062,6 +1098,25 @@ export default function LocationARScanner() {
                 {baldosaCercana.mensajeAR}
               </p>
               <div style={estilos.botonesAccion}>
+                {/* Botón escanear — solo cuando ya llegaste (≤ 30m) */}
+                {distancia !== null && distancia <= 30 && (
+                  <button
+                    className="modal-cerca-btn-primario"
+                    onClick={marcarVisitadaYVerAR}
+                    style={{
+                      ...estilos.btnPrimario,
+                      background: '#1d4ed8',
+                      boxShadow: '0 0 20px rgba(37,99,235,0.4)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      fontSize: '1.05rem',
+                    }}
+                  >
+                    📸 Escanear baldosa
+                  </button>
+                )}
                 <button className="modal-cerca-btn-primario" onClick={marcarVisitadaYVerAR} style={estilos.btnPrimario}>
                   Marcar como visitada
                 </button>
@@ -1090,6 +1145,57 @@ export default function LocationARScanner() {
             <p style={{ color: '#f0e6d3', marginTop: '1rem' }}>
               {scriptsOk ? 'Iniciando cámara AR…' : 'Cargando librerías AR…'}
             </p>
+          </div>
+        )}
+
+        {/* ── HUD aerosol — parte superior ── */}
+        {arListo && (
+          <div style={{
+            position: 'absolute',
+            top: '72px',
+            left: 0,
+            right: 0,
+            zIndex: 150,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '6px',
+            pointerEvents: 'none',
+            padding: '0 1rem',
+          }}>
+            <div
+              id="hud-titulo-wrap"
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                alignItems: 'center',
+                lineHeight: 1.1,
+              }}
+            />
+            <div
+              id="hud-sep"
+              style={{
+                width: '40px',
+                height: '1px',
+                background: 'rgba(255,255,255,0.25)',
+                opacity: 0,
+                margin: '2px auto',
+              }}
+            />
+            <div
+              id="hud-consigna"
+              className="consigna-hud-ar"
+              style={{
+                fontFamily: "'Oswald', 'Impact', 'Arial Black', sans-serif",
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                letterSpacing: '0.22em',
+                textTransform: 'uppercase',
+                textAlign: 'center',
+                lineHeight: 1,
+              }}
+            />
           </div>
         )}
 
@@ -1136,44 +1242,6 @@ export default function LocationARScanner() {
             }}
           >
             {fotoOk ? '✓' : escaneando ? '⏳' : '📸'}
-          </button>
-        )}
-
-        {/* ── Botón panel de información — esquina inferior derecha ── */}
-        {/* Alterna la visibilidad del panel A-Frame #panel-baldosa.           */}
-        {/* Al activarse emite 'panel-mostrar'; al desactivarse 'panel-ocultar'. */}
-        {/* La animación es materialize suave: opacity + scale con easeOutCubic. */}
-        {arListo && (
-          <button
-            onClick={togglePanel}
-            style={{
-              position: 'absolute',
-              bottom: '5rem',
-              right: '1rem',
-              zIndex: 200,
-              width: '3.2rem',
-              height: '3.2rem',
-              background: panelVisible
-                ? 'rgba(37, 99, 235, 0.85)'
-                : 'rgba(10, 18, 28, 0.82)',
-              color: 'white',
-              border: panelVisible
-                ? '1px solid rgba(96, 165, 250, 0.6)'
-                : '1px solid rgba(255,255,255,0.22)',
-              borderRadius: '50%',
-              fontSize: '1.3rem',
-              cursor: 'pointer',
-              backdropFilter: 'blur(8px)',
-              touchAction: 'manipulation',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'background 0.25s, border 0.25s, transform 0.1s',
-              transform: 'scale(1)',
-            }}
-            title={panelVisible ? 'Ocultar información' : 'Ver información de la baldosa'}
-          >
-            ℹ️
           </button>
         )}
 

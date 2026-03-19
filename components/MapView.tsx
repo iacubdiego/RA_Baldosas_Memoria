@@ -81,17 +81,38 @@ export default function MapView({ initialLocation }:MapViewProps) {
   const [destino,setDestino]=useState<BaldosaCercana|null>(null)
   const [detalle,setDetalle]=useState<Pin|BaldosaCercana|null>(null)
   const [loadingDetalle,setLoadingDetalle]=useState(false)
+  const recorridoAutoRef = useRef(false)
+  const [distanciaDestino,setDistanciaDestino]=useState<number|null>(null)
   const [ruta,setRuta]=useState<[number,number][]>([])
   const [loadingRuta,setLoadingRuta]=useState(false)
   const [pidiendo,setPidiendo]=useState(false)
 
   useEffect(()=>{
     if(!navigator.geolocation){setLoadingLocation(false);return}
-    navigator.geolocation.getCurrentPosition(
-      pos=>{setUserLocation({lat:pos.coords.latitude,lng:pos.coords.longitude});setLoadingLocation(false)},
-      ()=>setLoadingLocation(false),
-      {enableHighAccuracy:true,timeout:10000}
-    )
+    // Chequear estado del permiso antes de pedir — no interrumpir al usuario si ya lo dio
+    const obtenerUbicacion=()=>{
+      navigator.geolocation.getCurrentPosition(
+        pos=>{setUserLocation({lat:pos.coords.latitude,lng:pos.coords.longitude});setLoadingLocation(false)},
+        ()=>setLoadingLocation(false),
+        {enableHighAccuracy:true,timeout:10000}
+      )
+    }
+    if(navigator.permissions){
+      navigator.permissions.query({name:'geolocation'}).then(result=>{
+        if(result.state==='granted'){
+          // Permiso ya otorgado — obtener sin preguntar
+          obtenerUbicacion()
+        } else {
+          // 'prompt' o 'denied' — no forzar, el usuario puede activarlo desde el mapa
+          setLoadingLocation(false)
+        }
+      }).catch(()=>{
+        // API de permisos no disponible — comportamiento anterior
+        obtenerUbicacion()
+      })
+    } else {
+      obtenerUbicacion()
+    }
   },[])
 
   useEffect(()=>{
@@ -159,10 +180,32 @@ export default function MapView({ initialLocation }:MapViewProps) {
   }
 
   const iniciarRecorrido=(b:BaldosaCercana)=>{
-    if(destino?.id===b.id){ setDestino(null); setRuta([]); return }
+    if(destino?.id===b.id){ setDestino(null); setRuta([]); setDistanciaDestino(null); return }
     setDestino(b); setRuta([]); setPanelAbierto(false)
-    if(userLocation) fetchRutaOSRM(userLocation,{lat:b.lat,lng:b.lng})
+    if(userLocation){
+      setDistanciaDestino(calcularDistancia(userLocation.lat,userLocation.lng,b.lat,b.lng))
+      fetchRutaOSRM(userLocation,{lat:b.lat,lng:b.lng})
+    }
   }
+
+  // Recorrido automático a la baldosa más cercana (solo la primera vez que se tienen ubicación + pins)
+  useEffect(()=>{
+    if(recorridoAutoRef.current||!userLocation||pins.length===0)return
+    recorridoAutoRef.current=true
+    let minDist=Infinity, masCercana:Pin|null=null
+    for(const p of pins){
+      const d=calcularDistancia(userLocation.lat,userLocation.lng,p.lat,p.lng)
+      if(d<minDist){minDist=d;masCercana=p}
+    }
+    if(masCercana) iniciarRecorrido({...masCercana,mensajeAR:'',distancia:minDist})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[userLocation,pins])
+
+  // Actualizar distancia al destino cuando cambia la ubicación del usuario
+  useEffect(()=>{
+    if(!userLocation||!destino)return
+    setDistanciaDestino(calcularDistancia(userLocation.lat,userLocation.lng,destino.lat,destino.lng))
+  },[userLocation,destino])
 
 
 
@@ -224,12 +267,48 @@ export default function MapView({ initialLocation }:MapViewProps) {
 
       {/* Banner recorrido activo */}
       {destino&&(
-        <div style={{position:'absolute',top:'48px',left:0,right:0,zIndex:400,background:'#2563eb',color:'white',padding:'8px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',fontSize:'0.85rem',fontWeight:500}}>
-          <span>→ {destino.nombre}{destino.distancia?` · ${formatearDistancia(destino.distancia)}`:''}</span>
-          <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
-            {loadingRuta&&<span style={{fontSize:'0.75rem',opacity:0.8}}>Calculando…</span>}
-            <button onClick={()=>{setDestino(null);setRuta([])}} style={{background:'transparent',border:'none',color:'rgba(255,255,255,0.7)',fontSize:'1.1rem',cursor:'pointer'}}>✕</button>
+        <div style={{position:'absolute',top:'48px',left:0,right:0,zIndex:400}}>
+          {/* Fila de info del recorrido */}
+          <div style={{background:'#2563eb',color:'white',padding:'8px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',fontSize:'0.85rem',fontWeight:500}}>
+            <span>→ {destino.nombre}{distanciaDestino!==null?` · ${formatearDistancia(distanciaDestino)}`:''}</span>
+            <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
+              {loadingRuta&&<span style={{fontSize:'0.75rem',opacity:0.8}}>Calculando…</span>}
+              <button onClick={()=>{setDestino(null);setRuta([]);setDistanciaDestino(null)}} style={{background:'transparent',border:'none',color:'rgba(255,255,255,0.7)',fontSize:'1.1rem',cursor:'pointer'}}>✕</button>
+            </div>
           </div>
+          {/* Botón escanear — aparece solo cuando llegás (≤ 30m) */}
+          {distanciaDestino!==null&&distanciaDestino<=30&&(
+            <div style={{background:'#1d4ed8',padding:'10px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px'}}>
+              <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                <span style={{fontSize:'1.2rem'}}>📍</span>
+                <div>
+                  <p style={{color:'white',fontWeight:700,fontSize:'0.9rem',margin:0}}>¡Llegaste!</p>
+                  <p style={{color:'rgba(255,255,255,0.75)',fontSize:'0.75rem',margin:0}}>Estás a {Math.round(distanciaDestino)} m de la baldosa</p>
+                </div>
+              </div>
+              <a
+                href="/scanner"
+                style={{
+                  background:'white',
+                  color:'#1d4ed8',
+                  border:'none',
+                  borderRadius:'10px',
+                  padding:'10px 16px',
+                  fontSize:'0.9rem',
+                  fontWeight:700,
+                  cursor:'pointer',
+                  textDecoration:'none',
+                  whiteSpace:'nowrap',
+                  display:'flex',
+                  alignItems:'center',
+                  gap:'6px',
+                  flexShrink:0,
+                }}
+              >
+                📸 Escanear
+              </a>
+            </div>
+          )}
         </div>
       )}
 
