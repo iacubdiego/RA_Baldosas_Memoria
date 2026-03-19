@@ -19,27 +19,28 @@ const baldosaIcon = new L.Icon({
   popupAnchor: [0, -40],
 })
 
+// Destino: mismo ícono del pañuelo/flores que las baldosas normales
 const destinoIcon = new L.Icon({
-  iconUrl: 'data:image/svg+xml;base64,' + btoa(`
-    <svg width="36" height="44" viewBox="0 0 36 44" xmlns="http://www.w3.org/2000/svg">
-      <path d="M18 0C8.059 0 0 8.059 0 18c0 13.5 18 26 18 26s18-12.5 18-26C36 8.059 27.941 0 18 0z" fill="#dc2626"/>
-      <circle cx="18" cy="18" r="9" fill="white"/>
-      <circle cx="18" cy="18" r="4.5" fill="#dc2626"/>
-    </svg>
-  `),
-  iconSize: [36, 44], iconAnchor: [18, 44], popupAnchor: [0, -44],
+  iconUrl: '/images/logo_flores.png',
+  iconSize: [38, 48],
+  iconAnchor: [19, 48],
+  popupAnchor: [0, -48],
 })
 
+// Usuario: ícono de teléfono celular
 const userIcon = new L.Icon({
   iconUrl: 'data:image/svg+xml;base64,' + btoa(`
-    <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="12" cy="12" r="10" fill="#22c55e" stroke="white" stroke-width="3"/>
+    <svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="14" cy="14" r="13" fill="#1d4ed8" stroke="white" stroke-width="2.5"/>
+      <rect x="10" y="7" width="8" height="14" rx="1.5" fill="white"/>
+      <rect x="11.5" y="8.5" width="5" height="9" rx="0.5" fill="#1d4ed8"/>
+      <circle cx="14" cy="19.5" r="0.9" fill="white"/>
     </svg>
   `),
-  iconSize: [24, 24], iconAnchor: [12, 12],
+  iconSize: [28, 28], iconAnchor: [14, 14],
 })
 
-const RADIO_MAXIMO   = 100
+const RADIO_MAXIMO   = 1000
 const LIMIT_CERCANAS = 20
 
 interface Pin { id:string; codigo:string; nombre:string; direccion:string; barrio:string; lat:number; lng:number; vecesEscaneada?:number }
@@ -89,7 +90,6 @@ export default function MapView({ initialLocation }:MapViewProps) {
 
   useEffect(()=>{
     if(!navigator.geolocation){setLoadingLocation(false);return}
-    // Chequear estado del permiso antes de pedir — no interrumpir al usuario si ya lo dio
     const obtenerUbicacion=()=>{
       navigator.geolocation.getCurrentPosition(
         pos=>{setUserLocation({lat:pos.coords.latitude,lng:pos.coords.longitude});setLoadingLocation(false)},
@@ -99,17 +99,15 @@ export default function MapView({ initialLocation }:MapViewProps) {
     }
     if(navigator.permissions){
       navigator.permissions.query({name:'geolocation'}).then(result=>{
-        if(result.state==='granted'){
-          // Permiso ya otorgado — obtener sin preguntar
-          obtenerUbicacion()
-        } else {
-          // 'prompt' o 'denied' — no forzar, el usuario puede activarlo desde el mapa
+        if(result.state==='denied'){
+          // Solo omitir si ya fue explícitamente denegado
           setLoadingLocation(false)
+        } else {
+          // 'granted' o 'prompt' — llamar getCurrentPosition
+          // En 'granted' devuelve inmediato; en 'prompt' abre el diálogo nativo
+          obtenerUbicacion()
         }
-      }).catch(()=>{
-        // API de permisos no disponible — comportamiento anterior
-        obtenerUbicacion()
-      })
+      }).catch(()=>obtenerUbicacion())
     } else {
       obtenerUbicacion()
     }
@@ -218,24 +216,12 @@ export default function MapView({ initialLocation }:MapViewProps) {
         <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/>
         {ruta.length>1&&<Polyline positions={ruta} pathOptions={{color:'#2563eb',weight:5,opacity:0.9}}/>}
         {userLocation&&<Marker position={[userLocation.lat,userLocation.lng]} icon={userIcon}><Popup><div style={{fontFamily:'sans-serif',textAlign:'center'}}><strong>Tu ubicación</strong></div></Popup></Marker>}
-        {destino&&(
-          <Marker position={[destino.lat,destino.lng]} icon={destinoIcon}>
-            <Popup>
-              <div style={{fontFamily:'sans-serif',minWidth:'180px'}}>
-                <p style={{fontWeight:700,color:'#1a2a3a',margin:'0 0 4px'}}>{destino.nombre}</p>
-                {destino.direccion&&<p style={{fontSize:'0.82rem',color:'#4a6b7c',margin:'0 0 8px'}}>{destino.direccion}</p>}
-                {loadingRuta&&<p style={{fontSize:'0.78rem',color:'#6b7280',margin:'0 0 6px',textAlign:'center'}}>Calculando ruta…</p>}
-                <button onClick={()=>{setDestino(null);setRuta([])}} style={{width:'100%',padding:'6px',background:'#f3f4f6',color:'#6b7280',border:'none',borderRadius:'6px',fontSize:'0.78rem',cursor:'pointer'}}>Cancelar recorrido</button>
-              </div>
-            </Popup>
-          </Marker>
-        )}
         {pins.map(pin=>{
-          if(destino?.id===pin.id)return null
           const dist=userLocation?calcularDistancia(userLocation.lat,userLocation.lng,pin.lat,pin.lng):null
           const cerca=dist!==null&&dist<=RADIO_MAXIMO
+          const esDestino=destino?.id===pin.id
           return(
-            <Marker key={pin.id} position={[pin.lat,pin.lng]} icon={baldosaIcon}>
+            <Marker key={pin.id} position={[pin.lat,pin.lng]} icon={esDestino?destinoIcon:baldosaIcon}>
               <Popup>
                 <div style={{fontFamily:'sans-serif',minWidth:'200px',maxWidth:'240px'}}>
                   <h3 style={{fontSize:'0.95rem',color:'#1a2a3a',margin:'0 0 4px'}}>{pin.nombre}</h3>
@@ -245,10 +231,33 @@ export default function MapView({ initialLocation }:MapViewProps) {
                   <div style={{display:'flex',gap:'6px',marginTop:'6px'}}>
                     <button onClick={()=>verDetalle(pin.id,pin)} style={{flex:1,padding:'7px',background:'#2563eb',color:'white',border:'none',borderRadius:'6px',fontSize:'0.82rem',fontWeight:600,cursor:'pointer'}}>Ver detalle</button>
                     {userLocation
-                      ?<button onClick={()=>iniciarRecorrido({...pin,mensajeAR:''})} style={{flex:1,padding:'7px',background:'#f0f4f8',color:'#1a2a3a',border:'1px solid #e5e7eb',borderRadius:'6px',fontSize:'0.82rem',fontWeight:600,cursor:'pointer'}}>Ir →</button>
+                      ? esDestino
+                        ? <button onClick={()=>{setDestino(null);setRuta([]);setDistanciaDestino(null)}} style={{flex:1,padding:'7px',background:'#fee2e2',color:'#dc2626',border:'1px solid #fecaca',borderRadius:'6px',fontSize:'0.78rem',fontWeight:600,cursor:'pointer'}}>Ir a otra</button>
+                        : <button onClick={()=>iniciarRecorrido({...pin,mensajeAR:''})} style={{flex:1,padding:'7px',background:'#f0f4f8',color:'#1a2a3a',border:'1px solid #e5e7eb',borderRadius:'6px',fontSize:'0.82rem',fontWeight:600,cursor:'pointer'}}>Ir →</button>
                       :<button onMouseDown={e=>{e.stopPropagation();(window as any).__mapPedirUbicacion?.()}} style={{flex:1,padding:'7px',background:'#1a2a3a',color:'white',border:'none',borderRadius:'6px',fontSize:'0.75rem',fontWeight:600,cursor:'pointer'}}>Activar GPS</button>
                     }
                   </div>
+                  {/* Botón escanear en popup — activo solo si estás cerca */}
+                  <a
+                    href={cerca ? '/scanner' : undefined}
+                    onClick={cerca ? undefined : e=>e.preventDefault()}
+                    style={{
+                      display:'block',
+                      marginTop:'6px',
+                      padding:'7px',
+                      background:cerca?'#1d4ed8':'#e5e7eb',
+                      color:cerca?'white':'#9ca3af',
+                      borderRadius:'6px',
+                      fontSize:'0.82rem',
+                      fontWeight:600,
+                      textAlign:'center',
+                      textDecoration:'none',
+                      cursor:cerca?'pointer':'not-allowed',
+                      opacity:cerca?1:0.7,
+                    }}
+                  >
+                    📸 {cerca?'Escanear baldosa':'Acercate para escanear'}
+                  </a>
                 </div>
               </Popup>
             </Marker>
@@ -334,6 +343,41 @@ export default function MapView({ initialLocation }:MapViewProps) {
           Ver baldosas cercanas
         </button>
       )}
+
+      {/* Botón escanear — fijo en esquina inferior derecha, activo solo si estás en rango */}
+      {(()=>{
+        const enRango = distanciaDestino !== null && distanciaDestino <= RADIO_MAXIMO
+        return (
+          <a
+            href={enRango ? '/scanner' : undefined}
+            onClick={enRango ? undefined : e => e.preventDefault()}
+            style={{
+              position: 'absolute',
+              bottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.2rem)',
+              right: '1rem',
+              zIndex: 401,
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              background: enRango ? '#1d4ed8' : '#9ca3af',
+              color: 'white',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.6rem',
+              boxShadow: enRango ? '0 4px 16px rgba(29,78,216,0.5)' : '0 2px 8px rgba(0,0,0,0.2)',
+              textDecoration: 'none',
+              cursor: enRango ? 'pointer' : 'not-allowed',
+              transition: 'background 0.3s, box-shadow 0.3s',
+              border: enRango ? '2px solid rgba(255,255,255,0.3)' : '2px solid rgba(255,255,255,0.15)',
+              opacity: enRango ? 1 : 0.65,
+            }}
+            title={enRango ? 'Escanear baldosa' : `Acercate a una baldosa para escanear (estás a ${distanciaDestino !== null ? formatearDistancia(distanciaDestino) : '…'})`}
+          >
+            📸
+          </a>
+        )
+      })()}
 
       {/* Panel inferior */}
       {panelAbierto&&(

@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 
 export default function FooterWrapper() {
   const pathname = usePathname()
-  const sinFooter = pathname.startsWith('/scanner')
+  const sinFooter = pathname.startsWith('/scanner') || pathname.startsWith('/mapa')
   if (sinFooter) return null
 
   return (

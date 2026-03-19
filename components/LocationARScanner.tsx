@@ -125,7 +125,7 @@ export default function LocationARScanner() {
         .letra-hud-ar {
           display: inline-block;
           font-family: 'Oswald', 'Impact', 'Arial Black', sans-serif;
-          font-size: clamp(1.5rem, 5vw, 2rem);
+          font-size: clamp(1.8rem, 7vw, 2.4rem);
           font-weight: 700;
           text-transform: uppercase;
           color: transparent;
@@ -607,7 +607,13 @@ export default function LocationARScanner() {
           { x:  2,  z: -14 },
         ]
 
+        // Máximo de pañuelos congelados simultáneos en escena
+        const MAX_CONGELADOS = 5
         let spotActual = 0
+        let spotsUsados: number[] = [0]
+        let clonesCreados = 0
+
+        const escena = document.getElementById('escena-ar') as any
 
         const animarEnSpot = (idx: number, evento: string) => {
           const { x, z } = SPOTS[idx]
@@ -621,17 +627,80 @@ export default function LocationARScanner() {
 
         const vidEl = document.getElementById('panuelo-vid') as HTMLVideoElement | null
 
+        // Último frame válido del video — se actualiza en timeupdate
+        let ultimoFrameUrl: string | null = null
+
+        const congelarPanueloActual = () => {
+          if (!escena || !panuelo || !ultimoFrameUrl) return
+
+          if (clonesCreados >= MAX_CONGELADOS) {
+            const primero = escena.querySelector('[data-clon-panuelo]') as any
+            if (primero) primero.parentNode?.removeChild(primero)
+            clonesCreados--
+          }
+
+          const pos   = panuelo.getAttribute('position') as any
+          const scale = panuelo.getAttribute('scale')    as any
+          if (!pos || !scale) return
+
+          const sx = parseFloat(scale.x ?? '1.8')
+          const sy = parseFloat(scale.y ?? '1.8')
+          const w3 = (3.5 * sx).toFixed(2)
+          const h3 = (3.0 * sy).toFixed(2)
+
+          const clon = document.createElement('a-image') as any
+          clon.setAttribute('data-clon-panuelo', '')
+          clon.setAttribute('src', ultimoFrameUrl)
+          clon.setAttribute('width',  w3)
+          clon.setAttribute('height', h3)
+          clon.setAttribute('position', `${parseFloat(pos.x).toFixed(2)} ${parseFloat(pos.y).toFixed(2)} ${parseFloat(pos.z).toFixed(2)}`)
+          clon.setAttribute('material', 'transparent: true; alphaTest: 0.01; side: double; depthTest: false; depthWrite: false')
+          escena.appendChild(clon)
+          clonesCreados++
+        }
+
         const onEnded = () => {
+          // Congelar el pañuelo actual antes de moverlo
+          congelarPanueloActual()
+          // Elegir spot diferente al actual y a los recientes
           let siguiente: number
+          let intentos = 0
           do {
             siguiente = Math.floor(Math.random() * SPOTS.length)
-          } while (siguiente === spotActual)
+            intentos++
+          } while (spotsUsados.includes(siguiente) && intentos < 20)
           spotActual = siguiente
+          spotsUsados.push(siguiente)
+          if (spotsUsados.length > 3) spotsUsados.shift()
           animarEnSpot(siguiente, 'siguiente-entrada')
           vidEl?.play()
         }
 
         vidEl?.addEventListener('ended', onEnded)
+
+        // Capturar el frame al 40% de la duración del video —
+        // momento en que el pañuelo está completamente desplegado con flores
+        // Capturamos una sola vez por reproducción para no generar canvas en cada tick
+        let frameCapturadoEstaReproduccion = false
+        const MOMENTO_CAPTURA = 0.40 // 40% de la duración
+
+        const capturarFrame = () => {
+          if (!vidEl || vidEl.readyState < 2 || frameCapturadoEstaReproduccion) return
+          if (!vidEl.duration || vidEl.currentTime < vidEl.duration * MOMENTO_CAPTURA) return
+          frameCapturadoEstaReproduccion = true
+          const w = vidEl.videoWidth  || 640
+          const h = vidEl.videoHeight || 480
+          const c = document.createElement('canvas')
+          c.width = w; c.height = h
+          const cx = c.getContext('2d')
+          if (!cx) return
+          try { cx.drawImage(vidEl, 0, 0, w, h); ultimoFrameUrl = c.toDataURL('image/png') }
+          catch { frameCapturadoEstaReproduccion = false }
+        }
+        vidEl?.addEventListener('timeupdate', capturarFrame)
+
+        // Resetear el flag al inicio de cada nueva reproducción
+        vidEl?.addEventListener('play', () => { frameCapturadoEstaReproduccion = false })
 
         const iniciarPrimera = () => {
           animarEnSpot(0, 'escena-lista')
@@ -695,9 +764,9 @@ export default function LocationARScanner() {
     if (!hudListo || !baldosaActiva) return
 
     const COLORES_SUB = [
-      '#ff1a1a','#ff4400','#ffcc00',
-      '#00dd44','#0088ff','#cc00ff',
-      '#ff0066','#00ccff','#ff6600',
+      '#fca5a5','#fdba74','#fde68a',
+      '#86efac','#7dd3fc','#c4b5fd',
+      '#f9a8d4','#6ee7b7','#a5b4fc',
     ]
     const DELAY_TITULO   = 280
     const DELAY_CONSIGNA = 190
@@ -1161,7 +1230,8 @@ export default function LocationARScanner() {
             alignItems: 'center',
             gap: '6px',
             pointerEvents: 'none',
-            padding: '0 1rem',
+            padding: '0.75rem 1rem 0.85rem',
+            background: 'linear-gradient(180deg, rgba(0,0,0,0.52) 0%, rgba(0,0,0,0.28) 80%, transparent 100%)',
           }}>
             <div
               id="hud-titulo-wrap"
@@ -1178,7 +1248,7 @@ export default function LocationARScanner() {
               style={{
                 width: '40px',
                 height: '1px',
-                background: 'rgba(255,255,255,0.25)',
+                background: 'rgba(255,255,255,0.3)',
                 opacity: 0,
                 margin: '2px auto',
               }}
@@ -1188,7 +1258,7 @@ export default function LocationARScanner() {
               className="consigna-hud-ar"
               style={{
                 fontFamily: "'Oswald', 'Impact', 'Arial Black', sans-serif",
-                fontSize: '0.85rem',
+                fontSize: 'clamp(0.85rem, 3.2vw, 1.05rem)',
                 fontWeight: 600,
                 letterSpacing: '0.22em',
                 textTransform: 'uppercase',
