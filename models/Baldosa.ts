@@ -12,8 +12,7 @@ export interface IBaldosa {
   };
   direccion?: string;
   barrio?: string;
-  imagenUrl?: string;      // Imagen para cards/listados
-  fotoUrl?: string;         // NUEVO: Foto para el portaretrato AR
+  fotosUrls?: string[];    // Fotos de Memoria Abierta — [0] es la imagen principal
   audioUrl?: string;
   mindFileUrl?: string;
   clusterId?: string;
@@ -27,19 +26,19 @@ export interface IBaldosa {
 }
 
 const baldosaSchema = new mongoose.Schema<IBaldosa>({
-  codigo: { 
-    type: String, 
-    required: true, 
+  codigo: {
+    type: String,
+    required: true,
     unique: true,
-    index: true 
+    index: true
   },
-  nombre: { 
-    type: String, 
-    required: true 
+  nombre: {
+    type: String,
+    required: true
   },
   descripcion: String,
-  categoria: { 
-    type: String, 
+  categoria: {
+    type: String,
     required: true,
     enum: ['artista', 'politico', 'historico', 'deportista', 'cultural', 'otro']
   },
@@ -56,27 +55,26 @@ const baldosaSchema = new mongoose.Schema<IBaldosa>({
   },
   direccion: String,
   barrio: String,
-  imagenUrl: String,       // Imagen para cards/listados
-  fotoUrl: String,         // NUEVO: Foto para portaretrato AR
-  audioUrl: String,
+  fotosUrls:   [String],
+  audioUrl:    String,
   mindFileUrl: String,
-  clusterId: String,
+  clusterId:   String,
   targetIndex: Number,
-  mensajeAR: { 
-    type: String, 
-    required: true 
+  mensajeAR: {
+    type: String,
+    required: true
   },
   infoExtendida: String,
-  vecesEscaneada: { 
-    type: Number, 
-    default: 0 
+  vecesEscaneada: {
+    type: Number,
+    default: 0
   },
-  activo: { 
-    type: Boolean, 
-    default: true 
+  activo: {
+    type: Boolean,
+    default: true
   }
-}, { 
-  timestamps: true 
+}, {
+  timestamps: true
 });
 
 baldosaSchema.index({ ubicacion: '2dsphere' });

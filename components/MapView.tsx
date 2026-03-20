@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -43,8 +43,8 @@ const userIcon = new L.Icon({
 const RADIO_MAXIMO   = 1000
 const LIMIT_CERCANAS = 20
 
-interface Pin { id:string; codigo:string; nombre:string; direccion:string; barrio:string; lat:number; lng:number; vecesEscaneada?:number }
-interface BaldosaCercana { id:string; codigo:string; nombre:string; lat:number; lng:number; direccion:string; barrio:string; mensajeAR:string; distancia?:number; vecesEscaneada?:number }
+interface Pin { id:string; codigo:string; nombre:string; direccion:string; barrio:string; lat:number; lng:number; vecesEscaneada?:number; fotosUrls?:string[] }
+interface BaldosaCercana { id:string; codigo:string; nombre:string; lat:number; lng:number; direccion:string; barrio:string; mensajeAR:string; distancia?:number; vecesEscaneada?:number; fotosUrls?:string[] }
 interface MapViewProps { initialLocation: { lat:number; lng:number } }
 
 function calcularDistancia(lat1:number,lng1:number,lat2:number,lng2:number):number {
@@ -68,6 +68,35 @@ function RouteController({userLocation,destino}:{userLocation:{lat:number;lng:nu
   const map=useMap()
   useEffect(()=>{ if(destino&&userLocation){ map.fitBounds(L.latLngBounds([[userLocation.lat,userLocation.lng],[destino.lat,destino.lng]]),{padding:[80,80],maxZoom:17}) } },[destino,userLocation,map])
   return null
+}
+
+// ─── Slider de fotos ─────────────────────────────────────────────────────────
+
+function FotosSlider({ fotos, nombre }: { fotos: string[]; nombre: string }) {
+  const [idx, setIdx] = React.useState(0)
+  if (fotos.length === 0) return null
+  const prev = () => setIdx(i => (i - 1 + fotos.length) % fotos.length)
+  const next = () => setIdx(i => (i + 1) % fotos.length)
+  return (
+    <div style={{position:'relative',marginBottom:'16px',borderRadius:'10px',overflow:'hidden',background:'#000'}}>
+      <img
+        src={fotos[idx]}
+        alt={`${nombre} — foto ${idx + 1}`}
+        style={{width:'100%',maxHeight:'240px',objectFit:'cover',display:'block'}}
+      />
+      {fotos.length > 1 && (
+        <>
+          <button onClick={prev} style={{position:'absolute',left:'8px',top:'50%',transform:'translateY(-50%)',background:'rgba(0,0,0,0.45)',color:'white',border:'none',borderRadius:'50%',width:'32px',height:'32px',fontSize:'1rem',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>‹</button>
+          <button onClick={next} style={{position:'absolute',right:'8px',top:'50%',transform:'translateY(-50%)',background:'rgba(0,0,0,0.45)',color:'white',border:'none',borderRadius:'50%',width:'32px',height:'32px',fontSize:'1rem',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>›</button>
+          <div style={{position:'absolute',bottom:'8px',left:0,right:0,display:'flex',justifyContent:'center',gap:'5px'}}>
+            {fotos.map((_,i) => (
+              <button key={i} onClick={()=>setIdx(i)} style={{width:'6px',height:'6px',borderRadius:'50%',border:'none',background:i===idx?'white':'rgba(255,255,255,0.45)',padding:0,cursor:'pointer'}}/>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
 }
 
 export default function MapView({ initialLocation }:MapViewProps) {
@@ -227,7 +256,7 @@ export default function MapView({ initialLocation }:MapViewProps) {
                   <h3 style={{fontSize:'0.95rem',color:'#1a2a3a',margin:'0 0 4px'}}>{pin.nombre}</h3>
                   {pin.direccion&&<p style={{fontSize:'0.78rem',color:'#4a6b7c',margin:'0 0 4px'}}>{pin.direccion}</p>}
                   {dist!==null&&<p style={{fontSize:'0.78rem',fontWeight:600,color:cerca?'#166534':'#4b5563',margin:'0 0 4px'}}>{cerca?'✓ Estás cerca':`Estás a ${formatearDistancia(dist)}`}</p>}
-                  {pin.vecesEscaneada!==undefined&&pin.vecesEscaneada>0&&<p style={{fontSize:'0.72rem',color:'#6b7280',margin:'0 0 8px'}}>{pin.vecesEscaneada.toLocaleString('es-AR')} {pin.vecesEscaneada===1?'visita':'visitas'}</p>}
+                  {pin.vecesEscaneada!==undefined&&pin.vecesEscaneada>0&&<p style={{fontSize:'0.82rem',fontWeight:600,color:'#2563eb',margin:'0 0 8px'}}>👁 {pin.vecesEscaneada.toLocaleString('es-AR')} {pin.vecesEscaneada===1?'visita':'visitas'}</p>}
                   <div style={{display:'flex',gap:'6px',marginTop:'6px'}}>
                     <button onClick={()=>verDetalle(pin.id,pin)} style={{flex:1,padding:'7px',background:'#2563eb',color:'white',border:'none',borderRadius:'6px',fontSize:'0.82rem',fontWeight:600,cursor:'pointer'}}>Ver detalle</button>
                     {userLocation
@@ -467,9 +496,9 @@ export default function MapView({ initialLocation }:MapViewProps) {
                 </div>
               ):(
                 <>
-                  {/* Foto */}
-                  {('fotoUrl' in detalle && detalle.fotoUrl)&&(
-                    <img src={detalle.fotoUrl as string} alt={'nombre' in detalle ? detalle.nombre : ''} style={{width:'100%',borderRadius:'10px',marginBottom:'16px',objectFit:'cover',maxHeight:'200px'}}/>
+                  {/* Slider de fotos */}
+                  {('fotosUrls' in detalle && (detalle as any).fotosUrls?.length > 0)&&(
+                    <FotosSlider fotos={(detalle as any).fotosUrls} nombre={'nombre' in detalle ? detalle.nombre : ''} />
                   )}
 
                   {/* Descripción */}
@@ -478,26 +507,30 @@ export default function MapView({ initialLocation }:MapViewProps) {
                       {(detalle as any).descripcion}
                     </p>
                   )}
-                  {/* Info extendida */}
+                  {/* Info extendida — sin líneas de "Fecha registrada:" */}
                   {('infoExtendida' in detalle && (detalle as any).infoExtendida)&&(
                     <div style={{background:'#f8fafc',borderRadius:'10px',padding:'12px 14px',marginBottom:'14px'}}>
                       <p style={{fontSize:'0.88rem',color:'#4a6b7c',lineHeight:1.65,margin:0}}>
-                        {(detalle as any).infoExtendida}
+                        {(detalle as any).infoExtendida
+                          .split('\n')
+                          .filter((l:string)=>!l.trim().startsWith('Fecha registrada'))
+                          .join('\n')}
                       </p>
-                    </div>
-                  )}
-                  {/* Mensaje AR */}
-                  {('mensajeAR' in detalle && detalle.mensajeAR)&&(
-                    <div style={{borderTop:'1px solid #f0f0f0',paddingTop:'12px',marginTop:'4px'}}>
-                      <p style={{fontSize:'0.8rem',color:'#9ca3af',margin:'0 0 4px',textTransform:'uppercase',letterSpacing:'0.05em'}}>Mensaje</p>
-                      <p style={{fontSize:'0.95rem',color:'#1a2a3a',fontWeight:600,margin:0}}>{detalle.mensajeAR}</p>
                     </div>
                   )}
                   {/* Veces escaneada */}
                   {('vecesEscaneada' in detalle && (detalle as any).vecesEscaneada > 0)&&(
-                    <p style={{fontSize:'0.82rem',color:'#60a5fa',marginTop:'10px',marginBottom:0}}>
-                      👁 Vista {(detalle as any).vecesEscaneada.toLocaleString('es-AR')} {(detalle as any).vecesEscaneada === 1 ? 'vez' : 'veces'} en AR
-                    </p>
+                    <div style={{display:'flex',alignItems:'center',gap:'8px',marginTop:'12px',marginBottom:0}}>
+                      <span style={{fontSize:'1.4rem'}}>👁</span>
+                      <div>
+                        <span style={{fontSize:'1.3rem',fontWeight:700,color:'#2563eb',lineHeight:1}}>
+                          {(detalle as any).vecesEscaneada.toLocaleString('es-AR')}
+                        </span>
+                        <span style={{fontSize:'0.85rem',color:'#60a5fa',marginLeft:'6px'}}>
+                          {(detalle as any).vecesEscaneada === 1 ? 'visita en AR' : 'visitas en AR'}
+                        </span>
+                      </div>
+                    </div>
                   )}
                   {/* Botón recorrido */}
                   {userLocation?(
@@ -511,18 +544,13 @@ export default function MapView({ initialLocation }:MapViewProps) {
                       Cómo llegar
                     </button>
                   ):(
-                    <div style={{marginTop:'16px',padding:'12px 14px',background:'#f8fafc',borderRadius:'12px',border:'1px solid #e5e7eb'}}>
-                      <p style={{fontSize:'0.85rem',color:'#4a6b7c',margin:'0 0 10px',lineHeight:1.5}}>
-                        Activá tu ubicación para obtener indicaciones hacia esta baldosa
-                      </p>
-                      <button
-                        onClick={pedirUbicacion}
-                        disabled={pidiendo}
-                        style={{width:'100%',padding:'10px',background:pidiendo?'#e5e7eb':'#1a2a3a',color:pidiendo?'#9ca3af':'white',border:'none',borderRadius:'8px',fontSize:'0.9rem',fontWeight:600,cursor:pidiendo?'default':'pointer',transition:'all 0.2s'}}
-                      >
-                        {pidiendo?'Obteniendo ubicación…':'Activar ubicación'}
-                      </button>
-                    </div>
+                    <button
+                      onClick={pedirUbicacion}
+                      disabled={pidiendo}
+                      style={{marginTop:'14px',padding:'7px 14px',background:'transparent',color:pidiendo?'#9ca3af':'#4a6b7c',border:'1px solid #e5e7eb',borderRadius:'8px',fontSize:'0.8rem',cursor:pidiendo?'default':'pointer',display:'block'}}
+                    >
+                      {pidiendo?'Obteniendo ubicación…':'Activar ubicación para ir'}
+                    </button>
                   )}
                 </>
               )}
