@@ -27,9 +27,9 @@ export default function ContadorBaldosas() {
 
   return (
     <div style={{
-      margin:    'var(--space-lg) auto var(--space-xl)',
+      margin:    '0 auto',
       textAlign: 'center',
-      padding:   'var(--space-lg) var(--space-md)',
+      padding:   '0.75rem 1.5rem',
       background: 'rgba(37, 99, 235, 0.05)',
       border:    '1px solid rgba(37, 99, 235, 0.15)',
       borderRadius: '16px',
@@ -37,7 +37,7 @@ export default function ContadorBaldosas() {
     }}>
       <div style={{
         fontFamily:    'var(--font-display)',
-        fontSize:      'clamp(2.8rem, 8vw, 4rem)',
+        fontSize:      'clamp(2.4rem, 7vw, 3.2rem)',
         fontWeight:     800,
         color:         'var(--color-primary)',
         lineHeight:     1,

@@ -12,8 +12,7 @@ interface Baldosa {
   descripcion?: string
   mensajeAR: string
   infoExtendida?: string
-  imagenUrl?: string
-  fotoUrl?: string
+  fotosUrls?: string[]  // [0] es la imagen principal
   audioUrl?: string
   lat: number
   lng: number
@@ -392,7 +391,8 @@ export default function LocationARScanner() {
         setTimeout(resolve, 3000)
       })
 
-      const { nombre, mensajeAR, descripcion, direccion, fotoUrl } = baldosaActiva
+      const { nombre, mensajeAR, descripcion, direccion, fotosUrls } = baldosaActiva
+
 
       const nombreSafe  = nombre.replace(/"/g, '&quot;')
       const mensajeSafe = mensajeAR.replace(/"/g, '&quot;')
@@ -432,9 +432,9 @@ export default function LocationARScanner() {
       const Z_BASE  = -12
       const Y_OJOS  = 1.6
 
-      // Asset foto — reservado para uso futuro
-      const assetFoto = fotoUrl
-        ? `<img id="foto-baldosa" src="${fotoUrl}" crossorigin="anonymous">`
+      // Asset foto — primera foto disponible
+      const assetFoto = fotosUrls?.[0]
+        ? `<img id="foto-baldosa" src="${fotosUrls[0]}" crossorigin="anonymous">`
         : ''
 
       wrapper.innerHTML = [
@@ -1148,9 +1148,9 @@ export default function LocationARScanner() {
               )}
             </div>
             <div className="modal-cerca-body" style={{ padding: '1.5rem' }}>
-              {baldosaCercana.fotoUrl && (
+              {baldosaCercana.fotosUrls?.[0] && (
                 <div className="modal-cerca-foto" style={estilos.contenedorFoto}>
-                  <img src={baldosaCercana.fotoUrl} alt={baldosaCercana.nombre} style={estilos.fotoThumbnail} />
+                  <img src={baldosaCercana.fotosUrls[0]} alt={baldosaCercana.nombre} style={estilos.fotoThumbnail} />
                 </div>
               )}
               <h2 className="modal-cerca-nombre" style={estilos.nombreBaldosa}>{baldosaCercana.nombre}</h2>
@@ -1349,10 +1349,10 @@ export default function LocationARScanner() {
         </div>
 
         <div style={{ maxWidth: '500px', margin: '0 auto', padding: '1rem' }}>
-          {baldosaActiva.fotoUrl && (
+          {baldosaActiva.fotosUrls?.[0] && (
             <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
               <img
-                src={baldosaActiva.fotoUrl}
+                src={baldosaActiva.fotosUrls[0]}
                 alt={baldosaActiva.nombre}
                 style={{
                   width: '160px',

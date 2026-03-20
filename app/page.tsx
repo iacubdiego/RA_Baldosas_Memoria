@@ -134,7 +134,7 @@ export default function Home() {
           <div style={{
             display: 'flex',
             justifyContent: 'center',
-            margin: '0 auto var(--space-lg)',
+            margin: '0 auto var(--space-md)',
             opacity: 0,
             animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 2.5s forwards',
           }}>
@@ -190,35 +190,7 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* Contador + Nunca Más lado a lado */}
-          <div style={{
-            display: 'flex',
-            gap: '1rem',
-            justifyContent: 'center',
-            alignItems: 'stretch',
-            margin: '0 auto var(--space-lg)',
-            opacity: 0,
-            animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 3.2s forwards',
-          }}>
-            {/* Contador */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <ContadorBaldosas />
-            </div>
 
-            {/* Memorial Statement */}
-            <div className="banner-box" style={{
-              flex: 1,
-              minWidth: 0,
-              margin: 0,
-            }}>
-              <div className="banner-box-text">
-                Nunca Más
-              </div>
-              <div className="banner-box-label">
-                Memoria, Verdad y Justicia
-              </div>
-            </div>
-          </div>
 
           {/* Título principal */}
           <div style={{
@@ -241,128 +213,61 @@ export default function Home() {
             <p style={{
               fontSize: '1.25rem',
               color: 'var(--color-concrete)',
-              marginBottom: 'var(--space-xl)',
+              marginBottom: 'var(--space-md)',
               maxWidth: '600px',
-              margin: '0 auto var(--space-xl)',
+              margin: '0 auto var(--space-md)',
               lineHeight: 1.8,
             }}>
               Recorre las baldosas que se colocaron en todo el país para mantener viva la memoria y exigir verdad y justicia.
             </p>
           </div>
 
-          {/* Pasos */}
+          {/* Contador */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            opacity: 0,
+            animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 4.25s forwards',
+            marginBottom: 'var(--space-sm)',
+          }}>
+            <ContadorBaldosas />
+          </div>
+
+          {/* Banner */}
           <div style={{
             opacity: 0,
             animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 4.4s forwards',
-            marginTop: 'var(--space-xl)',
-            padding: 'var(--space-lg)',
+            marginTop: 'var(--space-md)',
+            padding: 'var(--space-md) var(--space-lg)',
             borderTop: '1px solid rgba(37, 99, 235, 0.1)',
+            textAlign: 'center',
           }}>
-            <h2 style={{ fontSize: '1.5rem', marginBottom: 'var(--space-lg)', color: 'var(--color-stone)' }}>
-              ¿Cómo funciona?
-            </h2>
-            
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-              gap: 'var(--space-lg)',
-              textAlign: 'left',
-            }}>
-              <div className="hover-lift" style={{
-                padding: 'var(--space-md)',
-                borderRadius: '8px',
-                background: 'rgba(255,255,255,0.5)',
-                transition: 'all var(--transition-base)',
-              }}>
-                <div style={{
-                  width: '50px',
-                  height: '50px',
-                  borderRadius: '50%',
-                  background: 'var(--color-stone)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--color-parchment)',
-                  fontSize: '1.5rem',
-                  fontWeight: 'bold',
-                  marginBottom: 'var(--space-sm)',
-                }}>
-                  1
-                </div>
-                <h3 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-xs)', color: 'var(--color-stone)' }}>
-                  Descubre las Baldosas
-                </h3>
-                <p style={{ color: 'var(--color-dust)', fontSize: '0.95rem', marginBottom: 0 }}>
-                  Explora el mapa y busca las baldosas más cercanas a tu ubicación
-                </p>
-              </div>
-
-              <div className="hover-lift" style={{
-                padding: 'var(--space-md)',
-                borderRadius: '8px',
-                background: 'rgba(255,255,255,0.5)',
-                transition: 'all var(--transition-base)',
-              }}>
-                <div style={{
-                  width: '50px',
-                  height: '50px',
-                  borderRadius: '50%',
-                  background: 'var(--color-stone)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--color-parchment)',
-                  fontSize: '1.5rem',
-                  fontWeight: 'bold',
-                  marginBottom: 'var(--space-sm)',
-                }}>
-                  2
-                </div>
-                <h3 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-xs)', color: 'var(--color-stone)' }}>
-                  Escanea en Realidad Aumentada
-                </h3>
-                <p style={{ color: 'var(--color-dust)', fontSize: '0.95rem', marginBottom: 0 }}>
-                  Usa tu cámara para ver información de la baldosa y encontrar una escena sumando REALIDAD AUMENTADA
-                </p>
-              </div>
-
-              <div className="hover-lift" style={{
-                padding: 'var(--space-md)',
-                borderRadius: '8px',
-                background: 'rgba(255,255,255,0.5)',
-                transition: 'all var(--transition-base)',
-              }}>
-                <div style={{
-                  width: '50px',
-                  height: '50px',
-                  borderRadius: '50%',
-                  background: 'var(--color-stone)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--color-parchment)',
-                  fontSize: '1.5rem',
-                  fontWeight: 'bold',
-                  marginBottom: 'var(--space-sm)',
-                }}>
-                  3
-                </div>
-                <h3 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-xs)', color: 'var(--color-stone)' }}>
-                  Mantén Viva la Memoria
-                </h3>
-                <p style={{ color: 'var(--color-dust)', fontSize: '0.95rem', marginBottom: 0 }}>
-                  Recorre las distintas baldosas y contribuí a mantener viva la memoria de cada persona
-                </p>
-              </div>
-            </div>
+            <img
+              src="images/banner.png"
+              alt="Banner"
+              style={{
+                width: '100%',
+                maxWidth: '720px',
+                height: 'auto',
+                borderRadius: '12px',
+                opacity: 0,
+                animation: 'bannerEntrada 1.1s cubic-bezier(0.25, 1, 0.5, 1) 4.9s forwards',
+              }}
+            />
+            <style>{`
+              @keyframes bannerEntrada {
+                0%   { opacity: 0; transform: translateY(28px) scale(0.97); }
+                100% { opacity: 1; transform: translateY(0)     scale(1);    }
+              }
+            `}</style>
           </div>
 
           {/* ── Colaborá con el mapa ── */}
           <div style={{
             opacity: 0,
             animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 4.7s forwards',
-            marginTop: 'var(--space-xl)',
-            padding: 'var(--space-lg)',
+            marginTop: 'var(--space-md)',
+            padding: 'var(--space-md) var(--space-lg)',
             borderTop: '1px solid rgba(37, 99, 235, 0.1)',
           }}>
             <h2 style={{ fontSize: '1.5rem', marginBottom: 'var(--space-sm)', color: 'var(--color-stone)' }}>
