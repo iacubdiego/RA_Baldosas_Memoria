@@ -11,7 +11,11 @@
  *   fotoUrl
  *
  * Uso:
- *   node scripts/import_csv.js ruta/al/archivo.csv
+ *   node scripts/import_csv.js ruta/al/archivo.csv [--reset]
+ *
+ * Flags:
+ *   --reset   Elimina TODA la colección antes de importar.
+ *             ⚠️  Irreversible. Usá solo si querés reemplazar el listado completo.
  *
  * Salida:
  *   - Inserta registros válidos en MongoDB
@@ -43,9 +47,11 @@ if (!MONGODB_URI) {
   process.exit(1)
 }
 
-const csvPath = process.argv[2]
+const csvPath  = process.argv[2]
+const doReset  = process.argv.includes('--reset')
+
 if (!csvPath) {
-  console.error('❌ Uso: node scripts/import_csv.js ruta/al/archivo.csv')
+  console.error('❌ Uso: node scripts/import_csv.js ruta/al/archivo.csv [--reset]')
   process.exit(1)
 }
 
@@ -166,13 +172,17 @@ function buscarIndice(posibles) {
 }
 
 const IDX = {
-  barrio:    buscarIndice(['barrio']),
-  nombre:    buscarIndice(['apellido y nombre', 'apellido', 'nombre']),
-  fecha:     buscarIndice(['fecha']),
-  direccion: buscarIndice(['dirección', 'direccion', 'lugar']),
-  lat:       buscarIndice(['latitud', 'lat']),
-  lng:       buscarIndice(['longitud', 'lng', 'lon']),
-  fotoUrl:   buscarIndice(['fotourl', 'foto_url', 'foto']),
+  barrio:           buscarIndice(['barrio', 'zona']),
+  nombre:           buscarIndice(['apellido y nombre', 'apellido', 'nombre']),
+  fecha:            buscarIndice(['fecha']),
+  fechaDesaparicion:buscarIndice(['fecha desaparición', 'fecha desaparicion']),
+  fechaColocacion:  buscarIndice(['fecha colocación', 'fecha colocacion']),
+  descripcion:      buscarIndice(['descripción', 'descripcion']),
+  fuente:           buscarIndice(['fuente']),
+  direccion:        buscarIndice(['dirección', 'direccion', 'lugar']),
+  lat:              buscarIndice(['latitud', 'lat']),
+  lng:              buscarIndice(['longitud', 'lng', 'lon']),
+  fotoUrl:          buscarIndice(['fotourl', 'foto_url', 'foto']),
 }
 
 // Verificar columnas obligatorias
@@ -195,13 +205,17 @@ for (let i = 1; i < lineas.length; i++) {
   const filaOriginal = lineas[i]
   const motivos      = []
 
-  const nombre    = IDX.nombre    >= 0 ? limpiar(campos[IDX.nombre])    : ''
-  const barrio    = IDX.barrio    >= 0 ? limpiar(campos[IDX.barrio])    : ''
-  const fecha     = IDX.fecha     >= 0 ? limpiar(campos[IDX.fecha])     : ''
-  const direccion = IDX.direccion >= 0 ? limpiar(campos[IDX.direccion]) : ''
-  const latStr    = IDX.lat       >= 0 ? limpiar(campos[IDX.lat])       : ''
-  const lngStr    = IDX.lng       >= 0 ? limpiar(campos[IDX.lng])       : ''
-  const fotoUrl   = IDX.fotoUrl   >= 0 ? limpiar(campos[IDX.fotoUrl])  : ''
+  const nombre           = IDX.nombre           >= 0 ? limpiar(campos[IDX.nombre])           : ''
+  const barrio           = IDX.barrio           >= 0 ? limpiar(campos[IDX.barrio])           : ''
+  const fecha            = IDX.fecha            >= 0 ? limpiar(campos[IDX.fecha])            : ''
+  const fechaDesaparicion= IDX.fechaDesaparicion>= 0 ? limpiar(campos[IDX.fechaDesaparicion]): fecha
+  const fechaColocacion  = IDX.fechaColocacion  >= 0 ? limpiar(campos[IDX.fechaColocacion])  : ''
+  const descripcionCSV   = IDX.descripcion      >= 0 ? limpiar(campos[IDX.descripcion])      : ''
+  const fuente           = IDX.fuente           >= 0 ? limpiar(campos[IDX.fuente])           : ''
+  const direccion        = IDX.direccion        >= 0 ? limpiar(campos[IDX.direccion])        : ''
+  const latStr           = IDX.lat              >= 0 ? limpiar(campos[IDX.lat])              : ''
+  const lngStr           = IDX.lng              >= 0 ? limpiar(campos[IDX.lng])              : ''
+  const fotoUrl          = IDX.fotoUrl          >= 0 ? limpiar(campos[IDX.fotoUrl])          : ''
 
   // Validar nombre
   if (!nombre) motivos.push('nombre vacío')
@@ -218,7 +232,7 @@ for (let i = 1; i < lineas.length; i++) {
   const baldosa = {
     // codigo se asigna después contra la DB
     nombre,
-    descripcion:  construirDescripcion(nombre, fecha, direccion, barrio),
+    descripcion:  descripcionCSV || construirDescripcion(nombre, fechaDesaparicion, direccion, barrio),
     ubicacion: {
       type:        'Point',
       coordinates: [lng, lat],   // GeoJSON: [longitud, latitud]
@@ -228,7 +242,10 @@ for (let i = 1; i < lineas.length; i++) {
     fotoUrl:      fotoUrl || null,
     imagenUrl:    null,
     mensajeAR:    construirMensajeAR(nombre),
-    infoExtendida: fecha ? `Fecha registrada: ${fecha}.` : '',
+    infoExtendida: fechaDesaparicion ? `Fecha registrada: ${fechaDesaparicion}.` : '',
+    fechaDesaparicion: fechaDesaparicion || null,
+    fechaColocacion:   fechaColocacion   || null,
+    fuente:            fuente            || null,
     vecesEscaneada: 0,
     activo:       true,
     createdAt:    new Date(),
@@ -257,6 +274,14 @@ async function importar() {
 
     const db  = client.db()
     const col = db.collection(COLECCION)
+
+    // ── Reset colección si se pasó el flag --reset ────────────────────────────
+    if (doReset) {
+      const confirmMsg = '⚠️  --reset activo: se eliminará TODA la colección antes de importar.'
+      console.log(confirmMsg)
+      await col.deleteMany({})
+      console.log('🗑️  Colección vaciada.\n')
+    }
 
     // ── Determinar próximo número de código disponible ────────────────────────
     // Busca el código más alto ya existente con patrón BALD-XXXX

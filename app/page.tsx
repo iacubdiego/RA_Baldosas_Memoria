@@ -174,7 +174,7 @@ export default function Home() {
                 lineHeight: 1.25,
                 textAlign: 'center',
               }}>
-                Viví la experiencia al acercarte a una baldosa
+                Intervení los espacios al acercarte a una baldosa
               </span>
               <span style={{
                 fontFamily: 'var(--font-body)',
