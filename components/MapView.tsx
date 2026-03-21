@@ -354,7 +354,7 @@ export default function MapView({ initialLocation }:MapViewProps) {
       {!panelAbierto&&(
         <button onClick={abrirPanel} style={{
           position:'absolute',
-          bottom:'calc(env(safe-area-inset-bottom, 0px) + 5.5rem)',
+          bottom:'calc(env(safe-area-inset-bottom, 0px) + 1.2rem)',
           left:'1rem', right:'1rem',
           zIndex:400,
           background:'#1a2a3a', color:'white', border:'none',
@@ -374,7 +374,7 @@ export default function MapView({ initialLocation }:MapViewProps) {
       )}
 
       {/* Botón escanear — rectangular, mismo estilo que "Ver baldosas cercanas" */}
-      {(()=>{
+      {!panelAbierto&&(()=>{
         const enRango = distanciaDestino !== null && distanciaDestino <= RADIO_MAXIMO
         return (
           <a
@@ -382,7 +382,7 @@ export default function MapView({ initialLocation }:MapViewProps) {
             onClick={enRango ? undefined : e => e.preventDefault()}
             style={{
               position: 'absolute',
-              bottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.2rem)',
+              bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5.5rem)',
               left: '1rem', right: '1rem',
               zIndex: 401,
               background: enRango ? '#1d4ed8' : '#1a2a3a',

@@ -224,25 +224,15 @@ export default function LocationARScanner() {
     fetchBaldosas()
   }, [])
 
-  // ── 2. Verificar permisos al montar — si ya están otorgados, arrancar directo
+  // ── 2. Arrancar GPS al montar ─────────────────────────────────────────────
   useEffect(() => {
     if (!navigator.geolocation) {
       window.location.href = '/mapa'
       return
     }
-    const fallback = setTimeout(() => iniciarGPSRef.current?.(), 1500)
-
-    navigator.geolocation.getCurrentPosition(
-      () => {
-        clearTimeout(fallback)
-        iniciarGPSRef.current?.()
-      },
-      () => {
-        clearTimeout(fallback)
-        iniciarGPSRef.current?.()
-      },
-      { enableHighAccuracy: false, timeout: 1000, maximumAge: 60000 }
-    )
+    // Pequeño delay para que iniciarGPSRef esté asignado
+    const t = setTimeout(() => iniciarGPSRef.current?.(), 100)
+    return () => clearTimeout(t)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
