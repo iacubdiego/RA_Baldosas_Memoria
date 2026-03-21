@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
 import ContadorBaldosas from '@/components/ContadorBaldosas'
@@ -59,6 +59,85 @@ function generarVenecitas(cantidad: number) {
   }
   
   return venecitas;
+}
+
+
+// ─── Banner Slider ────────────────────────────────────────────────────────────
+const BANNERS = [
+  { src: 'images/banner.png',  alt: 'Banner 1' },
+  { src: 'images/banner2.png', alt: 'Banner 2' },
+]
+const INTERVALO_MS = 4500
+const DURACION_FADE = 700
+
+function BannerSlider() {
+  const [actual, setActual]   = useState(0)
+  const [visible, setVisible] = useState(true)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    timerRef.current = setTimeout(() => {
+      // fade out
+      setVisible(false)
+      setTimeout(() => {
+        setActual(i => (i + 1) % BANNERS.length)
+        setVisible(true)
+      }, DURACION_FADE)
+    }, INTERVALO_MS)
+    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+  }, [actual])
+
+  return (
+    <div style={{
+      opacity: 0,
+      animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 4.4s forwards',
+      marginTop: 'var(--space-md)',
+      padding: 'var(--space-md) var(--space-lg)',
+      borderTop: '1px solid rgba(37, 99, 235, 0.1)',
+      textAlign: 'center',
+    }}>
+      <div style={{ position: 'relative', display: 'inline-block', width: '100%', maxWidth: '720px' }}>
+        <img
+          src={BANNERS[actual].src}
+          alt={BANNERS[actual].alt}
+          style={{
+            width: '100%',
+            height: 'auto',
+            borderRadius: '12px',
+            display: 'block',
+            opacity: visible ? 1 : 0,
+            transition: `opacity ${DURACION_FADE}ms ease`,
+          }}
+        />
+        {/* Indicadores */}
+        <div style={{
+          position: 'absolute',
+          bottom: '10px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: '6px',
+        }}>
+          {BANNERS.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => { setVisible(false); setTimeout(() => { setActual(i); setVisible(true) }, DURACION_FADE) }}
+              style={{
+                width:  i === actual ? '18px' : '7px',
+                height: '7px',
+                borderRadius: '999px',
+                background: i === actual ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.45)',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function Home() {
@@ -265,34 +344,8 @@ export default function Home() {
             <ContadorBaldosas />
           </div>
 
-          {/* Banner */}
-          <div style={{
-            opacity: 0,
-            animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 4.4s forwards',
-            marginTop: 'var(--space-md)',
-            padding: 'var(--space-md) var(--space-lg)',
-            borderTop: '1px solid rgba(37, 99, 235, 0.1)',
-            textAlign: 'center',
-          }}>
-            <img
-              src="images/banner.png"
-              alt="Banner"
-              style={{
-                width: '100%',
-                maxWidth: '720px',
-                height: 'auto',
-                borderRadius: '12px',
-                opacity: 0,
-                animation: 'bannerEntrada 1.1s cubic-bezier(0.25, 1, 0.5, 1) 4.9s forwards',
-              }}
-            />
-            <style>{`
-              @keyframes bannerEntrada {
-                0%   { opacity: 0; transform: translateY(28px) scale(0.97); }
-                100% { opacity: 1; transform: translateY(0)     scale(1);    }
-              }
-            `}</style>
-          </div>
+          {/* Banner slider */}
+          <BannerSlider />
 
           {/* ── Colaborá con el mapa ── */}
           <div style={{

@@ -1,0 +1,26 @@
+{
+  "name": "Recorremos Memoria",
+  "short_name": "Recorremos",
+  "description": "Descubrí las baldosas por la memoria cerca tuyo con realidad aumentada",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a2a3a",
+  "theme_color": "#1a2a3a",
+  "icons": [
+    {
+      "src": "/images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "lifestyle"],
+  "lang": "es-AR"
+}
