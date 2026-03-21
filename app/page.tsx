@@ -174,7 +174,7 @@ export default function Home() {
                 lineHeight: 1.25,
                 textAlign: 'center',
               }}>
-                Intervení los espacios al acercarte a una baldosa
+                Entra al mapa y salí a la calle
               </span>
               <span style={{
                 fontFamily: 'var(--font-body)',
@@ -185,7 +185,7 @@ export default function Home() {
                 lineHeight: 1.4,
                 marginTop: '0.15rem',
               }}>
-                Explorá el mapa y encontrá las baldosas más cercanas
+                Encontrá las baldosas más cercanas, escaneá y construí memoria.
               </span>
             </Link>
           </div>
@@ -218,7 +218,7 @@ export default function Home() {
               margin: '0 auto var(--space-md)',
               lineHeight: 1.8,
             }}>
-              Recorre las baldosas que se colocaron en todo el país para mantener viva la memoria y exigir verdad y justicia.
+              Detrás de cada baldosa hay una historia. Proponemos un Guía interactiva para explorar la memoria construida a través de las baldosas por la memoria. Sé parte del recorrido marcando cada baldosa que visitas cuando la escaneas.
             </p>
           </div>
 
