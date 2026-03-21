@@ -6,7 +6,6 @@ export async function GET(request: NextRequest) {
   try {
     await connectDB();
 
-    // ⚠️ Sin .limit() — devuelve todas las baldosas activas
     const baldosas = await Baldosa.find({ activo: true });
 
     const result = baldosas.map(baldosa => {
@@ -20,8 +19,7 @@ export async function GET(request: NextRequest) {
         lng,
         direccion:   baldosa.direccion,
         barrio:      baldosa.barrio,
-        imagenUrl:   baldosa.imagenUrl,
-        fotoUrl:     baldosa.fotoUrl,
+        fotosUrls:   baldosa.fotosUrls ?? [],
         mensajeAR:   baldosa.mensajeAR,
       };
     });

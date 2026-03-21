@@ -9,20 +9,20 @@ export async function GET() {
   try {
     await connectDB()
 
-    // Solo los campos mínimos para renderizar markers en el mapa
     const baldosas = await Baldosa
       .find({ activo: true })
-      .select('_id codigo nombre direccion barrio ubicacion')
+      .select('_id codigo nombre direccion barrio ubicacion vecesEscaneada')
       .lean()
 
     const pins = baldosas.map((b: any) => ({
-      id:       b._id.toString(),
-      codigo:   b.codigo,
-      nombre:   b.nombre,
-      direccion: b.direccion || '',
-      barrio:   b.barrio || '',
-      lat:      b.ubicacion.coordinates[1],
-      lng:      b.ubicacion.coordinates[0],
+      id:             b._id.toString(),
+      codigo:         b.codigo,
+      nombre:         b.nombre,
+      direccion:      b.direccion || '',
+      barrio:         b.barrio || '',
+      lat:            b.ubicacion.coordinates[1],
+      lng:            b.ubicacion.coordinates[0],
+      vecesEscaneada: b.vecesEscaneada ?? 0,
     }))
 
     return NextResponse.json({ pins, total: pins.length })
