@@ -206,9 +206,19 @@ export default function MapView({ initialLocation }:MapViewProps) {
     finally { setLoadingDetalle(false) }
   }
 
+  const prefetchAFrame = () => {
+    if (document.getElementById('aframe-prefetch')) return
+    const link = document.createElement('link')
+    link.id   = 'aframe-prefetch'
+    link.rel  = 'prefetch'
+    link.href = 'https://aframe.io/releases/1.4.1/aframe.min.js'
+    document.head.appendChild(link)
+  }
+
   const iniciarRecorrido=(b:BaldosaCercana)=>{
     if(destino?.id===b.id){ setDestino(null); setRuta([]); setDistanciaDestino(null); return }
     setDestino(b); setRuta([]); setPanelAbierto(false)
+    prefetchAFrame()
     if(userLocation){
       setDistanciaDestino(calcularDistancia(userLocation.lat,userLocation.lng,b.lat,b.lng))
       fetchRutaOSRM(userLocation,{lat:b.lat,lng:b.lng})

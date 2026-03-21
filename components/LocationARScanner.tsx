@@ -260,6 +260,15 @@ export default function LocationARScanner() {
 
     setFase('caminando')
 
+    // Prefetch A-Frame mientras el usuario camina hacia la baldosa
+    if (!document.getElementById('aframe-prefetch')) {
+      const link = document.createElement('link')
+      link.id   = 'aframe-prefetch'
+      link.rel  = 'prefetch'
+      link.href = 'https://aframe.io/releases/1.4.1/aframe.min.js'
+      document.head.appendChild(link)
+    }
+
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
         const { latitude: userLat, longitude: userLng } = pos.coords
@@ -346,10 +355,17 @@ export default function LocationARScanner() {
     if (fase !== 'ar' || scriptsOk) return
 
     async function cargarScripts() {
+      arDebug('⚡ fase=ar disparado — inicio carga')
       if (!(window as any).AFRAME) {
+        arDebug('📦 A-Frame no cargado — descargando script…')
         await loadScript('https://aframe.io/releases/1.4.1/aframe.min.js')
-        await delay(600)
+        arDebug('📦 Script A-Frame cargado — esperando delay(50)…')
+        await delay(50)
+        arDebug('📦 Delay(50) completado')
+      } else {
+        arDebug('📦 A-Frame ya estaba en memoria — sin descarga')
       }
+      arDebug('✅ scriptsOk=true')
       setScriptsOk(true)
     }
 
@@ -373,6 +389,7 @@ export default function LocationARScanner() {
     if (!scriptsOk || fase !== 'ar' || !baldosaActiva) return
 
     const montar = async () => {
+      arDebug('🎬 montar() iniciado')
       const contenedor = document.getElementById('ar-container')
       if (!contenedor) return
 
@@ -382,13 +399,22 @@ export default function LocationARScanner() {
       setHudListo(false)
 
       // Precargar video
+      arDebug('🎥 Precargando video pañuelo…')
       await new Promise<void>(resolve => {
         const preload = document.createElement('video')
-        preload.oncanplay = () => resolve()
-        preload.onerror   = () => resolve()
+        let resuelto = false
+        const done = (motivo: string) => {
+          if (resuelto) return
+          resuelto = true
+          arDebug(`🎥 Video pañuelo: ${motivo}`)
+          resolve()
+        }
+        const t = setTimeout(() => done('timeout 3s'), 3000)
+        preload.oncanplay = () => { clearTimeout(t); done('canplay') }
+        preload.onerror   = () => { clearTimeout(t); done('error') }
         preload.src = '/videos/panuelo.webm'
-        setTimeout(resolve, 3000)
       })
+      arDebug('🎥 Precarga video completada')
 
       const { nombre, mensajeAR, descripcion, direccion, fotosUrls } = baldosaActiva
 
@@ -409,11 +435,13 @@ export default function LocationARScanner() {
       })
       contenedor.appendChild(video)
 
+      arDebug('📷 Pidiendo acceso a cámara…')
       let streamActivo: MediaStream | null = null
       navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       }).then(stream => {
+        arDebug('📷 Cámara concedida — iniciando stream')
         streamActivo = stream
         video.srcObject = stream
         return video.play()
@@ -452,23 +480,20 @@ export default function LocationARScanner() {
       const Z_BASE  = -12
       const Y_OJOS  = 1.6
 
-      // Asset foto — primera foto disponible
-      const assetFoto = fotosUrls?.[0]
-        ? `<img id="foto-baldosa" src="${fotosUrls[0]}" crossorigin="anonymous">`
-        : ''
-
+      arDebug('🏗️ Inyectando escena A-Frame en DOM…')
       wrapper.innerHTML = [
         '<a-scene',
         '  id="escena-ar"',
         '  embedded',
-        '  renderer="antialias: true; alpha: true; colorManagement: true; preserveDrawingBuffer: true;"',
+        '  renderer="antialias: true; alpha: true; colorManagement: true;"',
         '  background="transparent: true"',
         '  vr-mode-ui="enabled: false"',
         '  loading-screen="enabled: false"',
+        '  webxr="optionalFeatures: hit-test, local-floor; overlayElement: #ar-container;"',
+        '  device-orientation-permission-ui="enabled: false"',
         '>',
         '  <a-assets timeout="20000">',
         '    <video id="panuelo-vid" src="/videos/panuelo.webm" muted playsinline crossorigin="anonymous" preload="auto"></video>',
-        assetFoto ? `    ${assetFoto}` : '',
         '  </a-assets>',
         '',
         `  <a-camera id="camara-ar" position="0 ${Y_OJOS} 0"`,
@@ -608,6 +633,7 @@ export default function LocationARScanner() {
 
       // ── onLoaded: animación de entrada del pañuelo + flores HTML ────────────
       const onLoaded = () => {
+        arDebug('🌐 A-Frame scene: evento loaded')
         aplicarAlpha()
         setArListo(true)
         const pos = getPosicion()
@@ -618,6 +644,7 @@ export default function LocationARScanner() {
 
         // ── Pañuelo: posición fija central, loopea ───────────────────────────
         const iniciarPanuelo = () => {
+          arDebug('🎞️ iniciarPanuelo() — video listo')
           if (!panuelo) return
           panuelo.setAttribute('position', `0 -3 ${Z_BASE}`)
           panuelo.setAttribute('scale', '0.8 0.8 0.8')
@@ -631,6 +658,7 @@ export default function LocationARScanner() {
           })
           setTimeout(() => panuelo.emit('escena-lista'), 50)
           vidEl?.play()
+          arDebug('✨ HUD listo — escena completamente activa')
           setHudListo(true)
         }
 
@@ -1204,6 +1232,15 @@ export default function LocationARScanner() {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+// Debug de tiempos — activo solo en desarrollo
+const _arDebugStart = typeof window !== 'undefined' ? performance.now() : 0
+function arDebug(msg: string) {
+  if (process.env.NODE_ENV !== 'development') return
+  const ms = Math.round(performance.now() - _arDebugStart)
+  const s  = (ms / 1000).toFixed(2)
+  console.log(`%c[AR ${s}s] ${msg}`, 'color: #60a5fa; font-weight: bold;')
+}
 
 function loadScript(src: string): Promise<void> {
   return new Promise((res, rej) => {
