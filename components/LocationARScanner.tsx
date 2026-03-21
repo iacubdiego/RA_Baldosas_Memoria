@@ -22,12 +22,9 @@ interface Baldosa {
 }
 
 type FaseExperiencia =
-  | 'verificando'     // Chequeando permisos silenciosamente al montar
-  | 'iniciando'       // Pedido de permisos
-  | 'caminando'       // Watcheando GPS, sin baldosa cerca
-  | 'cerca'           // Baldosa detectada a ≤ RADIO_AVISO metros → notificación
-  | 'ar'              // Usuario eligió ver la escena AR
-  | 'ficha'           // Detalle completo después de la escena
+  | 'verificando'     // Estado inicial mientras arranca el GPS
+  | 'caminando'       // Watcher GPS activo, sin baldosa en rango aún
+  | 'ar'              // Escena AR activa
   | 'error'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -101,6 +98,7 @@ export default function LocationARScanner() {
   const iniciarGPSRef   = useRef<(() => void) | null>(null)
   const sceneRef        = useRef<HTMLElement | null>(null)
   const baldosasRef     = useRef<Baldosa[]>([])
+  const autoLanzadoRef  = useRef(false)
 
   // Mantener ref sincronizada
   useEffect(() => { baldosasRef.current = baldosas }, [baldosas])
@@ -229,10 +227,10 @@ export default function LocationARScanner() {
   // ── 2. Verificar permisos al montar — si ya están otorgados, arrancar directo
   useEffect(() => {
     if (!navigator.geolocation) {
-      setFase('iniciando')
+      window.location.href = '/mapa'
       return
     }
-    const fallback = setTimeout(() => setFase('iniciando'), 1500)
+    const fallback = setTimeout(() => iniciarGPSRef.current?.(), 1500)
 
     navigator.geolocation.getCurrentPosition(
       () => {
@@ -241,7 +239,7 @@ export default function LocationARScanner() {
       },
       () => {
         clearTimeout(fallback)
-        setFase('iniciando')
+        iniciarGPSRef.current?.()
       },
       { enableHighAccuracy: false, timeout: 1000, maximumAge: 60000 }
     )
@@ -292,17 +290,28 @@ export default function LocationARScanner() {
 
         if (masProxima && minDist <= RADIO_ACTIVACION_M) {
           setBaldosaCercana(prev => {
-            const mismaId = prev && (prev.codigo || prev.id) === (masProxima.codigo || masProxima.id)
+            const mismaId = prev && (prev.codigo || prev.id) === (masProxima!.codigo || masProxima!.id)
             return mismaId
-              ? { ...masProxima, vecesEscaneada: prev!.vecesEscaneada }
-              : masProxima
+              ? { ...masProxima!, vecesEscaneada: prev!.vecesEscaneada }
+              : masProxima!
           })
-          setFase(prev =>
-            prev === 'ar' || prev === 'ficha' ? prev : 'cerca'
-          )
+          setFase(prev => {
+            if (prev === 'ar') return prev
+            if (!autoLanzadoRef.current) {
+              autoLanzadoRef.current = true
+              const id = masProxima!.codigo || masProxima!.id
+              fetch(`/api/baldosas/${id}`, { method: 'PATCH' }).catch(() => {})
+              setTimeout(() => {
+                setBaldosaActiva(masProxima!)
+                setFase('ar')
+              }, 50)
+            }
+            return prev
+          })
         } else {
+          autoLanzadoRef.current = false
           setFase(prev =>
-            prev === 'ar' || prev === 'ficha' ? prev : 'caminando'
+            prev === 'ar' ? prev : 'caminando'
           )
           if (minDist > RADIO_ACTIVACION_M * 2) {
             setBaldosaCercana(null)
@@ -899,24 +908,7 @@ export default function LocationARScanner() {
     const arContainer = document.getElementById('ar-container')
     if (arContainer) arContainer.innerHTML = ''
 
-    setScriptsOk(false)
-    setArListo(false)
-    setHudListo(false)
-    setFase('ficha')
-
-    setBaldosaActiva(prev => {
-      if (!prev) return prev
-      const id = prev.codigo || prev.id
-      fetch(`/api/baldosas/${id}`)
-        .then(r => r.json())
-        .then(data => {
-          if (data.baldosa?.vecesEscaneada !== undefined) {
-            setBaldosaActiva(b => b ? { ...b, vecesEscaneada: data.baldosa.vecesEscaneada } : b)
-          }
-        })
-        .catch(() => {})
-      return prev
-    })
+    window.location.href = '/mapa'
   }, [])
 
   const volverACaminar = useCallback(() => {
@@ -998,204 +990,13 @@ export default function LocationARScanner() {
 
   // ── 9. Renders por fase ───────────────────────────────────────────────────
 
-  if (fase === 'verificando') {
-    return (
-      <div style={{ ...estilos.pantallaCentrada, background: 'var(--color-stone)' }}>
-        <div style={estilos.spinner} />
-      </div>
-    )
-  }
-
-  if (fase === 'iniciando') {
-    return (
-      <div style={estilos.pantallaCentrada}>
-        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🌎</div>
-        <h1 style={estilos.titulo}>Baldosas por la Memoria</h1>
-        <p style={estilos.subtitulo}>
-          Caminá por Buenos Aires y descubrí las baldosas que honran a los desaparecidos.
-          Cuando te acerques a una, verás su historia.
-        </p>
-        <button onClick={iniciarGPS} style={estilos.btnPrimario}>
-          🌎 Activar ubicación
-        </button>
-        <a href="/mapa" style={estilos.btnSecundario}>
-          🗺️ Ver mapa primero
-        </a>
-      </div>
-    )
-  }
-
   if (fase === 'error') {
     return (
       <div style={estilos.pantallaCentrada}>
         <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
         <h2 style={{ ...estilos.titulo, fontSize: '1.4rem' }}>Algo salió mal</h2>
         <p style={{ ...estilos.subtitulo, color: '#fca5a5' }}>{errorMsg}</p>
-        <button onClick={() => { setFase('iniciando'); setErrorMsg('') }} style={estilos.btnPrimario}>
-          Reintentar
-        </button>
-        <a href="/" style={estilos.btnSecundario}>Volver al inicio</a>
-      </div>
-    )
-  }
-
-  if (fase === 'caminando') {
-    return (
-      <div style={estilos.pantallaOscura}>
-        <div style={estilos.navBar}>
-          <a href="/" style={estilos.navLink}>← Inicio</a>
-          <a href="/mapa" style={estilos.navLink}>🗺️ Mapa</a>
-        </div>
-        <div style={estilos.centradoVertical}>
-          <div style={estilos.radar}>
-            <div style={estilos.radarPulso1} />
-            <div style={estilos.radarPulso2} />
-            <span style={{ fontSize: '2.5rem', position: 'relative', zIndex: 2 }}>🌎</span>
-          </div>
-          <h2 style={{ ...estilos.titulo, marginTop: '1.5rem' }}>Buscando baldosas</h2>
-          <p style={estilos.subtitulo}>
-            Caminá por el barrio. Te avisaremos cuando estés cerca de una baldosa de la memoria.
-          </p>
-          {distancia !== null && (
-            <div style={estilos.chipDistancia}>
-              Baldosa más cercana: <strong> {formatearDistancia(distancia)}</strong>
-            </div>
-          )}
-          <div style={{ marginTop: '1.5rem', opacity: 0.6, fontSize: '0.85rem', color: '#90b4ce' }}>
-            {baldosas.length} baldosas cargadas · radio de detección {RADIO_ACTIVACION_M}m
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (fase === 'cerca' && baldosaCercana) {
-    return (
-      <div style={estilos.pantallaOscura}>
-        <style>{`
-          @media (min-width: 768px) {
-            .modal-cerca-wrap {
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              min-height: calc(100vh - 60px);
-            }
-            .modal-cerca-card {
-              width: 420px !important;
-              margin: 1.5rem auto !important;
-            }
-            .modal-cerca-foto img {
-              width: 80px !important;
-              height: 100px !important;
-            }
-            .modal-cerca-nombre {
-              font-size: 1.2rem !important;
-            }
-            .modal-cerca-banner {
-              font-size: 0.82rem !important;
-              padding: 0.65rem 1rem !important;
-            }
-            .modal-cerca-badge {
-              font-size: 0.75rem !important;
-            }
-            .modal-cerca-body {
-              padding: 1.1rem !important;
-            }
-            .modal-cerca-desc {
-              font-size: 0.82rem !important;
-            }
-            .modal-cerca-btn-primario {
-              padding: 0.65rem !important;
-              font-size: 0.9rem !important;
-            }
-            .modal-cerca-btn-secundario {
-              padding: 0.5rem !important;
-              font-size: 0.82rem !important;
-            }
-          }
-        `}</style>
-        <div style={estilos.navBar}>
-          <a href="/" style={estilos.navLink}>← Inicio</a>
-          <a href="/mapa" style={estilos.navLink}>🗺️ Mapa</a>
-        </div>
-        <div className="modal-cerca-wrap">
-          <div className="modal-cerca-card" style={estilos.cardNotificacion}>
-            <div className="modal-cerca-banner" style={estilos.bannerDeteccion}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', flex: 1 }}>
-                <span style={{ fontWeight: 700, fontSize: '1rem', color: '#f0f4f8' }}>Baldosa encontrada</span>
-                {distancia !== null && (
-                  <span className="modal-cerca-badge" style={{ ...estilos.badgeDistancia, padding: 0, background: 'none', color: '#90b4ce', fontSize: '0.78rem' }}>
-                    Estás a {formatearDistancia(distancia)} de la baldosa
-                  </span>
-                )}
-              </div>
-              {baldosaCercana.vecesEscaneada !== undefined && (
-                <div style={{
-                  textAlign: 'center',
-                  padding: '0.35rem 0.85rem',
-                  background: 'rgba(37,99,235,0.2)',
-                  borderRadius: '8px',
-                  border: '1px solid rgba(37,99,235,0.35)',
-                  flexShrink: 0,
-                }}>
-                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#60a5fa', lineHeight: 1 }}>
-                    {baldosaCercana.vecesEscaneada.toLocaleString('es-AR')}
-                  </div>
-                  <div style={{ fontSize: '0.62rem', color: '#90b4ce', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '0.15rem' }}>
-                    {baldosaCercana.vecesEscaneada === 1 ? 'visita' : 'visitas'}
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="modal-cerca-body" style={{ padding: '1.5rem' }}>
-              {baldosaCercana.fotosUrls?.[0] && (
-                <div className="modal-cerca-foto" style={estilos.contenedorFoto}>
-                  <img src={baldosaCercana.fotosUrls[0]} alt={baldosaCercana.nombre} style={estilos.fotoThumbnail} />
-                </div>
-              )}
-              <h2 className="modal-cerca-nombre" style={estilos.nombreBaldosa}>{baldosaCercana.nombre}</h2>
-              {baldosaCercana.direccion && (
-                <p style={estilos.direccion}>🌎 {baldosaCercana.direccion}</p>
-              )}
-              {baldosaCercana.descripcion && (
-                <p className="modal-cerca-desc" style={estilos.descripcionCorta}>
-                  {baldosaCercana.descripcion.slice(0, 120)}
-                  {baldosaCercana.descripcion.length > 120 ? '…' : ''}
-                </p>
-              )}
-              <p style={{ ...estilos.subtitulo, fontSize: '0.9rem', marginTop: '1rem' }}>
-                {baldosaCercana.mensajeAR}
-              </p>
-              <div style={estilos.botonesAccion}>
-                {/* Botón escanear — solo cuando ya llegaste (≤ 30m) */}
-                {distancia !== null && distancia <= 30 && (
-                  <button
-                    className="modal-cerca-btn-primario"
-                    onClick={marcarVisitadaYVerAR}
-                    style={{
-                      ...estilos.btnPrimario,
-                      background: '#1d4ed8',
-                      boxShadow: '0 0 20px rgba(37,99,235,0.4)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem',
-                      fontSize: '1.05rem',
-                    }}
-                  >
-                    📸 Escanear baldosa
-                  </button>
-                )}
-                <button className="modal-cerca-btn-primario" onClick={marcarVisitadaYVerAR} style={estilos.btnPrimario}>
-                  Marcar como visitada
-                </button>
-                <button className="modal-cerca-btn-secundario" onClick={volverACaminar} style={estilos.btnSecundario}>
-                  Seguir caminando
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <a href="/mapa" style={estilos.btnPrimario}>Volver al mapa</a>
       </div>
     )
   }
@@ -1338,68 +1139,6 @@ export default function LocationARScanner() {
   }
 
   // Ficha completa post-AR
-  if (fase === 'ficha' && baldosaActiva) {
-    return (
-      <div style={{ ...estilos.pantallaOscura, overflowY: 'auto' }}>
-        <div style={estilos.navBar}>
-          <button onClick={volverACaminar} style={{ ...estilos.navLink, background: 'none', border: 'none', cursor: 'pointer' }}>
-            ← Seguir caminando
-          </button>
-          <a href="/mapa" style={estilos.navLink}>🗺️ Mapa</a>
-        </div>
-
-        <div style={{ maxWidth: '500px', margin: '0 auto', padding: '1rem' }}>
-          {baldosaActiva.fotosUrls?.[0] && (
-            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-              <img
-                src={baldosaActiva.fotosUrls[0]}
-                alt={baldosaActiva.nombre}
-                style={{
-                  width: '160px',
-                  height: '200px',
-                  objectFit: 'cover',
-                  borderRadius: '8px',
-                  border: '3px solid #2563eb',
-                }}
-              />
-            </div>
-          )}
-
-          <h1 style={{ ...estilos.nombreBaldosa, fontSize: '2rem', marginTop: '0.5rem' }}>
-            {baldosaActiva.nombre}
-          </h1>
-
-          {baldosaActiva.direccion && (
-            <p style={estilos.direccion}>🌎 {baldosaActiva.direccion}</p>
-          )}
-
-          {(baldosaActiva.vecesEscaneada !== undefined && baldosaActiva.vecesEscaneada > 0) && (
-            <p style={{ ...estilos.direccion, color: '#60a5fa' }}>
-              👁 Vista {baldosaActiva.vecesEscaneada.toLocaleString('es-AR')} {baldosaActiva.vecesEscaneada === 1 ? 'vez' : 'veces'} en AR
-            </p>
-          )}
-
-          {baldosaActiva.descripcion && (
-            <p style={{ color: '#d0c8bc', lineHeight: 1.7, marginTop: '1rem' }}>
-              {baldosaActiva.descripcion}
-            </p>
-          )}
-
-          {baldosaActiva.infoExtendida && (
-            <p style={{ color: '#90b4ce', lineHeight: 1.7, marginTop: '0.75rem', fontSize: '0.95rem' }}>
-              {baldosaActiva.infoExtendida}
-            </p>
-          )}
-
-          <div style={{ ...estilos.botonesAccion, marginTop: '2rem' }}>
-            <button onClick={verEscenaAR} style={estilos.btnSecundario}>
-              ✨ Ver AR de nuevo
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return null
 }

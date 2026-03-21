@@ -354,7 +354,7 @@ export default function MapView({ initialLocation }:MapViewProps) {
       {!panelAbierto&&(
         <button onClick={abrirPanel} style={{
           position:'absolute',
-          bottom:'calc(env(safe-area-inset-bottom, 0px) + 5rem)',
+          bottom:'calc(env(safe-area-inset-bottom, 0px) + 5.5rem)',
           left:'1rem', right:'1rem',
           zIndex:400,
           background:'#1a2a3a', color:'white', border:'none',
@@ -373,7 +373,7 @@ export default function MapView({ initialLocation }:MapViewProps) {
         </button>
       )}
 
-      {/* Botón escanear — fijo en esquina inferior derecha, activo solo si estás en rango */}
+      {/* Botón escanear — rectangular, mismo estilo que "Ver baldosas cercanas" */}
       {(()=>{
         const enRango = distanciaDestino !== null && distanciaDestino <= RADIO_MAXIMO
         return (
@@ -383,27 +383,27 @@ export default function MapView({ initialLocation }:MapViewProps) {
             style={{
               position: 'absolute',
               bottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.2rem)',
-              right: '1rem',
+              left: '1rem', right: '1rem',
               zIndex: 401,
-              width: '56px',
-              height: '56px',
-              borderRadius: '50%',
-              background: enRango ? '#1d4ed8' : '#9ca3af',
-              color: 'white',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.6rem',
-              boxShadow: enRango ? '0 4px 16px rgba(29,78,216,0.5)' : '0 2px 8px rgba(0,0,0,0.2)',
-              textDecoration: 'none',
+              background: enRango ? '#1d4ed8' : '#1a2a3a',
+              color: enRango ? 'white' : 'rgba(255,255,255,0.35)',
+              border: 'none',
+              borderRadius: '16px',
+              padding: '1.1rem 1rem',
+              fontSize: '1.1rem', fontWeight: 700, letterSpacing: '0.01em',
               cursor: enRango ? 'pointer' : 'not-allowed',
-              transition: 'background 0.3s, box-shadow 0.3s',
-              border: enRango ? '2px solid rgba(255,255,255,0.3)' : '2px solid rgba(255,255,255,0.15)',
-              opacity: enRango ? 1 : 0.65,
+              boxShadow: enRango ? '0 6px 24px rgba(29,78,216,0.45)' : '0 6px 24px rgba(0,0,0,0.35)',
+              textAlign: 'center',
+              width: 'calc(100% - 2rem)',
+              maxWidth: '480px',
+              marginLeft: 'auto', marginRight: 'auto',
+              display: 'block',
+              textDecoration: 'none',
+              opacity: enRango ? 1 : 0.6,
+              transition: 'background 0.3s, box-shadow 0.3s, opacity 0.3s',
             }}
-            title={enRango ? 'Escanear baldosa' : `Acercate a una baldosa para escanear (estás a ${distanciaDestino !== null ? formatearDistancia(distanciaDestino) : '…'})`}
           >
-            📸
+            📸 {enRango ? 'Escanear baldosa' : 'Acercate para escanear'}
           </a>
         )
       })()}
