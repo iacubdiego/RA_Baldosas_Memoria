@@ -196,7 +196,7 @@ export default function LocationARScanner() {
           -webkit-text-fill-color: rgba(255,255,255,0.55);
         }
         .letra-hud-ar.pintada {
-          animation: letraSprayAR 0.55s cubic-bezier(0.22,1,0.36,1) forwards;
+          animation: letraSprayAR 0.35s cubic-bezier(0.22,1,0.36,1) forwards;
         }
         .consigna-hud-ar span {
           display: inline-block;
@@ -606,7 +606,7 @@ export default function LocationARScanner() {
       const scene = document.getElementById('escena-ar') as any
       sceneRef.current = scene
 
-      // ── onLoaded: animaciones de entrada + loop del pañuelo ──────────────────
+      // ── onLoaded: animación de entrada del pañuelo + flores HTML ────────────
       const onLoaded = () => {
         aplicarAlpha()
         setArListo(true)
@@ -614,125 +614,153 @@ export default function LocationARScanner() {
         setPosicion(pos.x, -1.6 + offsetY, Z_BASE * zoom)
 
         const panuelo = document.getElementById('columnas-vmj') as any
+        const vidEl   = document.getElementById('panuelo-vid') as HTMLVideoElement | null
 
-        // ── Posiciones disponibles para el pañuelo (x, z) ──────────────────
-        const SPOTS = [
-          { x:  0,  z: -12 },
-          { x: -4,  z: -12 },
-          { x:  4,  z: -12 },
-          { x:  0,  z: -15 },
-          { x: -3,  z: -10 },
-          { x:  3,  z: -10 },
-          { x: -2,  z: -14 },
-          { x:  2,  z: -14 },
-        ]
-
-        // Máximo de pañuelos congelados simultáneos en escena
-        const MAX_CONGELADOS = 5
-        let spotActual = 0
-        let spotsUsados: number[] = [0]
-        let clonesCreados = 0
-
-        const escena = document.getElementById('escena-ar') as any
-
-        const animarEnSpot = (idx: number, evento: string) => {
-          const { x, z } = SPOTS[idx]
+        // ── Pañuelo: posición fija central, loopea ───────────────────────────
+        const iniciarPanuelo = () => {
           if (!panuelo) return
-          panuelo.setAttribute('position', `${x} -3 ${z}`)
+          panuelo.setAttribute('position', `0 -3 ${Z_BASE}`)
           panuelo.setAttribute('scale', '0.8 0.8 0.8')
-          panuelo.setAttribute('animation__subir',  `property: position; to: ${x} 0.2 ${z}; dur: 1800; easing: easeOutCubic; startEvents: ${evento}`)
-          panuelo.setAttribute('animation__crecer', `property: scale;    to: 1.8 1.8 1.8;    dur: 1800; easing: easeOutCubic; startEvents: ${evento}`)
-          setTimeout(() => panuelo.emit(evento), 50)
-        }
-
-        const vidEl = document.getElementById('panuelo-vid') as HTMLVideoElement | null
-
-        // Último frame válido del video — se actualiza en timeupdate
-        let ultimoFrameUrl: string | null = null
-
-        const congelarPanueloActual = () => {
-          if (!escena || !panuelo || !ultimoFrameUrl) return
-
-          if (clonesCreados >= MAX_CONGELADOS) {
-            const primero = escena.querySelector('[data-clon-panuelo]') as any
-            if (primero) primero.parentNode?.removeChild(primero)
-            clonesCreados--
-          }
-
-          const pos   = panuelo.getAttribute('position') as any
-          const scale = panuelo.getAttribute('scale')    as any
-          if (!pos || !scale) return
-
-          const sx = parseFloat(scale.x ?? '1.8')
-          const sy = parseFloat(scale.y ?? '1.8')
-          const w3 = (3.5 * sx).toFixed(2)
-          const h3 = (3.0 * sy).toFixed(2)
-
-          const clon = document.createElement('a-image') as any
-          clon.setAttribute('data-clon-panuelo', '')
-          clon.setAttribute('src', ultimoFrameUrl)
-          clon.setAttribute('width',  w3)
-          clon.setAttribute('height', h3)
-          clon.setAttribute('position', `${parseFloat(pos.x).toFixed(2)} ${parseFloat(pos.y).toFixed(2)} ${parseFloat(pos.z).toFixed(2)}`)
-          clon.setAttribute('material', 'transparent: true; alphaTest: 0.01; side: double; depthTest: false; depthWrite: false')
-          escena.appendChild(clon)
-          clonesCreados++
-        }
-
-        const onEnded = () => {
-          // Congelar el pañuelo actual antes de moverlo
-          congelarPanueloActual()
-          // Elegir spot diferente al actual y a los recientes
-          let siguiente: number
-          let intentos = 0
-          do {
-            siguiente = Math.floor(Math.random() * SPOTS.length)
-            intentos++
-          } while (spotsUsados.includes(siguiente) && intentos < 20)
-          spotActual = siguiente
-          spotsUsados.push(siguiente)
-          if (spotsUsados.length > 3) spotsUsados.shift()
-          animarEnSpot(siguiente, 'siguiente-entrada')
-          vidEl?.play()
-        }
-
-        vidEl?.addEventListener('ended', onEnded)
-
-        // Capturar el frame al 40% de la duración del video —
-        // momento en que el pañuelo está completamente desplegado con flores
-        // Capturamos una sola vez por reproducción para no generar canvas en cada tick
-        let frameCapturadoEstaReproduccion = false
-        const MOMENTO_CAPTURA = 0.40 // 40% de la duración
-
-        const capturarFrame = () => {
-          if (!vidEl || vidEl.readyState < 2 || frameCapturadoEstaReproduccion) return
-          if (!vidEl.duration || vidEl.currentTime < vidEl.duration * MOMENTO_CAPTURA) return
-          frameCapturadoEstaReproduccion = true
-          const w = vidEl.videoWidth  || 640
-          const h = vidEl.videoHeight || 480
-          const c = document.createElement('canvas')
-          c.width = w; c.height = h
-          const cx = c.getContext('2d')
-          if (!cx) return
-          try { cx.drawImage(vidEl, 0, 0, w, h); ultimoFrameUrl = c.toDataURL('image/png') }
-          catch { frameCapturadoEstaReproduccion = false }
-        }
-        vidEl?.addEventListener('timeupdate', capturarFrame)
-
-        // Resetear el flag al inicio de cada nueva reproducción
-        vidEl?.addEventListener('play', () => { frameCapturadoEstaReproduccion = false })
-
-        const iniciarPrimera = () => {
-          animarEnSpot(0, 'escena-lista')
+          panuelo.setAttribute('animation__subir',  `property: position; to: 0 0.2 ${Z_BASE}; dur: 1800; easing: easeOutCubic; startEvents: escena-lista`)
+          panuelo.setAttribute('animation__crecer', `property: scale;    to: 1.8 1.8 1.8;    dur: 1800; easing: easeOutCubic; startEvents: escena-lista`)
+          vidEl?.addEventListener('ended', () => {
+            panuelo.setAttribute('position', `0 -3 ${Z_BASE}`)
+            panuelo.setAttribute('scale', '0.8 0.8 0.8')
+            setTimeout(() => panuelo.emit('escena-lista'), 50)
+            vidEl.play()
+          })
+          setTimeout(() => panuelo.emit('escena-lista'), 50)
           vidEl?.play()
           setHudListo(true)
         }
 
         if (vidEl && vidEl.readyState < 3) {
-          vidEl.addEventListener('canplay', () => setTimeout(iniciarPrimera, 200), { once: true })
+          vidEl.addEventListener('canplay', () => setTimeout(iniciarPanuelo, 200), { once: true })
         } else {
-          setTimeout(iniciarPrimera, 500)
+          setTimeout(iniciarPanuelo, 500)
         }
+
+        // ── Flores HTML: aparecen en secuencia sobre el contenedor AR ────────
+        const TOTAL_FLORES  = 11
+        const DELAY_INICIAL = 1200
+        const DELAY_ENTRE   = 550
+        const TAMANO_BASE   = 80   // px base — se varía por flor
+
+        // Inyectar keyframes de entrada variados una sola vez
+        if (!document.getElementById('flores-ar-style')) {
+          const st = document.createElement('style')
+          st.id = 'flores-ar-style'
+          st.textContent = `
+            @keyframes florEntradaGiro {
+              0%   { opacity:0; transform:translate(-50%,-50%) rotate(var(--rot-ini)) scale(0.2); filter:blur(6px) brightness(2); }
+              60%  { opacity:1; filter:blur(1px) brightness(1.3); }
+              100% { opacity:1; transform:translate(-50%,-50%) rotate(var(--rot-fin)) scale(1); filter:blur(0px) brightness(var(--brillo)); }
+            }
+            @keyframes florEntradaCaida {
+              0%   { opacity:0; transform:translate(-50%,-120%) rotate(var(--rot-ini)) scale(0.5); filter:blur(4px); }
+              70%  { opacity:1; filter:blur(0.5px); }
+              100% { opacity:1; transform:translate(-50%,-50%) rotate(var(--rot-fin)) scale(1); filter:blur(0px) brightness(var(--brillo)); }
+            }
+            @keyframes florEntradaExplosion {
+              0%   { opacity:0; transform:translate(-50%,-50%) rotate(var(--rot-ini)) scale(2.2); filter:blur(8px) brightness(3); }
+              50%  { opacity:0.9; filter:blur(2px) brightness(1.5); }
+              100% { opacity:1; transform:translate(-50%,-50%) rotate(var(--rot-fin)) scale(1); filter:blur(0px) brightness(var(--brillo)); }
+            }
+            @keyframes florFlotarA {
+              0%,100% { margin-top: 0px; }
+              50%     { margin-top: -6px; }
+            }
+            @keyframes florFlotarB {
+              0%,100% { margin-top: 0px; }
+              50%     { margin-top: 5px; }
+            }
+            @keyframes florPulso {
+              0%,100% { filter: brightness(var(--brillo)); }
+              50%     { filter: brightness(calc(var(--brillo) * 1.35)); }
+            }
+          `
+          document.head.appendChild(st)
+        }
+
+        const ANIMACIONES_ENTRADA = ['florEntradaGiro', 'florEntradaCaida', 'florEntradaExplosion']
+        const ANIMACIONES_IDLE    = ['florFlotarA', 'florFlotarB', 'florPulso']
+        const SOMBRAS = [
+          'drop-shadow(0 0 8px rgba(255,220,100,0.7)) drop-shadow(0 2px 12px rgba(0,0,0,0.5))',
+          'drop-shadow(0 0 12px rgba(255,150,200,0.6)) drop-shadow(0 3px 10px rgba(0,0,0,0.4))',
+          'drop-shadow(0 0 10px rgba(150,255,180,0.55)) drop-shadow(0 2px 8px rgba(0,0,0,0.45))',
+          'drop-shadow(0 0 14px rgba(180,140,255,0.65)) drop-shadow(0 4px 14px rgba(0,0,0,0.5))',
+          'drop-shadow(0 0 8px rgba(255,255,255,0.5)) drop-shadow(0 2px 10px rgba(0,0,0,0.4))',
+        ]
+
+        const generarPosicionFlor = (ocupadas: {x:number, y:number}[]): {x:number, y:number} => {
+          const zonas = ['superior', 'superior', 'lateral-izq', 'lateral-der']
+          for (let intento = 0; intento < 60; intento++) {
+            const zona = zonas[Math.floor(Math.random() * zonas.length)]
+            let x = 0, y = 0
+            if (zona === 'superior') {
+              x = 5  + Math.random() * 88
+              y = 3  + Math.random() * 28
+            } else if (zona === 'lateral-izq') {
+              x = 1  + Math.random() * 14
+              y = 15 + Math.random() * 65
+            } else {
+              x = 83 + Math.random() * 14
+              y = 15 + Math.random() * 65
+            }
+            const minSep = 16
+            const libre = ocupadas.every(o => Math.hypot(o.x - x, o.y - y) > minSep)
+            if (libre) return { x, y }
+          }
+          return { x: 5 + Math.random() * 88, y: 3 + Math.random() * 20 }
+        }
+
+        const ocupadas: {x: number, y: number}[] = []
+        const timersFlores: ReturnType<typeof setTimeout>[] = []
+
+        for (let i = 0; i < TOTAL_FLORES; i++) {
+          const t = setTimeout(() => {
+            if (!contenedor) return
+            const { x, y } = generarPosicionFlor(ocupadas)
+            ocupadas.push({ x, y })
+
+            // Variedad por flor
+            const tamano      = TAMANO_BASE + Math.floor(Math.random() * 55) - 15  // 65–135px
+            const rotIni      = `${Math.random() * 120 - 60}deg`
+            const rotFin      = `${Math.random() * 40 - 20}deg`
+            const brillo      = (0.85 + Math.random() * 0.5).toFixed(2)            // 0.85–1.35
+            const durEntrada  = 0.5 + Math.random() * 0.5                           // 0.5–1s
+            const animEntrada = ANIMACIONES_ENTRADA[i % ANIMACIONES_ENTRADA.length]
+            const animIdle    = ANIMACIONES_IDLE[Math.floor(Math.random() * ANIMACIONES_IDLE.length)]
+            const durIdle     = (2.5 + Math.random() * 2).toFixed(1)               // 2.5–4.5s
+            const sombra      = SOMBRAS[Math.floor(Math.random() * SOMBRAS.length)]
+            const delayIdle   = (Math.random() * 1.5).toFixed(1)
+
+            const flor = document.createElement('img')
+            flor.src = '/images/flores.webp'
+            flor.setAttribute('data-flor-ar', '')
+            flor.style.cssText = `
+              position: absolute;
+              left: ${x}%;
+              top: ${y}%;
+              width: ${tamano}px;
+              height: auto;
+              --rot-ini: ${rotIni};
+              --rot-fin: ${rotFin};
+              --brillo: ${brillo};
+              transform: translate(-50%,-50%) rotate(${rotFin});
+              z-index: 10;
+              pointer-events: none;
+              filter: ${sombra};
+              animation:
+                ${animEntrada} ${durEntrada}s cubic-bezier(0.22,1,0.36,1) forwards,
+                ${animIdle} ${durIdle}s ease-in-out ${delayIdle}s infinite;
+            `
+            contenedor.appendChild(flor)
+          }, DELAY_INICIAL + i * DELAY_ENTRE)
+          timersFlores.push(t)
+        }
+
+        ;(contenedor as any).__timersFlores = timersFlores
       }
 
       scene.addEventListener('loaded', onLoaded)
@@ -742,6 +770,9 @@ export default function LocationARScanner() {
 
     return () => {
       const contenedor = document.getElementById('ar-container')
+      // Limpiar timers de flores si quedaron pendientes
+      const timers = (contenedor as any)?.__timersFlores as ReturnType<typeof setTimeout>[] | undefined
+      if (timers) timers.forEach(clearTimeout)
       const scene = document.getElementById('escena-ar') as any
       if (scene) scene.removeEventListener('loaded', () => {})
       const wrapper = contenedor?.querySelector('div') as HTMLElement | null
@@ -788,9 +819,9 @@ export default function LocationARScanner() {
       '#86efac','#7dd3fc','#c4b5fd',
       '#f9a8d4','#6ee7b7','#a5b4fc',
     ]
-    const DELAY_TITULO   = 280
-    const DELAY_CONSIGNA = 190
-    const ESPERA_INICIAL = 400
+    const DELAY_TITULO   = 120
+    const DELAY_CONSIGNA = 80
+    const ESPERA_INICIAL = 200
 
     const colorAleatorio = (excluir: string) => {
       let c: string
@@ -1070,7 +1101,7 @@ export default function LocationARScanner() {
               className="consigna-hud-ar"
               style={{
                 fontFamily: "'Oswald', 'Impact', 'Arial Black', sans-serif",
-                fontSize: 'clamp(0.85rem, 3.2vw, 1.05rem)',
+                fontSize: 'clamp(1.1rem, 4.5vw, 1.5rem)',
                 fontWeight: 600,
                 letterSpacing: '0.22em',
                 textTransform: 'uppercase',
@@ -1083,13 +1114,31 @@ export default function LocationARScanner() {
 
         {/* Barra superior */}
         {arListo && (
-          <div style={estilos.barraAR}>
-            <button onClick={cerrarAR} style={estilos.btnCerrarAR}>
-              ✕ Cerrar AR
+          <div style={{ ...estilos.barraAR, justifyContent: 'space-between' }}>
+            <a href="/" style={{
+              display: 'flex',
+              alignItems: 'center',
+              textDecoration: 'none',
+            }}>
+              <img
+                src="/images/logo_flores.png"
+                alt="Inicio"
+                style={{ height: '28px', width: 'auto', opacity: 0.85 }}
+              />
+            </a>
+            <button onClick={cerrarAR} style={{
+              padding: '0.35rem 0.85rem',
+              background: 'rgba(26, 42, 58, 0.9)',
+              color: 'rgba(255,255,255,0.85)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              letterSpacing: '0.01em',
+            }}>
+              Volver al mapa
             </button>
-            <span style={estilos.nombreEnAR}>
-              {baldosaActiva?.nombre}
-            </span>
           </div>
         )}
 
