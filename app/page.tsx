@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 
 import ContadorBaldosas from '@/components/ContadorBaldosas'
 
@@ -61,17 +62,47 @@ function generarVenecitas(cantidad: number) {
 }
 
 export default function Home() {
-  const [venecitas, setVenecitas] = useState<any[]>([]);
-  
+  const [venecitas, setVenecitas] = useState<any[]>([])
+  const [modalGPS, setModalGPS] = useState(false)
+  const router = useRouter()
+
   useEffect(() => {
-    setVenecitas(generarVenecitas(32));
-  }, []);
+    setVenecitas(generarVenecitas(32))
+  }, [])
 
   useEffect(() => {
     return () => {
       document.body.classList.remove('home-navbar-oculta')
     }
   }, [])
+
+  const handleEntrarMapa = useCallback(async (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (!navigator.geolocation) {
+      router.push('/mapa')
+      return
+    }
+    // Chequear si ya tiene permiso con posición cacheada
+    const yaTienePermiso = await new Promise<boolean>(resolve => {
+      const timeout = setTimeout(() => resolve(false), 500)
+      navigator.geolocation.getCurrentPosition(
+        () => { clearTimeout(timeout); resolve(true) },
+        () => { clearTimeout(timeout); resolve(false) },
+        { enableHighAccuracy: false, timeout: 400, maximumAge: 60000 }
+      )
+    })
+    if (yaTienePermiso) {
+      router.push('/mapa')
+      return
+    }
+    // No tiene permiso — mostrar modal de espera y disparar diálogo nativo
+    setModalGPS(true)
+    navigator.geolocation.getCurrentPosition(
+      () => { setModalGPS(false); router.push('/mapa') },
+      () => { setModalGPS(false); router.push('/mapa') },
+      { enableHighAccuracy: true, timeout: 30000 }
+    )
+  }, [router])
 
   return (
     <div className="hero-background">
@@ -138,7 +169,7 @@ export default function Home() {
             opacity: 0,
             animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 2.5s forwards',
           }}>
-            <Link href="/mapa" style={{
+            <a href="/mapa" onClick={handleEntrarMapa} style={{
               display: 'inline-flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -154,6 +185,7 @@ export default function Home() {
               gap: '0.5rem',
               maxWidth: '420px',
               width: '100%',
+              cursor: 'pointer',
             }}
             onMouseEnter={e => {
               const el = e.currentTarget as HTMLAnchorElement
@@ -187,7 +219,7 @@ export default function Home() {
               }}>
                 Encontrá las baldosas más cercanas, escaneá y construí memoria.
               </span>
-            </Link>
+            </a>
           </div>
 
 
@@ -331,6 +363,49 @@ export default function Home() {
 
         </div>
       </div>
+
+      {/* ── Modal pedido de GPS ── */}
+      {modalGPS && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(10,18,28,0.72)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '1.5rem',
+        }}>
+          <div style={{
+            background: 'var(--color-stone)',
+            borderRadius: '16px',
+            padding: '1.75rem 2rem',
+            maxWidth: '320px',
+            width: '100%',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '0.75rem',
+            textAlign: 'center',
+          }}>
+            <div className="loading" style={{ width: '28px', height: '28px' }} />
+            <p style={{
+              color: 'var(--color-parchment)',
+              fontSize: '0.95rem',
+              fontWeight: 600,
+              margin: 0,
+            }}>
+              Esperando permiso de ubicación…
+            </p>
+            <p style={{
+              color: 'rgba(240,244,248,0.5)',
+              fontSize: '0.8rem',
+              margin: 0,
+              lineHeight: 1.5,
+            }}>
+              Aceptá o rechazá el permiso en el diálogo de tu navegador.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

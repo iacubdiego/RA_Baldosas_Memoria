@@ -417,7 +417,28 @@ export default function LocationARScanner() {
         streamActivo = stream
         video.srcObject = stream
         return video.play()
-      }).catch(e => console.warn('Cámara no disponible:', e))
+      }).catch(() => {
+        // Sin cámara — mostrar aviso flotante y continuar con fondo negro
+        const aviso = document.createElement('div')
+        aviso.id = 'aviso-camara'
+        Object.assign(aviso.style, {
+          position: 'absolute', bottom: '6rem', left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(26,42,58,0.92)',
+          color: 'rgba(240,244,248,0.85)',
+          padding: '0.6rem 1.1rem',
+          borderRadius: '10px',
+          fontSize: '0.82rem',
+          whiteSpace: 'nowrap',
+          zIndex: '200',
+          backdropFilter: 'blur(6px)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          pointerEvents: 'none',
+        })
+        aviso.textContent = '📷 Sin acceso a la cámara — activala en la configuración del navegador'
+        contenedor.appendChild(aviso)
+        setTimeout(() => aviso.remove(), 6000)
+      })
 
       // ── Canvas A-Frame encima, transparente ───────────────────────────────────
       const wrapper = document.createElement('div')
