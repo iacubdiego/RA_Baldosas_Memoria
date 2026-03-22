@@ -99,6 +99,7 @@ export default function LocationARScanner() {
   const sceneRef        = useRef<HTMLElement | null>(null)
   const baldosasRef     = useRef<Baldosa[]>([])
   const autoLanzadoRef  = useRef(false)
+  const floresDataRef   = useRef<{cx:number, cy:number, w:number, h:number, angle:number, src:string}[]>([])
 
   // Mantener ref sincronizada
   useEffect(() => { baldosasRef.current = baldosas }, [baldosas])
@@ -355,17 +356,11 @@ export default function LocationARScanner() {
     if (fase !== 'ar' || scriptsOk) return
 
     async function cargarScripts() {
-      arDebug('⚡ fase=ar disparado — inicio carga')
       if (!(window as any).AFRAME) {
-        arDebug('📦 A-Frame no cargado — descargando script…')
         await loadScript('https://aframe.io/releases/1.4.1/aframe.min.js')
-        arDebug('📦 Script A-Frame cargado — esperando delay(50)…')
         await delay(50)
-        arDebug('📦 Delay(50) completado')
       } else {
-        arDebug('📦 A-Frame ya estaba en memoria — sin descarga')
       }
-      arDebug('✅ scriptsOk=true')
       setScriptsOk(true)
     }
 
@@ -389,7 +384,6 @@ export default function LocationARScanner() {
     if (!scriptsOk || fase !== 'ar' || !baldosaActiva) return
 
     const montar = async () => {
-      arDebug('🎬 montar() iniciado')
       const contenedor = document.getElementById('ar-container')
       if (!contenedor) return
 
@@ -397,16 +391,15 @@ export default function LocationARScanner() {
       setArListo(false)
       setPanelVisible(false)
       setHudListo(false)
+      floresDataRef.current = []
 
       // Precargar video
-      arDebug('🎥 Precargando video pañuelo…')
       await new Promise<void>(resolve => {
         const preload = document.createElement('video')
         let resuelto = false
         const done = (motivo: string) => {
           if (resuelto) return
           resuelto = true
-          arDebug(`🎥 Video pañuelo: ${motivo}`)
           resolve()
         }
         const t = setTimeout(() => done('timeout 3s'), 3000)
@@ -414,10 +407,8 @@ export default function LocationARScanner() {
         preload.onerror   = () => { clearTimeout(t); done('error') }
         preload.src = '/videos/panuelo.webm'
       })
-      arDebug('🎥 Precarga video completada')
 
       const { nombre, mensajeAR, descripcion, direccion, fotosUrls } = baldosaActiva
-
 
       const nombreSafe  = nombre.replace(/"/g, '&quot;')
       const mensajeSafe = mensajeAR.replace(/"/g, '&quot;')
@@ -434,14 +425,11 @@ export default function LocationARScanner() {
         objectFit: 'cover', zIndex: '0',
       })
       contenedor.appendChild(video)
-
-      arDebug('📷 Pidiendo acceso a cámara…')
       let streamActivo: MediaStream | null = null
       navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       }).then(stream => {
-        arDebug('📷 Cámara concedida — iniciando stream')
         streamActivo = stream
         video.srcObject = stream
         return video.play()
@@ -468,6 +456,16 @@ export default function LocationARScanner() {
         setTimeout(() => aviso.remove(), 6000)
       })
 
+      // ── Video pañuelo oculto — fuera de A-Frame, referenciado por selector ──────
+      const vidHidden = document.createElement('video')
+      vidHidden.id = 'panuelo-vid'
+      vidHidden.src = '/videos/panuelo.webm'
+      vidHidden.setAttribute('muted', '')
+      vidHidden.setAttribute('playsinline', '')
+      vidHidden.setAttribute('preload', 'auto')
+      vidHidden.style.display = 'none'
+      contenedor.appendChild(vidHidden)
+
       // ── Canvas A-Frame encima, transparente ───────────────────────────────────
       const wrapper = document.createElement('div')
       Object.assign(wrapper.style, {
@@ -479,8 +477,6 @@ export default function LocationARScanner() {
 
       const Z_BASE  = -12
       const Y_OJOS  = 1.6
-
-      arDebug('🏗️ Inyectando escena A-Frame en DOM…')
       wrapper.innerHTML = [
         '<a-scene',
         '  id="escena-ar"',
@@ -492,17 +488,13 @@ export default function LocationARScanner() {
         '  webxr="optionalFeatures: hit-test, local-floor; overlayElement: #ar-container;"',
         '  device-orientation-permission-ui="enabled: false"',
         '>',
-        '  <a-assets timeout="20000">',
-        '    <video id="panuelo-vid" src="/videos/panuelo.webm" muted playsinline crossorigin="anonymous" preload="auto"></video>',
-        '  </a-assets>',
-        '',
         `  <a-camera id="camara-ar" position="0 ${Y_OJOS} 0"`,
         '    look-controls="enabled: true; magicWindowTrackingEnabled: true; touchEnabled: false; reverseMouseDrag: false"',
         '    wasd-controls="enabled: false"',
         '    fov="70"',
         '  ></a-camera>',
         '',
-        // ── Pañuelo ──────────────────────────────────────────────────────────
+        // ── Pañuelo — src por URL directa, sin a-assets ──────────────────────
         '  <a-video',
         '    id="columnas-vmj"',
         '    src="#panuelo-vid"',
@@ -633,7 +625,6 @@ export default function LocationARScanner() {
 
       // ── onLoaded: animación de entrada del pañuelo + flores HTML ────────────
       const onLoaded = () => {
-        arDebug('🌐 A-Frame scene: evento loaded')
         aplicarAlpha()
         setArListo(true)
         const pos = getPosicion()
@@ -644,7 +635,6 @@ export default function LocationARScanner() {
 
         // ── Pañuelo: posición fija central, loopea ───────────────────────────
         const iniciarPanuelo = () => {
-          arDebug('🎞️ iniciarPanuelo() — video listo')
           if (!panuelo) return
           panuelo.setAttribute('position', `0 -3 ${Z_BASE}`)
           panuelo.setAttribute('scale', '0.8 0.8 0.8')
@@ -658,7 +648,6 @@ export default function LocationARScanner() {
           })
           setTimeout(() => panuelo.emit('escena-lista'), 50)
           vidEl?.play()
-          arDebug('✨ HUD listo — escena completamente activa')
           setHudListo(true)
         }
 
@@ -784,6 +773,23 @@ export default function LocationARScanner() {
                 ${animIdle} ${durIdle}s ease-in-out ${delayIdle}s infinite;
             `
             contenedor.appendChild(flor)
+
+            // Guardar datos para compositing usando las variables del closure
+            // (no leemos el DOM — las dimensiones son conocidas)
+            {
+              const contRect = contenedor.getBoundingClientRect()
+              const rotRad = parseFloat(rotFin.replace('deg','')) * Math.PI / 180
+              // x/y son porcentajes del contenedor, con translate(-50%,-50%)
+              // por eso el centro es exactamente (x%, y%) del contenedor
+              floresDataRef.current.push({
+                cx: contRect.left + (x / 100) * contRect.width,
+                cy: contRect.top  + (y / 100) * contRect.height,
+                w:  tamano,
+                h:  tamano,
+                angle: rotRad,
+                src: '/images/flores.webp',
+              })
+            }
           }, DELAY_INICIAL + i * DELAY_ENTRE)
           timersFlores.push(t)
         }
@@ -1023,19 +1029,113 @@ export default function LocationARScanner() {
       const offscreen = document.createElement('canvas')
       offscreen.width  = W
       offscreen.height = H
-      const ctx = offscreen.getContext('2d')!
+      const ctx = offscreen.getContext('2d', { willReadFrequently: true })!
 
-      if (video && video.readyState >= 2) {
-        ctx.drawImage(video, 0, 0, W, H)
+      // 1. Fondo: video de cámara o negro
+
+      if (video && video.readyState >= 2 && video.videoWidth > 0) {
+        try {
+          ctx.drawImage(video, 0, 0, W, H)
+        } catch (e) {
+          ctx.fillStyle = '#0a121c'
+          ctx.fillRect(0, 0, W, H)
+        }
       } else {
         ctx.fillStyle = '#0a121c'
         ctx.fillRect(0, 0, W, H)
       }
+
+      // 2. Canvas A-Frame (pañuelo 3D)
       if (aCanvas) {
         ctx.drawImage(aCanvas, 0, 0, W, H)
       }
 
-      const fotoBase64 = offscreen.toDataURL('image/jpeg', 0.82)
+      // 3. Flores — cargar PNG estático y dibujar en cada posición
+      if (floresDataRef.current.length > 0) {
+        const florImg = await new Promise<HTMLImageElement | null>(res => {
+          const img = new Image()
+          img.onload  = () => res(img)
+          img.onerror = () => {
+; res(null) }
+          img.src = '/images/flores_0200.png'
+        })
+
+        if (florImg) {
+          for (const f of floresDataRef.current) {
+            ctx.save()
+            ctx.globalAlpha = 0.92
+            ctx.translate(f.cx, f.cy)
+            ctx.rotate(f.angle)
+            ctx.drawImage(florImg, -f.w / 2, -f.h / 2, f.w, f.h)
+            ctx.restore()
+          }
+        }
+      }
+
+      // 4. HUD título (nombre de la baldosa) — texto spray blanco
+      const hudWrap = document.getElementById('hud-titulo-wrap')
+      if (hudWrap && baldosaActiva) {
+        const hudRect = hudWrap.getBoundingClientRect()
+        const texto   = baldosaActiva.nombre.toUpperCase()
+        const fSize   = Math.min(Math.max(W * 0.07, 28), 56)
+        ctx.save()
+        ctx.font         = `700 ${fSize}px 'Impact', 'Arial Black', sans-serif`
+        ctx.textAlign    = 'center'
+        ctx.textBaseline = 'middle'
+        // Glow blanco
+        ctx.shadowColor  = 'rgba(255,255,255,0.6)'
+        ctx.shadowBlur   = 18
+        ctx.fillStyle    = 'white'
+        ctx.fillText(texto, W / 2, hudRect.top + hudRect.height / 2)
+        ctx.restore()
+      }
+
+      // 5. HUD consigna "Florecerán Pañuelos" — texto coloreado
+      const hudConsigna = document.getElementById('hud-consigna')
+      if (hudConsigna) {
+        const consignaRect = hudConsigna.getBoundingClientRect()
+        const spans = hudConsigna.querySelectorAll('span') as NodeListOf<HTMLElement>
+        if (spans.length > 0) {
+          const fSizeSub = Math.min(Math.max(W * 0.038, 14), 28)
+          ctx.save()
+          ctx.font         = `600 ${fSizeSub}px 'Oswald', 'Impact', sans-serif`
+          ctx.textAlign    = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.letterSpacing = '0.22em'
+          // Reconstruir el texto completo para centrarlo
+          const textoConsigna = Array.from(spans).map(s => s.textContent || '').join('')
+          const cy = consignaRect.top + consignaRect.height / 2
+          // Medir ancho total para alinear letra a letra
+          const totalW = ctx.measureText(textoConsigna).width
+          let offsetX = W / 2 - totalW / 2
+          Array.from(spans).forEach(span => {
+            const ch    = span.textContent || ''
+            const color = span.style.color || 'white'
+            ctx.fillStyle   = color
+            ctx.shadowColor = color.replace(')', ', 0.5)').replace('rgb', 'rgba')
+            ctx.shadowBlur  = 8
+            ctx.fillText(ch, offsetX + ctx.measureText(ch).width / 2, cy)
+            offsetX += ctx.measureText(ch).width
+          })
+          ctx.restore()
+        }
+      }
+
+      // Test si el canvas está tainted
+      let fotoBase64: string
+      try {
+        fotoBase64 = offscreen.toDataURL('image/jpeg', 0.82)
+      } catch (e) {
+        // Fallback: intentar sin el video
+        const fallback = document.createElement('canvas')
+        fallback.width  = W
+        fallback.height = H
+        const fctx = fallback.getContext('2d')!
+        fctx.fillStyle = '#0a121c'
+        fctx.fillRect(0, 0, W, H)
+        if (aCanvas) { try { fctx.drawImage(aCanvas, 0, 0, W, H) } catch {} }
+        fotoBase64 = fallback.toDataURL('image/jpeg', 0.82)
+      }
 
       const entrada = {
         id:        Date.now(),
@@ -1051,8 +1151,7 @@ export default function LocationARScanner() {
       localStorage.setItem('recorremo_foto_pendiente', JSON.stringify(entrada))
       setFotoOk(true)
       window.location.href = '/scanner/foto'
-    } catch {
-      // Silencioso
+    } catch (e) {
     } finally {
       setEscaneando(false)
     }
@@ -1074,7 +1173,7 @@ export default function LocationARScanner() {
   // ── Escena AR activa ──────────────────────────────────────────────────────
   if (fase === 'ar') {
     return (
-      <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#000' }}>
+      <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', overflow: 'hidden', background: '#000', zIndex: 9999 }}>
         {/* Contenedor donde se monta A-Frame */}
         <div id="ar-container" style={{ width: '100%', height: '100%' }} />
 
@@ -1092,7 +1191,7 @@ export default function LocationARScanner() {
         {arListo && (
           <div style={{
             position: 'absolute',
-            top: '72px',
+            top: 'calc(env(safe-area-inset-top, 0px) + 60px)',
             left: 0,
             right: 0,
             zIndex: 150,
@@ -1233,14 +1332,6 @@ export default function LocationARScanner() {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// Debug de tiempos — activo solo en desarrollo
-const _arDebugStart = typeof window !== 'undefined' ? performance.now() : 0
-function arDebug(msg: string) {
-  if (process.env.NODE_ENV !== 'development') return
-  const ms = Math.round(performance.now() - _arDebugStart)
-  const s  = (ms / 1000).toFixed(2)
-  console.log(`%c[AR ${s}s] ${msg}`, 'color: #60a5fa; font-weight: bold;')
-}
 
 function loadScript(src: string): Promise<void> {
   return new Promise((res, rej) => {

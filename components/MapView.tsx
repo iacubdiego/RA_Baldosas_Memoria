@@ -40,7 +40,7 @@ const userIcon = new L.Icon({
   iconSize: [28, 28], iconAnchor: [14, 14],
 })
 
-const RADIO_MAXIMO   = 1000
+const RADIO_MAXIMO   = 2500
 const LIMIT_CERCANAS = 20
 
 interface Pin { id:string; codigo:string; nombre:string; direccion:string; barrio:string; lat:number; lng:number; vecesEscaneada?:number; fotosUrls?:string[] }
