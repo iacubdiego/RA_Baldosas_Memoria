@@ -329,7 +329,7 @@ export default function Home() {
               margin: '0 auto var(--space-md)',
               lineHeight: 1.8,
             }}>
-              Detrás de cada baldosa hay una historia. Proponemos un Guía interactiva para explorar la memoria construida a través de las baldosas por la memoria. Sé parte del recorrido marcando cada baldosa que visitas cuando la escaneas.
+              Detrás de cada baldosa hay una historia. Proponemos una guía interactiva para explorar la memoria construida a través de las baldosas por la memoria. Sé parte del recorrido marcando cada baldosa que visitas cuando la escaneas.
             </p>
           </div>
 

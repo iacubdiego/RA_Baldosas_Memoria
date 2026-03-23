@@ -83,7 +83,7 @@ export default function QuienesSomosPage() {
           <div className="qs-hero-inner">
             <h1 className="qs-hero-title">Quiénes<br/><em>somos</em></h1>
             <p className="qs-hero-lead">
-              Somos gcoop, una Cooperativa de desarrollo de Software Libre. Más allá de nuestros trabajos para empresas de distintos tipos, buscamos aportar a la sociedad desde nuestros conocimientos para construir un mundo mejor, solidario y democrático.
+              Somos gcoop, una Cooperativa de desarrollo de Software Libre. Más allá de nuestros trabajos para empresas de distintos tipo, buscamos aportar a la sociedad desde nuestros conocimientos para construir un mundo mejor, solidario y democrático.
             </p>
           </div>
         </section>
