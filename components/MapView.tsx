@@ -40,7 +40,7 @@ const userIcon = new L.Icon({
   iconSize: [28, 28], iconAnchor: [14, 14],
 })
 
-const RADIO_MAXIMO   = 2500
+const RADIO_MAXIMO   = 50   // metros — debe estar a menos de 50m para escanear
 const LIMIT_CERCANAS = 20
 
 interface Pin { id:string; codigo:string; nombre:string; direccion:string; barrio:string; lat:number; lng:number; vecesEscaneada?:number; fotosUrls?:string[] }
@@ -265,7 +265,7 @@ export default function MapView({ initialLocation }:MapViewProps) {
                 <div style={{fontFamily:'sans-serif',minWidth:'200px',maxWidth:'240px'}}>
                   <h3 style={{fontSize:'0.95rem',color:'#1a2a3a',margin:'0 0 4px'}}>{pin.nombre}</h3>
                   {pin.direccion&&<p style={{fontSize:'0.78rem',color:'#4a6b7c',margin:'0 0 4px'}}>{pin.direccion}</p>}
-                  {dist!==null&&<p style={{fontSize:'0.78rem',fontWeight:600,color:cerca?'#166534':'#4b5563',margin:'0 0 4px'}}>{cerca?'✓ Estás cerca':`Estás a ${formatearDistancia(dist)}`}</p>}
+                  {dist!==null&&<p style={{fontSize:'0.78rem',fontWeight:600,color:cerca?'#166534':'#4b5563',margin:'0 0 4px'}}>{cerca?`✓ Estás cerca · ${formatearDistancia(dist)}`:`Estás a ${formatearDistancia(dist)}`}</p>}
                   {pin.vecesEscaneada!==undefined&&pin.vecesEscaneada>0&&<p style={{fontSize:'0.82rem',fontWeight:600,color:'#2563eb',margin:'0 0 8px'}}>👁 {pin.vecesEscaneada.toLocaleString('es-AR')} {pin.vecesEscaneada===1?'visita':'visitas'}</p>}
                   <div style={{display:'flex',gap:'6px',marginTop:'6px'}}>
                     <button onClick={()=>verDetalle(pin.id,pin)} style={{flex:1,padding:'7px',background:'#2563eb',color:'white',border:'none',borderRadius:'6px',fontSize:'0.82rem',fontWeight:600,cursor:'pointer'}}>Ver detalle</button>
@@ -460,7 +460,7 @@ export default function MapView({ initialLocation }:MapViewProps) {
                       <div style={{display:'flex',alignItems:'center',gap:'6px',flexShrink:0}}>
                         {b.distancia!==undefined&&(
                           <span style={{fontSize:'0.75rem',fontWeight:600,padding:'3px 8px',borderRadius:'12px',background:cerca?'#dcfce7':'#f3f4f6',color:cerca?'#166534':'#6b7280'}}>
-                            {cerca?'✓ Cerca':formatearDistancia(b.distancia)}
+                            {cerca?`✓ Cerca · ${formatearDistancia(b.distancia)}`:formatearDistancia(b.distancia)}
                           </span>
                         )}
                         <button onClick={()=>verDetalle(b.id,b)} style={{background:'#f0f4f8',border:'1px solid #e5e7eb',borderRadius:'8px',padding:'5px 8px',fontSize:'0.78rem',fontWeight:600,color:'#1a2a3a',cursor:'pointer',whiteSpace:'nowrap'}}>
