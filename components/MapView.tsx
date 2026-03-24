@@ -40,7 +40,7 @@ const userIcon = new L.Icon({
   iconSize: [28, 28], iconAnchor: [14, 14],
 })
 
-const RADIO_MAXIMO   = 50   // metros — debe estar a menos de 50m para escanear
+const RADIO_MAXIMO   = 100   // metros — debe estar a menos de 100m para escanear
 const LIMIT_CERCANAS = 20
 
 interface Pin { id:string; codigo:string; nombre:string; direccion:string; barrio:string; lat:number; lng:number; vecesEscaneada?:number; fotosUrls?:string[] }
