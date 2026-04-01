@@ -60,10 +60,10 @@ async function proximoCodigo(): Promise<string> {
     .findOne({ codigo: /^BALD-\d+$/ })
     .sort({ codigo: -1 })
     .select('codigo')
-    .lean()
+    .lean() as { codigo: string } | null
 
   let num = 1
-  if (ultimo && typeof ultimo.codigo === 'string') {
+  if (ultimo?.codigo) {
     const match = ultimo.codigo.match(/^BALD-(\d+)$/)
     if (match) num = parseInt(match[1], 10) + 1
   }
