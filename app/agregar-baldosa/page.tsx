@@ -512,6 +512,21 @@ export default function AgregarBaldosaPage() {
           Completá este formulario y la vamos a revisar para incorporarla al recorrido.
         </p>
 
+        {/* Aviso para correcciones */}
+        <div style={{
+          padding: '14px 18px',
+          borderRadius: '10px',
+          marginBottom: 'var(--space-lg)',
+          background: 'rgba(99, 102, 241, 0.05)',
+          border: '1px solid rgba(99, 102, 241, 0.15)',
+          fontSize: '0.88rem',
+          lineHeight: 1.65,
+          color: 'var(--color-concrete)',
+        }}>
+          <strong style={{ color: 'var(--color-stone)' }}>¿Querés corregir o completar datos de una baldosa que ya está en el mapa?</strong>
+          {' '}Usá este mismo formulario: indicá el nombre y la dirección de la baldosa existente, y contanos en <em>Información adicional</em> qué dato querés modificar.
+        </div>
+
         {/* Mensaje de resultado */}
         {resultado && (
           <div style={estilos.alerta(resultado.ok ? 'ok' : 'error')}>
