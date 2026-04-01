@@ -5,7 +5,7 @@ import connectDB from '@/lib/mongodb'
 import Baldosa from '@/models/Baldosa'
 
 // ── Configuración ─────────────────────────────────────────────────────────────
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'baldosas')
+const UPLOAD_DIR = path.join(process.cwd(), 'public', 'images', 'uploads', 'baldosas')
 const MAX_FILE_SIZE = 5 * 1024 * 1024  // 5 MB por archivo
 const MAX_FOTOS = 3
 const TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/webp']
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
       const filepath = path.join(UPLOAD_DIR, filename)
       await writeFile(filepath, buffer)
 
-      fotosUrls.push(`/uploads/baldosas/${filename}`)
+      fotosUrls.push(`images/uploads/baldosas/${filename}`)
     }
 
     // 9. Armar info extendida
