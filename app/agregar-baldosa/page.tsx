@@ -315,6 +315,7 @@ export default function AgregarBaldosaPage() {
   const [lat, setLat] = useState('')
   const [lng, setLng] = useState('')
   const [descripcion, setDescripcion] = useState('')
+  const [infoAdicional, setInfoAdicional] = useState('')
   const [contacto, setContacto] = useState('')
   const [honeypot, setHoneypot] = useState('')
   const [fotos, setFotos] = useState<FotoPreview[]>([])
@@ -468,6 +469,7 @@ export default function AgregarBaldosaPage() {
         direccion: direccion.trim(),
         barrio: barrio.trim(),
         descripcion: descripcion.trim(),
+        infoAdicional: infoAdicional.trim(),
         contacto: contacto.trim(),
         sitio_web: honeypot,
       }
@@ -498,7 +500,7 @@ export default function AgregarBaldosaPage() {
         // Limpiar formulario
         setNombre(''); setDireccion(''); setBarrio('')
         setLat(''); setLng(''); setDescripcion('')
-        setContacto(''); setErrores({})
+        setInfoAdicional(''); setContacto(''); setErrores({})
         fotos.forEach(f => URL.revokeObjectURL(f.url))
         setFotos([])
         formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -572,7 +574,7 @@ export default function AgregarBaldosaPage() {
             <Input
               id="nombre"
               type="text"
-              placeholder="Ej: María Elena Walsh"
+              placeholder="Ej: Palumbo Garrido, Juan Carlos"
               value={nombre}
               onChange={(e: any) => setNombre(e.target.value)}
               maxLength={200}
@@ -736,25 +738,42 @@ export default function AgregarBaldosaPage() {
 
           <hr style={estilos.separador} />
 
-          {/* Descripción */}
+          {/* Descripción (pública — se muestra en la app) */}
           <div style={estilos.campo}>
             <label style={estilos.label} htmlFor="descripcion">
-              Información adicional <span style={estilos.labelOpcional}>(opcional)</span>
+              Descripción <span style={estilos.labelOpcional}>(opcional — se mostrará en el detalle de la baldosa)</span>
             </label>
             <Input
               as="textarea"
               id="descripcion"
-              placeholder="Todo lo que sepas: fecha de colocación, organización que la colocó, historia de la persona…"
+              placeholder="Historia de la persona, fecha de colocación, organización que la colocó…"
               value={descripcion}
               onChange={(e: any) => setDescripcion(e.target.value)}
               maxLength={1000}
             />
           </div>
 
-          {/* Contacto */}
+          <hr style={estilos.separador} />
+
+          {/* Información adicional (privada — solo para revisión interna) */}
+          <div style={estilos.campo}>
+            <label style={estilos.label} htmlFor="infoAdicional">
+              Información adicional <span style={estilos.labelOpcional}>(opcional — no se publica, es solo para nuestra revisión)</span>
+            </label>
+            <Input
+              as="textarea"
+              id="infoAdicional"
+              placeholder="Cualquier dato que nos ayude a verificar: fuentes, links, aclaraciones…"
+              value={infoAdicional}
+              onChange={(e: any) => setInfoAdicional(e.target.value)}
+              maxLength={1000}
+            />
+          </div>
+
+          {/* Contacto (privado — solo para revisión interna) */}
           <div style={estilos.campo}>
             <label style={estilos.label} htmlFor="contacto">
-              Tu email o contacto <span style={estilos.labelOpcional}>(opcional — por si necesitamos consultarte algo)</span>
+              Tu email o contacto <span style={estilos.labelOpcional}>(opcional — no se publica, es por si necesitamos consultarte)</span>
             </label>
             <Input
               id="contacto"

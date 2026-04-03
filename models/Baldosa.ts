@@ -19,6 +19,7 @@ export interface IBaldosa {
   targetIndex?: number;
   mensajeAR: string;
   infoExtendida?: string;
+  notasInternas?: string;  // Solo visible para admin — contacto, notas del formulario
   vecesEscaneada: number;
   activo: boolean;
   createdAt: Date;
@@ -65,6 +66,7 @@ const baldosaSchema = new mongoose.Schema<IBaldosa>({
     required: true
   },
   infoExtendida: String,
+  notasInternas: String,    // No se expone en ningún endpoint público
   vecesEscaneada: {
     type: Number,
     default: 0

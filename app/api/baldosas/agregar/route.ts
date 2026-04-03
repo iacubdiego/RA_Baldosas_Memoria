@@ -108,11 +108,12 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Extraer y sanitizar campos de texto
-    const nombre      = sanitize(body.nombre || '', 200)
-    const direccion   = sanitize(body.direccion || '', 300)
-    const barrio      = sanitize(body.barrio || '', 100)
-    const descripcion = sanitize(body.descripcion || '', 1000)
-    const contacto    = sanitize(body.contacto || '', 200)
+    const nombre        = sanitize(body.nombre || '', 200)
+    const direccion     = sanitize(body.direccion || '', 300)
+    const barrio        = sanitize(body.barrio || '', 100)
+    const descripcion   = sanitize(body.descripcion || '', 1000)
+    const infoAdicional = sanitize(body.infoAdicional || '', 1000)
+    const contacto      = sanitize(body.contacto || '', 200)
     const latRaw      = parseFloat(body.lat)
     const lngRaw      = parseFloat(body.lng)
 
@@ -173,13 +174,13 @@ export async function POST(request: NextRequest) {
     await connectDB()
     const codigo = await proximoCodigo()
 
-    // 9. Armar info extendida
-    const partes: string[] = []
-    if (contacto) partes.push(`Contacto: ${contacto}`)
-    if (descripcion) partes.push(descripcion)
-    if (!lat || !lng) partes.push('⚠️ Coordenadas no confirmadas — verificar dirección.')
-    if (fotosUrls.length > 0) partes.push(`📷 ${fotosUrls.length} foto(s) adjunta(s).`)
-    const infoExtendida = partes.join('\n\n') || undefined
+    // 9. Armar notas internas (solo visible para admin, no se expone en la app)
+    const notasPartes: string[] = []
+    if (contacto) notasPartes.push(`Contacto: ${contacto}`)
+    if (infoAdicional) notasPartes.push(infoAdicional)
+    if (!lat || !lng) notasPartes.push('⚠️ Coordenadas no confirmadas — verificar dirección.')
+    if (fotosUrls.length > 0) notasPartes.push(`📷 ${fotosUrls.length} foto(s) adjunta(s).`)
+    const notasInternas = notasPartes.join('\n\n') || undefined
 
     // 10. Insertar con activo: false
     await Baldosa.create({
@@ -195,7 +196,7 @@ export async function POST(request: NextRequest) {
       barrio: barrio || undefined,
       fotosUrls: fotosUrls.length > 0 ? fotosUrls : undefined,
       mensajeAR: `${nombre.toUpperCase()} — PRESENTE`,
-      infoExtendida,
+      notasInternas,
       vecesEscaneada: 0,
       activo: false,
     })
