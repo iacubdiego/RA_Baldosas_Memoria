@@ -5,21 +5,15 @@ import Link from 'next/link'
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 interface FotoPreview {
-  file: File
-  url: string   // URL.createObjectURL para preview
+  dataUri: string   // data:image/jpeg;base64,...
+  url: string       // URL.createObjectURL para preview (más liviano que el data URI)
 }
 
-// ── Comprimir imagen del lado del cliente ─────────────────────────────────────
-// Redimensiona a max 1200px de ancho y comprime a JPG calidad 0.8
-// Reduce el peso de las fotos de celular (~3-5MB → ~200-400KB)
-function comprimirImagen(file: File, maxAncho = 1200, calidad = 0.8): Promise<File> {
-  return new Promise((resolve) => {
-    // Si ya es menor a 500KB, no comprimir
-    if (file.size < 500 * 1024) {
-      resolve(file)
-      return
-    }
-
+// ── Comprimir imagen y devolver como data URI base64 ──────────────────────────
+// Redimensiona a max 800px de ancho y comprime a JPG calidad 0.7
+// Fotos de celular (~3-5MB) → ~100-200KB en base64
+function comprimirABase64(file: File, maxAncho = 800, calidad = 0.7): Promise<string> {
+  return new Promise((resolve, reject) => {
     const img = new Image()
     const url = URL.createObjectURL(file)
 
@@ -40,23 +34,13 @@ function comprimirImagen(file: File, maxAncho = 1200, calidad = 0.8): Promise<Fi
       const ctx = canvas.getContext('2d')!
       ctx.drawImage(img, 0, 0, w, h)
 
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) { resolve(file); return }
-          const comprimido = new File([blob], file.name, {
-            type: 'image/jpeg',
-            lastModified: Date.now(),
-          })
-          resolve(comprimido)
-        },
-        'image/jpeg',
-        calidad
-      )
+      const dataUri = canvas.toDataURL('image/jpeg', calidad)
+      resolve(dataUri)
     }
 
     img.onerror = () => {
       URL.revokeObjectURL(url)
-      resolve(file) // fallback: enviar sin comprimir
+      reject(new Error('No se pudo procesar la imagen.'))
     }
 
     img.src = url
@@ -228,6 +212,17 @@ const estilos = {
     border: '1px solid rgba(37, 99, 235, 0.08)',
   } as React.CSSProperties,
 
+  avisoCorreccion: {
+    padding: '14px 18px',
+    borderRadius: '10px',
+    marginBottom: 'var(--space-lg)',
+    background: 'rgba(99, 102, 241, 0.05)',
+    border: '1px solid rgba(99, 102, 241, 0.15)',
+    fontSize: '0.88rem',
+    lineHeight: 1.65,
+    color: 'var(--color-concrete)',
+  } as React.CSSProperties,
+
   // ── Estilos de fotos ──
   dropZone: (dragging: boolean) => ({
     border: `2px dashed ${dragging ? 'var(--color-primary)' : '#d1d9e0'}`,
@@ -326,6 +321,7 @@ export default function AgregarBaldosaPage() {
 
   // UI state
   const [enviando, setEnviando] = useState(false)
+  const [procesandoFotos, setProcesandoFotos] = useState(false)
   const [resultado, setResultado] = useState<{ ok: boolean; mensaje: string } | null>(null)
   const [errores, setErrores] = useState<Record<string, string>>({})
   const [ubicando, setUbicando] = useState(false)
@@ -335,11 +331,15 @@ export default function AgregarBaldosaPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // ── Manejo de fotos ───────────────────────────────────────────────────────
-  function agregarFotos(archivos: FileList | File[]) {
-    const nuevas: FotoPreview[] = []
+  async function agregarFotos(archivos: FileList | File[]) {
     const disponibles = MAX_FOTOS - fotos.length
     const errFotos: string[] = []
 
+    if (archivos.length > disponibles) {
+      errFotos.push(`Máximo ${MAX_FOTOS} fotos. Se tomaron las primeras ${disponibles}.`)
+    }
+
+    const aCargar: File[] = []
     for (let i = 0; i < Math.min(archivos.length, disponibles); i++) {
       const f = archivos[i]
 
@@ -348,16 +348,12 @@ export default function AgregarBaldosaPage() {
         continue
       }
 
-      if (f.size > 10 * 1024 * 1024) { // 10MB límite client-side (se comprime después)
-        errFotos.push(`"${f.name}" es demasiado grande (máx. 10 MB).`)
+      if (f.size > 15 * 1024 * 1024) {
+        errFotos.push(`"${f.name}" es demasiado grande (máx. 15 MB).`)
         continue
       }
 
-      nuevas.push({ file: f, url: URL.createObjectURL(f) })
-    }
-
-    if (archivos.length > disponibles) {
-      errFotos.push(`Máximo ${MAX_FOTOS} fotos. Se tomaron las primeras ${disponibles}.`)
+      aCargar.push(f)
     }
 
     if (errFotos.length > 0) {
@@ -366,7 +362,25 @@ export default function AgregarBaldosaPage() {
       setErrores(prev => { const { fotos: _, ...rest } = prev; return rest })
     }
 
-    setFotos(prev => [...prev, ...nuevas])
+    if (aCargar.length === 0) return
+
+    // Comprimir y convertir a base64
+    setProcesandoFotos(true)
+    try {
+      const nuevas: FotoPreview[] = []
+      for (const file of aCargar) {
+        const dataUri = await comprimirABase64(file)
+        nuevas.push({
+          dataUri,
+          url: URL.createObjectURL(file),
+        })
+      }
+      setFotos(prev => [...prev, ...nuevas])
+    } catch {
+      setErrores(prev => ({ ...prev, fotos: 'Error al procesar las fotos.' }))
+    } finally {
+      setProcesandoFotos(false)
+    }
   }
 
   function removerFoto(index: number) {
@@ -383,7 +397,6 @@ export default function AgregarBaldosaPage() {
     if (e.target.files && e.target.files.length > 0) {
       agregarFotos(e.target.files)
     }
-    // Limpiar el input para permitir seleccionar el mismo archivo de nuevo
     e.target.value = ''
   }
 
@@ -450,29 +463,27 @@ export default function AgregarBaldosaPage() {
     setEnviando(true)
 
     try {
-      // Comprimir fotos antes de enviar
-      const fotosComprimidas = await Promise.all(
-        fotos.map(f => comprimirImagen(f.file))
-      )
+      const payload: any = {
+        nombre: nombre.trim(),
+        direccion: direccion.trim(),
+        barrio: barrio.trim(),
+        descripcion: descripcion.trim(),
+        contacto: contacto.trim(),
+        sitio_web: honeypot,
+      }
 
-      // Armar FormData
-      const fd = new FormData()
-      fd.append('nombre', nombre.trim())
-      fd.append('direccion', direccion.trim())
-      fd.append('barrio', barrio.trim())
-      if (lat.trim()) fd.append('lat', lat.trim())
-      if (lng.trim()) fd.append('lng', lng.trim())
-      fd.append('descripcion', descripcion.trim())
-      fd.append('contacto', contacto.trim())
-      fd.append('sitio_web', honeypot)  // honeypot
+      if (lat.trim()) payload.lat = lat.trim()
+      if (lng.trim()) payload.lng = lng.trim()
 
-      for (const foto of fotosComprimidas) {
-        fd.append('fotos', foto)
+      // Agregar fotos como data URIs base64
+      if (fotos.length > 0) {
+        payload.fotos = fotos.map(f => f.dataUri)
       }
 
       const res = await fetch('/api/baldosas/agregar', {
         method: 'POST',
-        body: fd,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       })
 
       const data = await res.json()
@@ -488,10 +499,8 @@ export default function AgregarBaldosaPage() {
         setNombre(''); setDireccion(''); setBarrio('')
         setLat(''); setLng(''); setDescripcion('')
         setContacto(''); setErrores({})
-        // Limpiar fotos
         fotos.forEach(f => URL.revokeObjectURL(f.url))
         setFotos([])
-        // Scroll al mensaje
         formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }
     } catch {
@@ -513,16 +522,7 @@ export default function AgregarBaldosaPage() {
         </p>
 
         {/* Aviso para correcciones */}
-        <div style={{
-          padding: '14px 18px',
-          borderRadius: '10px',
-          marginBottom: 'var(--space-lg)',
-          background: 'rgba(99, 102, 241, 0.05)',
-          border: '1px solid rgba(99, 102, 241, 0.15)',
-          fontSize: '0.88rem',
-          lineHeight: 1.65,
-          color: 'var(--color-concrete)',
-        }}>
+        <div style={estilos.avisoCorreccion}>
           <strong style={{ color: 'var(--color-stone)' }}>¿Querés corregir o completar datos de una baldosa que ya está en el mapa?</strong>
           {' '}Usá este mismo formulario: indicá el nombre y la dirección de la baldosa existente, y contanos en <em>Información adicional</em> qué dato querés modificar.
         </div>
@@ -646,13 +646,15 @@ export default function AgregarBaldosaPage() {
                   </svg>
                 </div>
                 <p style={{ fontSize: '0.9rem', color: 'var(--color-dust)', margin: 0 }}>
-                  {dragging
-                    ? 'Soltá las fotos acá'
-                    : 'Tocá para elegir fotos o arrastralas acá'
+                  {procesandoFotos
+                    ? 'Procesando fotos…'
+                    : dragging
+                      ? 'Soltá las fotos acá'
+                      : 'Tocá para elegir fotos o arrastralas acá'
                   }
                 </p>
                 <p style={{ fontSize: '0.75rem', color: '#9ca3af', margin: '4px 0 0' }}>
-                  Máximo 5 MB por foto · Se comprimen automáticamente
+                  Se comprimen automáticamente antes de enviar
                 </p>
               </div>
             )}
@@ -768,13 +770,13 @@ export default function AgregarBaldosaPage() {
           {/* Botón enviar */}
           <button
             type="submit"
-            disabled={enviando}
+            disabled={enviando || procesandoFotos}
             style={{
               ...estilos.botonEnviar,
-              ...(enviando ? estilos.botonDeshabilitado : {}),
+              ...((enviando || procesandoFotos) ? estilos.botonDeshabilitado : {}),
             }}
             onMouseEnter={e => {
-              if (!enviando) {
+              if (!enviando && !procesandoFotos) {
                 (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)'
                 ;(e.currentTarget as HTMLButtonElement).style.boxShadow = '0 8px 24px rgba(26,42,58,0.3)'
               }
@@ -784,7 +786,7 @@ export default function AgregarBaldosaPage() {
               ;(e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px rgba(26,42,58,0.2)'
             }}
           >
-            {enviando ? 'Enviando…' : 'Enviar baldosa'}
+            {procesandoFotos ? 'Procesando fotos…' : enviando ? 'Enviando…' : 'Enviar baldosa'}
           </button>
 
           <p style={estilos.nota}>
