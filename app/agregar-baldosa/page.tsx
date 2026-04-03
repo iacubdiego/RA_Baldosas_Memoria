@@ -327,6 +327,7 @@ export default function AgregarBaldosaPage() {
   const [errores, setErrores] = useState<Record<string, string>>({})
   const [ubicando, setUbicando] = useState(false)
   const [dragging, setDragging] = useState(false)
+  const [mostrarPopup, setMostrarPopup] = useState(false)
 
   const formRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -497,6 +498,7 @@ export default function AgregarBaldosaPage() {
           ok: true,
           mensaje: data.mensaje || 'Baldosa registrada. Será revisada antes de aparecer en el mapa.',
         })
+        setMostrarPopup(true)
         // Limpiar formulario
         setNombre(''); setDireccion(''); setBarrio('')
         setLat(''); setLng(''); setDescripcion('')
@@ -574,7 +576,7 @@ export default function AgregarBaldosaPage() {
             <Input
               id="nombre"
               type="text"
-              placeholder="Ej: Palumbo Garrido, Juan Carlos"
+              placeholder="Ej: María Elena Walsh"
               value={nombre}
               onChange={(e: any) => setNombre(e.target.value)}
               maxLength={200}
@@ -815,6 +817,116 @@ export default function AgregarBaldosaPage() {
           </p>
         </form>
       </div>
+
+      {/* ── Popup de éxito ── */}
+      {mostrarPopup && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            background: 'rgba(10, 18, 28, 0.65)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem',
+            animation: 'fadeIn 0.3s ease',
+          }}
+          onClick={() => setMostrarPopup(false)}
+        >
+          <div
+            style={{
+              background: '#fff',
+              borderRadius: '16px',
+              padding: '2rem 2rem 1.5rem',
+              maxWidth: '380px',
+              width: '100%',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.25)',
+              textAlign: 'center',
+              animation: 'slideUpFade 0.4s cubic-bezier(0.25, 1, 0.5, 1)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              background: 'rgba(16, 185, 129, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1rem',
+            }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+
+            <h3 style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '1.4rem',
+              fontWeight: 700,
+              color: 'var(--color-stone)',
+              margin: '0 0 0.5rem',
+            }}>
+              ¡Baldosa enviada!
+            </h3>
+
+            <p style={{
+              fontSize: '0.92rem',
+              color: 'var(--color-dust)',
+              lineHeight: 1.6,
+              margin: '0 0 1.25rem',
+            }}>
+              Gracias por colaborar. La baldosa será revisada antes de aparecer en el mapa.
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setMostrarPopup(false)}
+                style={{
+                  flex: 1,
+                  padding: '11px',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  fontFamily: 'var(--font-body)',
+                  color: 'var(--color-stone)',
+                  background: '#f1f5f9',
+                  border: '1.5px solid #e2e8f0',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  textTransform: 'none',
+                  letterSpacing: 'normal',
+                  transition: 'background 0.2s ease',
+                }}
+              >
+                Cargar otra
+              </button>
+              <Link
+                href="/mapa"
+                style={{
+                  flex: 1,
+                  padding: '11px',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  fontFamily: 'var(--font-body)',
+                  color: 'var(--color-parchment)',
+                  background: 'var(--color-stone)',
+                  border: 'none',
+                  borderRadius: '10px',
+                  textAlign: 'center',
+                  textDecoration: 'none',
+                  transition: 'opacity 0.2s ease',
+                }}
+              >
+                Ir al mapa
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
