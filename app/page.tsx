@@ -333,6 +333,43 @@ export default function Home() {
             </p>
           </div>
 
+          {/* Link a colaborar */}
+          <div style={{
+            opacity: 0,
+            animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 4.2s forwards',
+            marginBottom: 'var(--space-md)',
+          }}>
+            <a href="/colaborar" style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '0.95rem',
+              fontWeight: 500,
+              color: 'var(--color-primary)',
+              textDecoration: 'none',
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              border: '1.5px solid rgba(37, 99, 235, 0.2)',
+              background: 'rgba(37, 99, 235, 0.04)',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(37, 99, 235, 0.08)'
+              ;(e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(37, 99, 235, 0.35)'
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(37, 99, 235, 0.04)'
+              ;(e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(37, 99, 235, 0.2)'
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="16" />
+                <line x1="8" y1="12" x2="16" y2="12" />
+              </svg>
+              ¿Conocés alguna baldosa recordatorio de los/as desaparecidos/as de la última dictadura cívico militar?
+            </a>
+          </div>
+
           {/* Contador */}
           <div style={{
             display: 'flex',

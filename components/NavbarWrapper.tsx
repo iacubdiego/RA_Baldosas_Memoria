@@ -4,9 +4,10 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 
 const LINKS = [
-  { href: '/mapa',            label: 'Mapa' },
-  { href: '/quienes-somos',   label: '¿Quiénes somos?' },
-  { href: '/como-funciona',   label: '¿Cómo funciona?' },
+  { href: '/mapa',              label: 'Mapa' },
+  { href: '/colaborar',          label: 'Colaborar' },
+  { href: '/quienes-somos',     label: '¿Quiénes somos?' },
+  { href: '/como-funciona',     label: '¿Cómo funciona?' },
 ]
 
 export default function NavbarWrapper() {
