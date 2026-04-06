@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useMemo } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -58,6 +58,11 @@ function formatearDistancia(m:number):string {
   return m<1000?`${Math.round(m)} m`:`${(m/1000).toFixed(1)} km`
 }
 
+/** Normaliza texto para búsqueda: minúsculas y sin acentos */
+function normalizar(texto:string):string {
+  return texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+}
+
 function MapFitter({pins}:{pins:Pin[]}) {
   const map=useMap(), done=useRef(false)
   useEffect(()=>{ if(pins.length>0&&!done.current){done.current=true; map.fitBounds(L.latLngBounds(pins.map(p=>[p.lat,p.lng] as [number,number])),{padding:[50,50],maxZoom:15})} },[pins,map])
@@ -67,6 +72,15 @@ function MapFitter({pins}:{pins:Pin[]}) {
 function RouteController({userLocation,destino}:{userLocation:{lat:number;lng:number}|null; destino:{lat:number;lng:number}|null}) {
   const map=useMap()
   useEffect(()=>{ if(destino&&userLocation){ map.fitBounds(L.latLngBounds([[userLocation.lat,userLocation.lng],[destino.lat,destino.lng]]),{padding:[80,80],maxZoom:17}) } },[destino,userLocation,map])
+  return null
+}
+
+/** Vuela el mapa a una coordenada específica */
+function FlyTo({target}:{target:{lat:number;lng:number}|null}) {
+  const map=useMap()
+  useEffect(()=>{
+    if(target) map.flyTo([target.lat,target.lng],17,{duration:0.8})
+  },[target,map])
   return null
 }
 
@@ -117,6 +131,36 @@ export default function MapView({ initialLocation }:MapViewProps) {
   const [loadingRuta,setLoadingRuta]=useState(false)
   const [pidiendo,setPidiendo]=useState(false)
 
+  // ─── Estado de búsqueda ──────────────────────────────────────────────────
+  const [busquedaAbierta,setBusquedaAbierta]=useState(false)
+  const [queryBusqueda,setQueryBusqueda]=useState('')
+  const [flyTarget,setFlyTarget]=useState<{lat:number;lng:number}|null>(null)
+  const inputBusquedaRef=useRef<HTMLInputElement>(null)
+
+  const resultadosBusqueda=useMemo(()=>{
+    if(queryBusqueda.trim().length<2) return []
+    const q=normalizar(queryBusqueda.trim())
+    return pins
+      .filter(p=>normalizar(p.nombre).includes(q)||normalizar(p.direccion).includes(q)||normalizar(p.barrio).includes(q))
+      .slice(0,12)
+  },[queryBusqueda,pins])
+
+  const abrirBusqueda=()=>{
+    setBusquedaAbierta(true)
+    setTimeout(()=>inputBusquedaRef.current?.focus(),80)
+  }
+  const cerrarBusqueda=()=>{
+    setBusquedaAbierta(false)
+    setQueryBusqueda('')
+  }
+  const seleccionarResultado=(pin:Pin)=>{
+    cerrarBusqueda()
+    setFlyTarget({lat:pin.lat,lng:pin.lng})
+    // Limpiar flyTarget después de volar para que se pueda volver a seleccionar el mismo pin
+    setTimeout(()=>setFlyTarget(null),1000)
+    verDetalle(pin.id,pin)
+  }
+
   useEffect(()=>{
     if(!navigator.geolocation){setLoadingLocation(false);return}
     const obtenerUbicacion=()=>{
@@ -129,11 +173,8 @@ export default function MapView({ initialLocation }:MapViewProps) {
     if(navigator.permissions){
       navigator.permissions.query({name:'geolocation'}).then(result=>{
         if(result.state==='denied'){
-          // Solo omitir si ya fue explícitamente denegado
           setLoadingLocation(false)
         } else {
-          // 'granted' o 'prompt' — llamar getCurrentPosition
-          // En 'granted' devuelve inmediato; en 'prompt' abre el diálogo nativo
           obtenerUbicacion()
         }
       }).catch(()=>obtenerUbicacion())
@@ -176,25 +217,21 @@ export default function MapView({ initialLocation }:MapViewProps) {
   const fetchRutaOSRM=async(origen:{lat:number;lng:number},dest:{lat:number;lng:number})=>{
     setLoadingRuta(true)
     try {
-      // OSRM public server — walking profile
       const url=`https://router.project-osrm.org/route/v1/foot/${origen.lng},${origen.lat};${dest.lng},${dest.lat}?overview=full&geometries=geojson`
       const res=await fetch(url)
       const data=await res.json()
       if(data.routes&&data.routes[0]){
-        // GeoJSON coords son [lng,lat] — invertir para Leaflet [lat,lng]
         const coords:[number,number][]=data.routes[0].geometry.coordinates.map(([lng,lat]:[number,number])=>[lat,lng])
         setRuta(coords)
       }
     } catch(e) {
       console.error('Error OSRM:',e)
-      // Fallback: línea recta
       if(userLocation) setRuta([[userLocation.lat,userLocation.lng],[dest.lat,dest.lng]])
     } finally {
       setLoadingRuta(false)
     }
   }
 
-  // Carga el detalle completo de una baldosa desde la API
   const verDetalle=async(id:string,datosBasicos:Pin|BaldosaCercana)=>{
     setDetalle(datosBasicos)
     setLoadingDetalle(true)
@@ -225,7 +262,6 @@ export default function MapView({ initialLocation }:MapViewProps) {
     }
   }
 
-  // Recorrido automático a la baldosa más cercana (solo la primera vez que se tienen ubicación + pins)
   useEffect(()=>{
     if(recorridoAutoRef.current||!userLocation||pins.length===0)return
     recorridoAutoRef.current=true
@@ -238,7 +274,6 @@ export default function MapView({ initialLocation }:MapViewProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[userLocation,pins])
 
-  // Actualizar distancia al destino cuando cambia la ubicación del usuario
   useEffect(()=>{
     if(!userLocation||!destino)return
     setDistanciaDestino(calcularDistancia(userLocation.lat,userLocation.lng,destino.lat,destino.lng))
@@ -247,6 +282,20 @@ export default function MapView({ initialLocation }:MapViewProps) {
 
 
   // ruta viene de OSRM (se actualiza en iniciarRecorrido)
+
+  // Medir alto real del banner de recorrido para posicionar botones debajo
+  const bannerRef = useRef<HTMLDivElement>(null)
+  const [bannerHeight, setBannerHeight] = useState(0)
+
+  useEffect(() => {
+    const el = bannerRef.current
+    if (!el) { setBannerHeight(0); return }
+    const ro = new ResizeObserver(([entry]) => setBannerHeight(entry.contentRect.height))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [destino])
+
+  const topBotones = destino ? `${bannerHeight + 10}px` : '12px'
 
   return (
     <div style={{position:'relative',width:'100%',height:'100dvh'}}>
@@ -304,18 +353,195 @@ export default function MapView({ initialLocation }:MapViewProps) {
         })}
         <MapFitter pins={pins}/>
         <RouteController userLocation={userLocation} destino={destino}/>
+        <FlyTo target={flyTarget}/>
       </MapContainer>
 
-      {/* Navbar superpuesta */}
-      <div style={{position:'absolute',top:0,left:0,right:0,zIndex:400,background:'rgba(26,42,58,0.92)',backdropFilter:'blur(8px)',borderBottom:'1px solid rgba(255,255,255,0.1)',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 1rem',height:'48px'}}>
-        <a href="/" style={{color:'white',textDecoration:'none',fontSize:'0.9rem',fontWeight:600,opacity:0.85}}>← Inicio</a>
-        <span style={{color:'white',fontSize:'0.85rem',fontWeight:500,opacity:0.7}}>Recorremos Memoria</span>
-        {!loadingPins&&<span style={{color:'white',fontSize:'0.78rem',opacity:0.6}}>{pins.length.toLocaleString('es-AR')} baldosas</span>}
-      </div>
+      {/* ── Botones flotantes: Inicio (izq) + Buscar (der) ─────────── */}
+      {!busquedaAbierta ? (
+        <>
+          <a
+            href="/"
+            aria-label="Volver al inicio"
+            style={{
+              position:'absolute',
+              top:topBotones,
+              left:'12px',
+              zIndex:450,
+              height:'42px',
+              borderRadius:'21px',
+              background:'white',
+              boxShadow:'0 2px 12px rgba(0,0,0,0.25)',
+              display:'flex',
+              alignItems:'center',
+              justifyContent:'center',
+              gap:'6px',
+              padding:'0 14px',
+              textDecoration:'none',
+              color:'#1a2a3a',
+              transition:'top 0.25s ease',
+            }}
+          >
+            <img src="/images/logo_flores.png" alt="Inicio" style={{width:'24px',height:'24px',objectFit:'contain'}}/>
+            <span style={{fontSize:'0.88rem',fontWeight:600}}>Volver</span>
+          </a>
+          <button
+            onClick={abrirBusqueda}
+            aria-label="Buscar baldosa"
+            style={{
+              position:'absolute',
+              top:topBotones,
+              right:'12px',
+              zIndex:450,
+              height:'42px',
+              borderRadius:'21px',
+              border:'none',
+              background:'white',
+              boxShadow:'0 2px 12px rgba(0,0,0,0.25)',
+              cursor:'pointer',
+              display:'flex',
+              alignItems:'center',
+              justifyContent:'center',
+              gap:'6px',
+              padding:'0 16px',
+              color:'#1a2a3a',
+              transition:'top 0.25s ease',
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="8.5" cy="8.5" r="6"/>
+              <line x1="13" y1="13" x2="18" y2="18"/>
+            </svg>
+            <span style={{fontSize:'0.88rem',fontWeight:600}}>Buscar</span>
+          </button>
+        </>
+      ) : (
+        <div style={{
+          position:'absolute',
+          top:topBotones,
+          left:'12px',
+          right:'12px',
+          zIndex:450,
+          maxWidth:'480px',
+          marginLeft:'auto',
+          marginRight:'auto',
+          transition:'top 0.25s ease',
+        }}>
+          {/* Barra de búsqueda */}
+          <div style={{
+            display:'flex',
+            alignItems:'center',
+            background:'white',
+            borderRadius: resultadosBusqueda.length>0 ? '14px 14px 0 0' : '14px',
+            boxShadow:'0 4px 24px rgba(0,0,0,0.2)',
+            padding:'0 4px 0 14px',
+            height:'48px',
+            gap:'8px',
+          }}>
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}>
+              <circle cx="8.5" cy="8.5" r="6"/>
+              <line x1="13" y1="13" x2="18" y2="18"/>
+            </svg>
+            <input
+              ref={inputBusquedaRef}
+              type="text"
+              value={queryBusqueda}
+              onChange={e=>setQueryBusqueda(e.target.value)}
+              placeholder="Buscar por nombre o dirección…"
+              style={{
+                flex:1,
+                border:'none',
+                outline:'none',
+                fontSize:'0.92rem',
+                color:'#1a2a3a',
+                background:'transparent',
+                padding:'0',
+              }}
+            />
+            {queryBusqueda && (
+              <button
+                onClick={()=>setQueryBusqueda('')}
+                style={{background:'none',border:'none',color:'#9ca3af',fontSize:'1.1rem',cursor:'pointer',padding:'4px',lineHeight:1}}
+              >
+                ✕
+              </button>
+            )}
+            <button
+              onClick={cerrarBusqueda}
+              style={{
+                background:'#f3f4f6',
+                border:'none',
+                borderRadius:'10px',
+                padding:'6px 12px',
+                fontSize:'0.82rem',
+                fontWeight:600,
+                color:'#4a6b7c',
+                cursor:'pointer',
+                whiteSpace:'nowrap',
+              }}
+            >
+              Cerrar
+            </button>
+          </div>
+
+          {/* Resultados */}
+          {queryBusqueda.trim().length >= 2 && (
+            <div style={{
+              background:'white',
+              borderRadius:'0 0 14px 14px',
+              boxShadow:'0 8px 24px rgba(0,0,0,0.15)',
+              maxHeight:'55vh',
+              overflowY:'auto',
+              borderTop:'1px solid #f0f0f0',
+            }}>
+              {resultadosBusqueda.length === 0 ? (
+                <p style={{padding:'16px',textAlign:'center',color:'#6b7280',fontSize:'0.85rem',margin:0}}>
+                  No se encontraron baldosas
+                </p>
+              ) : (
+                resultadosBusqueda.map(pin => {
+                  const dist = userLocation ? calcularDistancia(userLocation.lat, userLocation.lng, pin.lat, pin.lng) : null
+                  return (
+                    <button
+                      key={pin.id}
+                      onClick={() => seleccionarResultado(pin)}
+                      style={{
+                        display:'flex',
+                        alignItems:'center',
+                        gap:'10px',
+                        width:'100%',
+                        padding:'12px 14px',
+                        background:'transparent',
+                        border:'none',
+                        borderBottom:'1px solid #f5f5f5',
+                        cursor:'pointer',
+                        textAlign:'left',
+                      }}
+                    >
+                      <div style={{minWidth:0,flex:1}}>
+                        <p style={{fontSize:'0.9rem',fontWeight:600,color:'#1a2a3a',margin:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                          {pin.nombre}
+                        </p>
+                        <p style={{fontSize:'0.76rem',color:'#6b7280',margin:'1px 0 0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                          {pin.direccion}{pin.barrio ? ` · ${pin.barrio}` : ''}
+                        </p>
+                      </div>
+                      {dist !== null && (
+                        <span style={{fontSize:'0.72rem',fontWeight:600,color:'#6b7280',flexShrink:0}}>
+                          {formatearDistancia(dist)}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Banner recorrido activo */}
       {destino&&(
-        <div style={{position:'absolute',top:'48px',left:0,right:0,zIndex:400}}>
+        <div ref={bannerRef} style={{position:'absolute',top:0,left:0,right:0,zIndex:400}}>
           {/* Fila de info del recorrido */}
           <div style={{background:'#2563eb',color:'white',padding:'8px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',fontSize:'0.85rem',fontWeight:500}}>
             <span>→ {destino.nombre}{distanciaDestino!==null?` · ${formatearDistancia(distanciaDestino)}`:''}</span>

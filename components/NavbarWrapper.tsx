@@ -12,7 +12,11 @@ const LINKS = [
 
 export default function NavbarWrapper() {
   const pathname = usePathname()
+  const esMapa = pathname === '/mapa'
   const esHome = pathname === '/'
+
+  // En el mapa no se muestra la navbar — el mapa tiene su propia UI
+  if (esMapa) return null
 
   const [visible, setVisible] = useState(esHome ? 0 : 1)
 
