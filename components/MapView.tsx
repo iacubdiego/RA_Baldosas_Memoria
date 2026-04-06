@@ -301,7 +301,7 @@ export default function MapView({ initialLocation }:MapViewProps) {
     <div style={{position:'relative',width:'100%',height:'100dvh'}}>
 
       <MapContainer center={[userLocation?.lat??initialLocation.lat,userLocation?.lng??initialLocation.lng]} zoom={13} style={{width:'100%',height:'100%'}} zoomControl={false}>
-        <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/>
+        <TileLayer attribution='&copy; <a href="https://www.ign.gob.ar/AreaServicios/Argenmap/IntroduccionV2" target="_blank">Instituto Geográfico Nacional</a> + <a href="https://www.osm.org/copyright" target="_blank">OpenStreetMap</a>' url="https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/capabaseargenmap@EPSG:3857@png/{z}/{x}/{-y}.png"/>
         {ruta.length>1&&<Polyline positions={ruta} pathOptions={{color:'#2563eb',weight:5,opacity:0.9}}/>}
         {userLocation&&<Marker position={[userLocation.lat,userLocation.lng]} icon={userIcon}><Popup><div style={{fontFamily:'sans-serif',textAlign:'center'}}><strong>Tu ubicación</strong></div></Popup></Marker>}
         {pins.map(pin=>{
