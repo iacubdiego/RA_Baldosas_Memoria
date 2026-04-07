@@ -346,6 +346,20 @@ export default function MapView({ initialLocation }:MapViewProps) {
                   >
                     📸 {cerca?'Escanear baldosa':'Acercate para escanear'}
                   </a>
+                  <a
+                    href={`/colaborar/${pin.id}`}
+                    style={{
+                      display:'block',
+                      marginTop:'6px',
+                      padding:'5px',
+                      fontSize:'0.75rem',
+                      color:'#6b7280',
+                      textAlign:'right',
+                      textDecoration:'none',
+                    }}
+                  >
+                    ¿Corregir datos?
+                  </a>
                 </div>
               </Popup>
             </Marker>

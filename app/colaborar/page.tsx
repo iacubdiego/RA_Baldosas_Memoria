@@ -528,7 +528,7 @@ export default function AgregarBaldosaPage() {
         {/* Aviso para correcciones */}
         <div style={estilos.avisoCorreccion}>
           <strong style={{ color: 'var(--color-stone)' }}>¿Querés corregir o completar datos de una baldosa que ya está en el mapa?</strong>
-          {' '}Usá este mismo formulario: indicá el nombre y la dirección de la baldosa existente, y contanos en <em>Información adicional</em> qué dato querés modificar.
+          {' '}Buscala en el <a href="/mapa" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>mapa</a>, tocá sobre ella y elegí <em>"¿Corregir datos?"</em>.
         </div>
 
         {/* Mensaje de resultado */}
