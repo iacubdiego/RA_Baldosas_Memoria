@@ -71,7 +71,18 @@ function MapFitter({pins}:{pins:Pin[]}) {
 
 function RouteController({userLocation,destino}:{userLocation:{lat:number;lng:number}|null; destino:{lat:number;lng:number}|null}) {
   const map=useMap()
-  useEffect(()=>{ if(destino&&userLocation){ map.fitBounds(L.latLngBounds([[userLocation.lat,userLocation.lng],[destino.lat,destino.lng]]),{padding:[80,80],maxZoom:17}) } },[destino,userLocation,map])
+  useEffect(()=>{
+    if(!destino||!userLocation) return
+    // Esperar a que el panel se cierre y el DOM se actualice antes de ajustar el mapa
+    const timer=setTimeout(()=>{
+      map.invalidateSize()
+      map.flyToBounds(
+        L.latLngBounds([[userLocation.lat,userLocation.lng],[destino.lat,destino.lng]]),
+        {padding:[80,80],maxZoom:17,duration:0.6}
+      )
+    },150)
+    return ()=>clearTimeout(timer)
+  },[destino,userLocation,map])
   return null
 }
 

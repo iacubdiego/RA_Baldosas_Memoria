@@ -66,6 +66,7 @@ function generarVenecitas(cantidad: number) {
 const BANNERS = [
   { src: 'images/banner.png',  alt: 'Banner 1' },
   { src: 'images/banner2.png', alt: 'Banner 2' },
+  { src: 'images/banner3.png', alt: 'Banner 3' },
 ]
 const INTERVALO_MS = 4500
 const DURACION_FADE = 700

@@ -115,6 +115,10 @@ export default function QuienesSomosPage() {
               <span className="qs-proyecto-dot"/>
               <span><strong>Recorremos Memoria</strong> — un sitio en construcción para invitar a salir a la calle, recorrer baldosas, conocer las historias de cada una, marcar la visita y llevarse un recuerdo interactivo.</span>
             </div>
+            <div className="qs-proyecto">
+              <span className="qs-proyecto-dot"/>
+              <span>Trabajamos en conjunto con <strong>malefico3d</strong> para generar la experiencia de Realidad Aumentada en 3D que acompaña cada baldosa.</span>
+            </div>
           </div>
 
           <div className="qs-block">

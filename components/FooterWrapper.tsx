@@ -13,20 +13,46 @@ export default function FooterWrapper() {
       color:      'var(--color-parchment)',
       borderTop:  '2px solid var(--color-primary)',
     }}>
-      <div style={{
-        maxWidth:       '1200px',
-        margin:         '0 auto',
-        padding:        '2.5rem 1.5rem 2rem',
-        display:        'flex',
-        flexWrap:       'wrap',
-        justifyContent: 'space-between',
-        alignItems:     'flex-start',
-        gap:            '2rem',
-      }}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes salpicado {
+          0%   { opacity: 0; transform: scale(0.6) rotate(-3deg); filter: blur(4px); }
+          20%  { opacity: 1; transform: scale(1.05) rotate(1deg); filter: blur(0); }
+          30%  { opacity: 0.7; transform: scale(1) rotate(0deg); filter: blur(0); }
+          80%  { opacity: 0.7; transform: scale(1) rotate(0deg); filter: blur(0); }
+          100% { opacity: 0; transform: scale(0.95) rotate(2deg); filter: blur(2px); }
+        }
+        .footer-grid {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 2.5rem 1.5rem 2rem;
+          display: flex;
+          flex-direction: column;
+          gap: 2rem;
+        }
+        .footer-creditos {
+          display: flex;
+          align-items: flex-end;
+          justify-content: flex-end;
+          gap: 2rem;
+          width: 100%;
+        }
+        @media (min-width: 768px) {
+          .footer-grid {
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: flex-start;
+          }
+          .footer-creditos {
+            flex: 0 0 auto;
+          }
+        }
+      `}} />
+      <div className="footer-grid">
 
         {/* Columna izquierda: proyecto */}
-        <div style={{ flex: '1 1 240px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
+        <div style={{ flex: '0 1 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <img
               src="/images/logo_flores.png"
               alt="Recorremos Memoria"
@@ -42,21 +68,12 @@ export default function FooterWrapper() {
               Recorremos Memoria
             </span>
           </div>
-          <p style={{
-            fontSize:   '0.83rem',
-            lineHeight: 1.65,
-            color:      'rgba(240,244,248,0.6)',
-            margin:     0,
-            maxWidth:   '280px',
-          }}>
-
-          </p>
         </div>
 
         {/* Columna central: links */}
         <div style={{ flex: '0 0 auto' }}>
           <p style={{
-            fontSize:      '0.68rem',
+            fontSize:      '0.88rem',
             letterSpacing: '0.18em',
             textTransform: 'uppercase',
             color:         'rgba(240, 244, 248, 0.8)',
@@ -87,6 +104,54 @@ export default function FooterWrapper() {
               </a>
             ))}
           </nav>
+        </div>
+
+        {/* Columna derecha: créditos */}
+        <div className="footer-creditos">
+          <span style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: '1.75rem',
+            fontWeight: 700,
+            color: 'rgba(240,244,248,0.7)',
+            letterSpacing: '-0.02em',
+            lineHeight: 1.1,
+            opacity: 0,
+            animation: 'salpicado 4.5s cubic-bezier(0.25, 1, 0.5, 1) infinite',
+          }}>
+            gcoop
+          </span>
+          <span style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: '1.4rem',
+            fontWeight: 300,
+            color: 'rgba(240,244,248,0.35)',
+            lineHeight: 1,
+          }}>
+            +
+          </span>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '0.82rem',
+              fontWeight: 400,
+              color: 'rgba(240,244,248,0.45)',
+              letterSpacing: '0.01em',
+            }}>
+              Animación por
+            </span>
+            <span style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '1.75rem',
+              fontWeight: 700,
+              color: 'rgba(240,244,248,0.7)',
+              letterSpacing: '-0.02em',
+              lineHeight: 1.1,
+              opacity: 0,
+              animation: 'salpicado 4.5s cubic-bezier(0.25, 1, 0.5, 1) 1.25s infinite',
+            }}>
+              malefico3d
+            </span>
+          </div>
         </div>
       </div>
     </footer>
