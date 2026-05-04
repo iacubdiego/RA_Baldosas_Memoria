@@ -19,21 +19,20 @@ function generarVenecitas(cantidad: number) {
     let posicionValida = false;
     
     do {
-      // Elegir un lado del perímetro (0: arriba, 1: abajo, 2: izquierda, 3: derecha)
       lado = Math.floor(Math.random() * 4);
       
-      if (lado === 0) { // Arriba — toda la franja superior
-        x = Math.random() * 90 + 5; // 5% a 95% (cubre todo el ancho)
-        y = Math.random() * 10 + 2; // 2% a 12%
-      } else if (lado === 1) { // Abajo — toda la franja inferior
-        x = Math.random() * 90 + 5; // 5% a 95%
-        y = Math.random() * 10 + 86; // 86% a 96%
-      } else if (lado === 2) { // Izquierda
-        x = Math.random() * 10 + 3; // 3% a 13%
-        y = Math.random() * 60 + 20; // 20% a 80%
-      } else { // Derecha
-        x = Math.random() * 10 + 87; // 87% a 97%
-        y = Math.random() * 60 + 20; // 20% a 80%
+      if (lado === 0) {
+        x = Math.random() * 90 + 5;
+        y = Math.random() * 10 + 2;
+      } else if (lado === 1) {
+        x = Math.random() * 90 + 5;
+        y = Math.random() * 10 + 86;
+      } else if (lado === 2) {
+        x = Math.random() * 10 + 3;
+        y = Math.random() * 60 + 20;
+      } else {
+        x = Math.random() * 10 + 87;
+        y = Math.random() * 60 + 20;
       }
       
       posicionValida = !usados.some(u => Math.abs(u.x - x) < 6 && Math.abs(u.y - y) < 7);
@@ -42,7 +41,6 @@ function generarVenecitas(cantidad: number) {
     
     if (posicionValida) {
       usados.push({x, y});
-      
       const rotacion = Math.random() * 30 - 15;
       const delay = 3.0 + Math.random() * 1.5;
       const imgNum = (i % 8) + 1;
@@ -61,7 +59,6 @@ function generarVenecitas(cantidad: number) {
   return venecitas;
 }
 
-// Generar spans aleatorios para grid masonry
 function generateRandomSpans(count: number): ('tall' | 'wide' | 'normal')[] {
   return Array.from({ length: count }, () => {
     const rand = Math.random();
@@ -71,97 +68,260 @@ function generateRandomSpans(count: number): ('tall' | 'wide' | 'normal')[] {
   });
 }
 
-// Seleccionar imágenes aleatorias de las 20 disponibles
-function selectRandomImages(count: number): string[] {
-  const allImages = Array.from({ length: 20 }, (_, i) => `images/slice/slice${String(i + 1).padStart(2, '0')}.jpg`);
-  const selected: string[] = [];
-  const indices = new Set<number>();
-  
-  while (selected.length < count && indices.size < allImages.length) {
-    const randomIdx = Math.floor(Math.random() * allImages.length);
-    if (!indices.has(randomIdx)) {
-      indices.add(randomIdx);
-      selected.push(allImages[randomIdx]);
-    }
-  }
-  
-  return selected;
-}
-
-// ─── Image Grid ────────────────────────────────────────────────────────────
-interface GridItem {
+// ─── Grid Item Component ────────────────────────────────────────────────────
+interface GridItemData {
   id: number;
-  src: string;
   span: 'tall' | 'wide' | 'normal';
   animation: 'fadeInUp' | 'fadeInLeft' | 'fadeInRight' | 'scaleIn';
   delay: number;
+  nombre: string;
+  barrio: string;
+  fotos: string[];
+}
+
+function GridItemComponent({ item }: { item: GridItemData }) {
+  const [currentPhotoIdx, setCurrentPhotoIdx] = useState(0);
+  const [isHovering, setIsHovering] = useState(false);
+  const cycleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const imagesRef = useRef<{ [key: string]: HTMLImageElement }>({});
+
+  const animations: ('fadeInUp' | 'fadeInLeft' | 'fadeInRight' | 'scaleIn')[] = ['fadeInUp', 'fadeInLeft', 'fadeInRight', 'scaleIn'];
+  const animation = animations[item.id % animations.length];
+  const slideDirection = currentPhotoIdx % 2 === 0 ? 'from-left' : 'from-right';
+
+  // Auto-cycle con pausa en hover
+  useEffect(() => {
+    if (isHovering) {
+      if (cycleTimerRef.current) clearInterval(cycleTimerRef.current);
+      return;
+    }
+
+    cycleTimerRef.current = setInterval(() => {
+      setCurrentPhotoIdx(prev => (prev + 1) % item.fotos.length);
+    }, 4500);
+
+    return () => {
+      if (cycleTimerRef.current) clearInterval(cycleTimerRef.current);
+    };
+  }, [isHovering, item.fotos.length]);
+
+  // Preload imágenes
+  useEffect(() => {
+    item.fotos.forEach((foto, idx) => {
+      const img = new Image();
+      img.src = foto;
+      imagesRef.current[idx] = img;
+    });
+  }, [item.fotos]);
+
+  const currentFoto = item.fotos[currentPhotoIdx];
+  const fotoIsBase64 = currentFoto.startsWith('data:');
+
+  return (
+    <div
+      className={`grid-item ${item.span}`}
+      style={{
+        animation: `${animation} 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
+        opacity: 0,
+        animationDelay: `${item.delay}ms`,
+      }}
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+      tabIndex={0}
+      role="button"
+      aria-label={`Baldosa de ${item.nombre} en ${item.barrio}`}
+    >
+      <div className="grid-image-wrapper">
+        {fotoIsBase64 ? (
+          <div
+            className={`grid-image ${slideDirection}`}
+            style={{
+              backgroundImage: `url('${currentFoto}')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          />
+        ) : (
+          <img
+            src={currentFoto}
+            alt={`${item.nombre} - foto ${currentPhotoIdx + 1}`}
+            className={`grid-image ${slideDirection}`}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+          />
+        )}
+      </div>
+
+      {/* Overlay con micro-labels */}
+      <div className="grid-overlay">
+        <div className="grid-info">
+          <div className="grid-label">{item.nombre}</div>
+          <div className="grid-sublabel">{item.barrio}</div>
+        </div>
+      </div>
+
+      {/* Indicador de múltiples fotos */}
+      {item.fotos.length > 1 && (
+        <div className="grid-indicator">
+          {currentPhotoIdx + 1}/{item.fotos.length}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Logo Filler Component ────────────────────────────────────────────────────
+function LogoFiller() {
+  return (
+    <div
+      className="grid-item-filler"
+      style={{
+        background: 'transparent',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <img
+        src="/images/logo_flores.png"
+        alt="Logo Recorremos Memoria"
+        style={{
+          width: '60%',
+          height: '60%',
+          objectFit: 'contain',
+          opacity: 0.3,
+          filter: 'drop-shadow(0 2px 4px rgba(26, 42, 58, 0.1))',
+        }}
+      />
+    </div>
+  );
+}
+
+// ─── Image Grid ────────────────────────────────────────────────────────────
+interface BaldosaData {
+  id: string;
+  nombre: string;
+  barrio?: string;
+  fotosUrls?: string[];
 }
 
 function ImageGrid() {
-  const [gridItems, setGridItems] = useState<GridItem[]>([]);
+  const [gridItems, setGridItems] = useState<GridItemData[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const itemCount = 8;
-    const images = selectRandomImages(itemCount);
-    const spans = generateRandomSpans(itemCount);
-    const animations: ('fadeInUp' | 'fadeInLeft' | 'fadeInRight' | 'scaleIn')[] = ['fadeInUp', 'fadeInLeft', 'fadeInRight', 'scaleIn'];
+    const fetchBaldosas = async () => {
+      try {
+        const res = await fetch('/api/baldosas');
+        const data = await res.json();
 
-    const items: GridItem[] = images.map((src, i) => ({
-      id: i,
-      src,
-      span: spans[i],
-      animation: animations[i % animations.length],
-      delay: i * 80,
-    }));
+        if (!data.baldosas || data.baldosas.length === 0) {
+          setLoading(false);
+          return;
+        }
 
-    setGridItems(items);
+        // Seleccionar 8 baldosas random
+        const shuffled = [...data.baldosas].sort(() => Math.random() - 0.5);
+        const selected = shuffled.slice(0, 8);
+
+        // Generar spans aleatorios
+        const spans = generateRandomSpans(8);
+
+        // Construir grid items con fotos
+        const items: GridItemData[] = selected.map((baldosa: BaldosaData, idx: number) => {
+          const fotos = baldosa.fotosUrls && baldosa.fotosUrls.length >= 2
+            ? [baldosa.fotosUrls[0], baldosa.fotosUrls[1]]
+            : baldosa.fotosUrls && baldosa.fotosUrls.length === 1
+            ? [baldosa.fotosUrls[0], baldosa.fotosUrls[0]]
+            : ['/images/placeholder.jpg', '/images/placeholder.jpg'];
+
+          return {
+            id: idx,
+            span: spans[idx],
+            animation: 'fadeInUp',
+            delay: idx * 80,
+            nombre: baldosa.nombre,
+            barrio: baldosa.barrio || 'Sin especificar',
+            fotos,
+          };
+        });
+
+        setGridItems(items);
+      } catch (error) {
+        console.error('Error cargando baldosas:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBaldosas();
   }, []);
 
-  if (gridItems.length === 0) return null;
+  if (loading) return null;
+
+  // Calcular cuántos fillers necesitamos
+  const itemCount = gridItems.length;
+  const fillers = Array.from({ length: Math.max(0, 8 - itemCount) });
 
   return (
-    <div style={{
-      opacity: 0,
-      animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 4.4s forwards',
-      marginTop: 'var(--space-md)',
-      padding: 'var(--space-md) var(--space-lg)',
-      borderTop: '1px solid rgba(37, 99, 235, 0.1)',
-    }}>
+    <div
+      style={{
+        opacity: 0,
+        animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 4.4s forwards',
+        marginTop: 'var(--space-md)',
+        padding: 'var(--space-md) var(--space-lg)',
+        borderTop: '1px solid rgba(37, 99, 235, 0.1)',
+      }}
+    >
       <style>{`
         .grid-container {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
-          grid-auto-rows: 140px;
+          grid-auto-rows: 180px;
           grid-auto-flow: dense;
-          gap: 6px;
+          gap: 8px;
           width: 100%;
           max-width: 100%;
         }
         
-        @media (min-width: 500px) {
+        @media (min-width: 600px) {
           .grid-container {
             grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
           }
         }
         
-        @media (min-width: 800px) {
+        @media (min-width: 900px) {
           .grid-container {
             grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
           }
         }
         
         .grid-item {
-          border-radius: 8px;
-          border: 0.5px solid rgba(37, 99, 235, 0.1);
-          background-size: cover;
-          background-position: center;
+          position: relative;
+          border-radius: 12px;
           overflow: hidden;
           cursor: pointer;
-          transition: border-color 0.2s ease;
+          border: 1px solid rgba(37, 99, 235, 0.15);
+          box-shadow: 0 2px 8px rgba(26, 42, 58, 0.08);
+          transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+          outline: 2px solid transparent;
+          outline-offset: 2px;
         }
         
         .grid-item:hover {
           border-color: rgba(37, 99, 235, 0.3);
+          box-shadow: 0 8px 24px rgba(26, 42, 58, 0.15);
+          transform: translateY(-4px);
+        }
+        
+        .grid-item:focus-visible {
+          outline: 2px solid var(--color-primary);
+          outline-offset: 2px;
         }
         
         .grid-item.tall {
@@ -170,6 +330,117 @@ function ImageGrid() {
         
         .grid-item.wide {
           grid-column: span 2;
+        }
+        
+        .grid-image-wrapper {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+        }
+        
+        .grid-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          background-size: cover;
+          background-position: center;
+        }
+        
+        .grid-image.from-left {
+          animation: slideInFromLeft 0.7s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        
+        .grid-image.from-right {
+          animation: slideInFromRight 0.7s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        
+        @keyframes slideInFromLeft {
+          from {
+            opacity: 0;
+            transform: translateX(-100%);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        @keyframes slideInFromRight {
+          from {
+            opacity: 0;
+            transform: translateX(100%);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        .grid-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(26, 42, 58, 0.5) 100%);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+          display: flex;
+          align-items: flex-end;
+          padding: 12px;
+          z-index: 2;
+        }
+        
+        .grid-item:hover .grid-overlay {
+          opacity: 1;
+        }
+        
+        .grid-info {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        
+        .grid-label {
+          color: var(--color-parchment);
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.03em;
+          line-height: 1.2;
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        
+        .grid-sublabel {
+          color: rgba(240, 244, 248, 0.7);
+          font-size: 11px;
+          font-weight: 400;
+          letter-spacing: 0.02em;
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        
+        .grid-indicator {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          background: rgba(26, 42, 58, 0.9);
+          color: var(--color-parchment);
+          padding: 4px 8px;
+          border-radius: 6px;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.05em;
+          z-index: 3;
+          backdrop-filter: blur(4px);
+        }
+        
+        .grid-item-filler {
+          border-radius: 12px;
+          border: 1px solid rgba(37, 99, 235, 0.1);
+          box-shadow: 0 2px 8px rgba(26, 42, 58, 0.04);
         }
         
         @keyframes fadeInUp {
@@ -216,19 +487,13 @@ function ImageGrid() {
           }
         }
       `}</style>
-      
+
       <div className="grid-container">
         {gridItems.map((item) => (
-          <div
-            key={item.id}
-            className={`grid-item ${item.span}`}
-            style={{
-              backgroundImage: `url('${item.src}')`,
-              animation: `${item.animation} 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
-              opacity: 0,
-              animationDelay: `${item.delay}ms`,
-            }}
-          />
+          <GridItemComponent key={item.id} item={item} />
+        ))}
+        {fillers.map((_, idx) => (
+          <LogoFiller key={`filler-${idx}`} />
         ))}
       </div>
     </div>
@@ -256,7 +521,7 @@ export default function Home() {
       router.push('/mapa')
       return
     }
-    // Chequear si ya tiene permiso con posición cacheada
+
     const yaTienePermiso = await new Promise<boolean>(resolve => {
       const timeout = setTimeout(() => resolve(false), 500)
       navigator.geolocation.getCurrentPosition(
@@ -269,7 +534,7 @@ export default function Home() {
       router.push('/mapa')
       return
     }
-    // No tiene permiso — mostrar modal de espera y disparar diálogo nativo
+
     setModalGPS(true)
     navigator.geolocation.getCurrentPosition(
       () => { setModalGPS(false); router.push('/mapa') },
@@ -292,10 +557,7 @@ export default function Home() {
       }}>
         <div className="container" style={{ textAlign: 'center', maxWidth: '900px', width: '100%' }}>
           
-          {/* Logo con animación de baldosa que se levanta */}
           <div className="logo-baldosa-container">
-
-            {/* Baldosa que se levanta desde el piso */}
             <div className="baldosa-animada">
               <img 
                 src="/images/baldoson.jpg" 
@@ -304,7 +566,6 @@ export default function Home() {
                 loading="eager"
               />
               
-              {/* Venecitas que aparecen en el perímetro */}
               <div className="venecitas-container">
                 {venecitas.map((v) => (
                   <img 
@@ -323,19 +584,15 @@ export default function Home() {
                 ))}
               </div>
               
-              {/* Imagen central */}
               <img 
                 src="/images/logo_flores.png" 
                 alt="Logo"
                 className="logo-centro"
                 loading="eager"
               />
-              
             </div>
-
           </div>
 
-          {/* CTA principal — Mapa como entrada a la experiencia */}
           <div style={{
             display: 'flex',
             justifyContent: 'center',
@@ -396,9 +653,6 @@ export default function Home() {
             </a>
           </div>
 
-
-
-          {/* Título principal */}
           <div style={{
             opacity: 0,
             animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 3.8s forwards',
@@ -411,7 +665,6 @@ export default function Home() {
             </h1>
           </div>
           
-          {/* Descripción */}
           <div style={{
             opacity: 0,
             animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 4.1s forwards',
@@ -428,7 +681,6 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Link a colaborar */}
           <div style={{
             opacity: 0,
             animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 4.2s forwards',
@@ -465,7 +717,6 @@ export default function Home() {
             </a>
           </div>
 
-          {/* Contador */}
           <div style={{
             display: 'flex',
             justifyContent: 'center',
@@ -476,12 +727,10 @@ export default function Home() {
             <ContadorBaldosas />
           </div>
 
-          {/* Image Grid — Masonry con spans aleatorios */}
           <ImageGrid />
         </div>
       </div>
 
-      {/* ── Modal pedido de GPS ── */}
       {modalGPS && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 1000,
