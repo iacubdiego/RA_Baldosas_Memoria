@@ -59,6 +59,7 @@ function generarVenecitas(cantidad: number) {
   return venecitas;
 }
 
+// Generar spans aleatorios para grid masonry
 function generateRandomSpans(count: number): ('tall' | 'wide' | 'normal')[] {
   return Array.from({ length: count }, () => {
     const rand = Math.random();
@@ -68,7 +69,7 @@ function generateRandomSpans(count: number): ('tall' | 'wide' | 'normal')[] {
   });
 }
 
-// ─── Grid Item Component ────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────
 interface GridItemData {
   id: number;
   span: 'tall' | 'wide' | 'normal';
@@ -79,6 +80,39 @@ interface GridItemData {
   fotos: string[];
 }
 
+// Seleccionar imágenes aleatorias de las 20 disponibles + generar metadata mock
+function selectRandomImagesWithMetadata(count: number): GridItemData[] {
+  const allImages = Array.from({ length: 20 }, (_, i) => `images/slice/slice${String(i + 1).padStart(2, '0')}.jpg`);
+  const barrios = ['San Telmo', 'La Boca', 'Retiro', 'San Nicolás', 'Flores', 'Caballito', 'Belgrano', 'Palermo', 'Villa Crespo', 'Mataderos'];
+  const nombres = ['Baldosa', 'Memoria', 'Homenaje', 'Recuerdo', 'Historia', 'Legado', 'Reflejo', 'Huella'];
+  
+  const selected: GridItemData[] = [];
+  const indices = new Set<number>();
+  const spans = generateRandomSpans(count);
+
+  while (selected.length < count && indices.size < allImages.length) {
+    const randomIdx = Math.floor(Math.random() * allImages.length);
+    if (!indices.has(randomIdx)) {
+      indices.add(randomIdx);
+      const barrio = barrios[Math.floor(Math.random() * barrios.length)];
+      const nombre = nombres[Math.floor(Math.random() * nombres.length)];
+      
+      selected.push({
+        id: selected.length,
+        span: spans[selected.length],
+        animation: 'fadeInUp',
+        delay: selected.length * 80,
+        nombre: `${nombre}`,
+        barrio: barrio,
+        fotos: [allImages[randomIdx], allImages[(randomIdx + 1) % allImages.length]],
+      });
+    }
+  }
+
+  return selected;
+}
+
+// ─── Grid Item Component ────────────────────────────────────────────────────
 function GridItemComponent({ item }: { item: GridItemData }) {
   const [currentPhotoIdx, setCurrentPhotoIdx] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
@@ -115,7 +149,6 @@ function GridItemComponent({ item }: { item: GridItemData }) {
   }, [item.fotos]);
 
   const currentFoto = item.fotos[currentPhotoIdx];
-  const fotoIsBase64 = currentFoto.startsWith('data:');
 
   return (
     <div
@@ -129,30 +162,14 @@ function GridItemComponent({ item }: { item: GridItemData }) {
       onMouseLeave={() => setIsHovering(false)}
       tabIndex={0}
       role="button"
-      aria-label={`Baldosa de ${item.nombre} en ${item.barrio}`}
+      aria-label={`${item.nombre} en ${item.barrio}`}
     >
       <div className="grid-image-wrapper">
-        {fotoIsBase64 ? (
-          <div
-            className={`grid-image ${slideDirection}`}
-            style={{
-              backgroundImage: `url('${currentFoto}')`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }}
-          />
-        ) : (
-          <img
-            src={currentFoto}
-            alt={`${item.nombre} - foto ${currentPhotoIdx + 1}`}
-            className={`grid-image ${slideDirection}`}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-            }}
-          />
-        )}
+        <img
+          src={currentFoto}
+          alt={`${item.nombre} - foto ${currentPhotoIdx + 1}`}
+          className={`grid-image ${slideDirection}`}
+        />
       </div>
 
       {/* Overlay con micro-labels */}
@@ -200,71 +217,18 @@ function LogoFiller() {
   );
 }
 
-// ─── Image Grid ────────────────────────────────────────────────────────────
-interface BaldosaData {
-  id: string;
-  nombre: string;
-  barrio?: string;
-  fotosUrls?: string[];
-}
-
+// ─── Image Grid ────────────────────────────────────────────────────────
 function ImageGrid() {
   const [gridItems, setGridItems] = useState<GridItemData[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchBaldosas = async () => {
-      try {
-        const res = await fetch('/api/baldosas');
-        const data = await res.json();
-
-        if (!data.baldosas || data.baldosas.length === 0) {
-          setLoading(false);
-          return;
-        }
-
-        // Seleccionar 8 baldosas random
-        const shuffled = [...data.baldosas].sort(() => Math.random() - 0.5);
-        const selected = shuffled.slice(0, 8);
-
-        // Generar spans aleatorios
-        const spans = generateRandomSpans(8);
-
-        // Construir grid items con fotos
-        const items: GridItemData[] = selected.map((baldosa: BaldosaData, idx: number) => {
-          const fotos = baldosa.fotosUrls && baldosa.fotosUrls.length >= 2
-            ? [baldosa.fotosUrls[0], baldosa.fotosUrls[1]]
-            : baldosa.fotosUrls && baldosa.fotosUrls.length === 1
-            ? [baldosa.fotosUrls[0], baldosa.fotosUrls[0]]
-            : ['/images/placeholder.jpg', '/images/placeholder.jpg'];
-
-          return {
-            id: idx,
-            span: spans[idx],
-            animation: 'fadeInUp',
-            delay: idx * 80,
-            nombre: baldosa.nombre,
-            barrio: baldosa.barrio || 'Sin especificar',
-            fotos,
-          };
-        });
-
-        setGridItems(items);
-      } catch (error) {
-        console.error('Error cargando baldosas:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBaldosas();
+    const items = selectRandomImagesWithMetadata(8);
+    setGridItems(items);
   }, []);
 
-  if (loading) return null;
+  if (gridItems.length === 0) return null;
 
-  // Calcular cuántos fillers necesitamos
-  const itemCount = gridItems.length;
-  const fillers = Array.from({ length: Math.max(0, 8 - itemCount) });
+  const fillers = Array.from({ length: Math.max(0, 8 - gridItems.length) });
 
   return (
     <div
@@ -343,8 +307,6 @@ function ImageGrid() {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          background-size: cover;
-          background-position: center;
         }
         
         .grid-image.from-left {
