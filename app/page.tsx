@@ -61,32 +61,63 @@ function generarVenecitas(cantidad: number) {
   return venecitas;
 }
 
+// Generar spans aleatorios para grid masonry
+function generateRandomSpans(count: number): ('tall' | 'wide' | 'normal')[] {
+  return Array.from({ length: count }, () => {
+    const rand = Math.random();
+    if (rand < 0.3) return 'tall';
+    if (rand < 0.5) return 'wide';
+    return 'normal';
+  });
+}
 
-// ─── Banner Slider ────────────────────────────────────────────────────────────
-const BANNERS = [
-  { src: 'images/banner.png',  alt: 'Banner 1' },
-  { src: 'images/banner2.png', alt: 'Banner 2' },
-  { src: 'images/banner3.png', alt: 'Banner 3' },
-]
-const INTERVALO_MS = 4500
-const DURACION_FADE = 700
+// Seleccionar imágenes aleatorias de las 20 disponibles
+function selectRandomImages(count: number): string[] {
+  const allImages = Array.from({ length: 20 }, (_, i) => `images/slice/slice${String(i + 1).padStart(2, '0')}.jpg`);
+  const selected: string[] = [];
+  const indices = new Set<number>();
+  
+  while (selected.length < count && indices.size < allImages.length) {
+    const randomIdx = Math.floor(Math.random() * allImages.length);
+    if (!indices.has(randomIdx)) {
+      indices.add(randomIdx);
+      selected.push(allImages[randomIdx]);
+    }
+  }
+  
+  return selected;
+}
 
-function BannerSlider() {
-  const [actual, setActual]   = useState(0)
-  const [visible, setVisible] = useState(true)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+// ─── Image Grid ────────────────────────────────────────────────────────────
+interface GridItem {
+  id: number;
+  src: string;
+  span: 'tall' | 'wide' | 'normal';
+  animation: 'fadeInUp' | 'fadeInLeft' | 'fadeInRight' | 'scaleIn';
+  delay: number;
+}
+
+function ImageGrid() {
+  const [gridItems, setGridItems] = useState<GridItem[]>([]);
 
   useEffect(() => {
-    timerRef.current = setTimeout(() => {
-      // fade out
-      setVisible(false)
-      setTimeout(() => {
-        setActual(i => (i + 1) % BANNERS.length)
-        setVisible(true)
-      }, DURACION_FADE)
-    }, INTERVALO_MS)
-    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
-  }, [actual])
+    const itemCount = 8;
+    const images = selectRandomImages(itemCount);
+    const spans = generateRandomSpans(itemCount);
+    const animations: ('fadeInUp' | 'fadeInLeft' | 'fadeInRight' | 'scaleIn')[] = ['fadeInUp', 'fadeInLeft', 'fadeInRight', 'scaleIn'];
+
+    const items: GridItem[] = images.map((src, i) => ({
+      id: i,
+      src,
+      span: spans[i],
+      animation: animations[i % animations.length],
+      delay: i * 80,
+    }));
+
+    setGridItems(items);
+  }, []);
+
+  if (gridItems.length === 0) return null;
 
   return (
     <div style={{
@@ -95,50 +126,113 @@ function BannerSlider() {
       marginTop: 'var(--space-md)',
       padding: 'var(--space-md) var(--space-lg)',
       borderTop: '1px solid rgba(37, 99, 235, 0.1)',
-      textAlign: 'center',
     }}>
-      <div style={{ position: 'relative', display: 'inline-block', width: '100%', maxWidth: '720px' }}>
-        <img
-          src={BANNERS[actual].src}
-          alt={BANNERS[actual].alt}
-          style={{
-            width: '100%',
-            height: 'auto',
-            borderRadius: '12px',
-            display: 'block',
-            opacity: visible ? 1 : 0,
-            transition: `opacity ${DURACION_FADE}ms ease`,
-          }}
-        />
-        {/* Indicadores */}
-        <div style={{
-          position: 'absolute',
-          bottom: '10px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          gap: '6px',
-        }}>
-          {BANNERS.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => { setVisible(false); setTimeout(() => { setActual(i); setVisible(true) }, DURACION_FADE) }}
-              style={{
-                width:  i === actual ? '18px' : '7px',
-                height: '7px',
-                borderRadius: '999px',
-                background: i === actual ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.45)',
-                border: 'none',
-                padding: 0,
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-              }}
-            />
-          ))}
-        </div>
+      <style>{`
+        .grid-container {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          grid-auto-rows: 140px;
+          grid-auto-flow: dense;
+          gap: 6px;
+          width: 100%;
+          max-width: 100%;
+        }
+        
+        @media (min-width: 500px) {
+          .grid-container {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        }
+        
+        @media (min-width: 800px) {
+          .grid-container {
+            grid-template-columns: repeat(4, 1fr);
+          }
+        }
+        
+        .grid-item {
+          border-radius: 8px;
+          border: 0.5px solid rgba(37, 99, 235, 0.1);
+          background-size: cover;
+          background-position: center;
+          overflow: hidden;
+          cursor: pointer;
+          transition: border-color 0.2s ease;
+        }
+        
+        .grid-item:hover {
+          border-color: rgba(37, 99, 235, 0.3);
+        }
+        
+        .grid-item.tall {
+          grid-row: span 2;
+        }
+        
+        .grid-item.wide {
+          grid-column: span 2;
+        }
+        
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes fadeInLeft {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        @keyframes fadeInRight {
+          from {
+            opacity: 0;
+            transform: translateX(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        @keyframes scaleIn {
+          from {
+            opacity: 0;
+            transform: scale(0.8);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+      `}</style>
+      
+      <div className="grid-container">
+        {gridItems.map((item) => (
+          <div
+            key={item.id}
+            className={`grid-item ${item.span}`}
+            style={{
+              backgroundImage: `url('${item.src}')`,
+              animation: `${item.animation} 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
+              opacity: 0,
+              animationDelay: `${item.delay}ms`,
+            }}
+          />
+        ))}
       </div>
     </div>
-  )
+  );
 }
 
 export default function Home() {
@@ -382,8 +476,8 @@ export default function Home() {
             <ContadorBaldosas />
           </div>
 
-          {/* Banner slider */}
-          <BannerSlider />
+          {/* Image Grid — Masonry con spans aleatorios */}
+          <ImageGrid />
         </div>
       </div>
 
