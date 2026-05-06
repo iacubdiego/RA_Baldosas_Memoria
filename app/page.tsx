@@ -74,36 +74,44 @@ const LAYOUTS: LayoutConfig[] = [
     items: [
       { id: 'div1', area: '1 / 1 / 2 / 3' },
       { id: 'div2', area: '1 / 3 / 2 / 4' },
-      { id: 'div3', area: '2 / 1 / 4 / 2' },
-      { id: 'div4', area: '2 / 2 / 4 / 4' },
+      { id: 'div3', area: '2 / 1 / 3 / 2' },
+      { id: 'div4', area: '2 / 2 / 3 / 4' },
+      { id: 'div5', area: '3 / 1 / 4 / 4' },
+      { id: 'div6', area: '4 / 1 / 6 / 4' },
     ]
   },
   {
     id: 2,
     items: [
-      { id: 'div1', area: '1 / 1 / 3 / 3' },
-      { id: 'div2', area: '1 / 3 / 3 / 4' },
-      { id: 'div3', area: '3 / 2 / 4 / 4' },
+      { id: 'div1', area: '1 / 1 / 2 / 3' },
+      { id: 'div2', area: '1 / 3 / 2 / 4' },
+      { id: 'div3', area: '2 / 1 / 3 / 4' },
       { id: 'div4', area: '3 / 1 / 4 / 2' },
+      { id: 'div5', area: '3 / 2 / 4 / 4' },
+      { id: 'div6', area: '4 / 1 / 6 / 4' },
     ]
   },
   {
     id: 3,
     items: [
-      { id: 'div1', area: '1 / 1 / 3 / 2' },
+      { id: 'div1', area: '1 / 1 / 2 / 2' },
       { id: 'div2', area: '1 / 2 / 2 / 3' },
-      { id: 'div3', area: '1 / 2 / 2 / 4' },
-      { id: 'div4', area: '3 / 1 / 4 / 2' },
-      { id: 'div5', area: '2 / 2 / 4 / 4' },
+      { id: 'div3', area: '1 / 3 / 2 / 4' },
+      { id: 'div4', area: '2 / 1 / 3 / 4' },
+      { id: 'div5', area: '3 / 1 / 4 / 2' },
+      { id: 'div6', area: '3 / 2 / 4 / 4' },
+      { id: 'div7', area: '4 / 1 / 6 / 4' },
     ]
   },
   {
     id: 4,
     items: [
-      { id: 'div1', area: '1 / 1 / 3 / 2' },
-      { id: 'div2', area: '3 / 1 / 4 / 3' },
-      { id: 'div3', area: '1 / 2 / 3 / 4' },
-      { id: 'div4', area: '3 / 3 / 4 / 4' },
+      { id: 'div1', area: '1 / 1 / 2 / 2' },
+      { id: 'div2', area: '1 / 2 / 3 / 4' },
+      { id: 'div3', area: '2 / 1 / 3 / 2' },
+      { id: 'div4', area: '3 / 1 / 4 / 3' },
+      { id: 'div5', area: '3 / 3 / 4 / 4' },
+      { id: 'div6', area: '4 / 1 / 6 / 4' },
     ]
   }
 ];
@@ -155,7 +163,7 @@ function GridItem({ images, area, index }: GridItemProps) {
     const initialTimeout = setTimeout(() => {
       cycleTimerRef.current = setInterval(() => {
         setCurrentPhotoIdx(prev => (prev + 1) % images.length);
-      }, 5000); // Cicla cada 5s
+      }, 5000 + (index * 800)); // 5s base + delay escalonado por item
     }, itemInitialDelay); // Delay inicial diferenciado
 
     return () => {
@@ -260,8 +268,8 @@ function ImageGrid() {
         .grid-container {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          grid-template-rows: repeat(5, 1fr);
-          gap: 6px;
+          grid-template-rows: repeat(6, 1fr);
+          gap: 2px;
           width: 100%;
           aspect-ratio: 1 / 1;
           max-width: 800px;
@@ -269,19 +277,19 @@ function ImageGrid() {
         
         @media (min-width: 600px) {
           .grid-container {
-            gap: 10px;
+            gap: 3px;
           }
         }
         
         @media (min-width: 900px) {
           .grid-container {
-            gap: 12px;
+            gap: 4px;
           }
         }
         
         .grid-item {
           position: relative;
-          border-radius: 12px;
+          border-radius: 0;
           overflow: hidden;
           cursor: pointer;
           border: 1px solid rgba(37, 99, 235, 0.15);
@@ -685,8 +693,8 @@ export default function Home() {
               flex: '1 1 280px',
               minWidth: '260px',
               padding: 'var(--space-lg) var(--space-lg)',
-              background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(14, 165, 233, 0.08) 100%)',
-              border: '2px solid rgba(37, 99, 235, 0.2)',
+              background: 'transparent',
+              border: 'none',
               borderRadius: '14px',
               display: 'flex',
               flexDirection: 'column',
@@ -695,24 +703,26 @@ export default function Home() {
               textAlign: 'center',
             }}>
               <h2 style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 'clamp(1.5rem, 3.5vw, 2rem)',
-                fontWeight: 700,
-                color: 'var(--color-stone)',
+                fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif",
+                fontSize: 'clamp(2rem, 5vw, 3.2rem)',
+                fontWeight: 400,
+                fontStyle: 'italic',
+                color: '#000000',
                 letterSpacing: '-0.02em',
                 margin: '0 0 var(--space-xs) 0',
-                lineHeight: 1.2,
+                lineHeight: 1.1,
               }}>
                 Saliendo a la calle
               </h2>
               <p style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 'clamp(1.2rem, 3vw, 1.6rem)',
-                fontWeight: 600,
-                color: 'var(--color-primary)',
+                fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif",
+                fontSize: 'clamp(1.8rem, 4.5vw, 2.8rem)',
+                fontWeight: 400,
+                fontStyle: 'italic',
+                color: '#000000',
                 letterSpacing: '-0.01em',
                 margin: 0,
-                lineHeight: 1.3,
+                lineHeight: 1.2,
               }}>
                 Recorremos memoria
               </p>
