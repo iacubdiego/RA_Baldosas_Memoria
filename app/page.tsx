@@ -139,7 +139,9 @@ function GridItem({ images, area, index }: GridItemProps) {
   const [isHovering, setIsHovering] = useState(false);
   const cycleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const slideDirection = currentPhotoIdx % 2 === 0 ? 'from-left' : 'from-right';
+  // Direcciones de animación variadas
+  const directions = ['from-left', 'from-right', 'from-top', 'from-bottom'];
+  const slideDirection = directions[index % directions.length];
   const itemInitialDelay = index * 200; // 200ms entre cada item
 
   // Auto-cycle con pausa en hover - comienza con delay diferenciado
@@ -211,12 +213,26 @@ function ImageGrid() {
     const randomLayout = LAYOUTS[Math.floor(Math.random() * LAYOUTS.length)];
     setLayout(randomLayout);
     
-    const selectedImages = randomLayout.items.map(() => {
-      const allImages = Array.from({ length: 20 }, (_, i) => `images/slice/slice${String(i + 1).padStart(2, '0')}.jpg`);
-      const shuffled = allImages.sort(() => Math.random() - 0.5);
-      return shuffled.slice(0, 2);
+    // Seleccionar TODAS las imágenes únicas necesarias de una sola vez
+    const itemCount = randomLayout.items.length;
+    const imagesPerItem = 2;
+    const totalNeeded = itemCount * imagesPerItem;
+    
+    // Pool global de imágenes disponibles
+    const allImages = Array.from({ length: 20 }, (_, i) => `images/slice/slice${String(i + 1).padStart(2, '0')}.jpg`);
+    
+    // Mezclar y seleccionar imágenes únicas (sin repetición)
+    const shuffled = allImages.sort(() => Math.random() - 0.5);
+    const selectedImages = shuffled.slice(0, totalNeeded);
+    
+    // Distribuir imágenes entre items (cada item obtiene imagesPerItem imágenes)
+    const distributedImages = randomLayout.items.map((_, idx) => {
+      const start = idx * imagesPerItem;
+      const end = start + imagesPerItem;
+      return selectedImages.slice(start, end);
     });
-    setImages(selectedImages);
+    
+    setImages(distributedImages);
   }, []);
 
   if (!layout || images.length === 0) return null;
@@ -243,7 +259,7 @@ function ImageGrid() {
       <style>{`
         .grid-container {
           display: grid;
-          grid-template-columns: repeat(5, 1fr);
+          grid-template-columns: repeat(3, 1fr);
           grid-template-rows: repeat(5, 1fr);
           gap: 6px;
           width: 100%;
@@ -300,11 +316,19 @@ function ImageGrid() {
         }
         
         .grid-image.from-left {
-          animation: slideInFromLeft 1.4s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+          animation: slideInFromLeft 2.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
         
         .grid-image.from-right {
-          animation: slideInFromRight 1.4s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+          animation: slideInFromRight 2.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        
+        .grid-image.from-top {
+          animation: slideInFromTop 2.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        
+        .grid-image.from-bottom {
+          animation: slideInFromBottom 2.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
         
         @keyframes slideInFromLeft {
@@ -326,6 +350,28 @@ function ImageGrid() {
           to {
             opacity: 1;
             transform: translateX(0);
+          }
+        }
+        
+        @keyframes slideInFromTop {
+          from {
+            opacity: 0;
+            transform: translateY(-100%);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes slideInFromBottom {
+          from {
+            opacity: 0;
+            transform: translateY(100%);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
           }
         }
         
