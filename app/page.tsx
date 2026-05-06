@@ -1,10 +1,10 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import Link from 'next/link'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-
-import ContadorBaldosas from '@/components/ContadorBaldosas'
 
 // Generar posiciones aleatorias para venecitas en el perímetro
 function generarVenecitas(cantidad: number) {
@@ -59,176 +59,141 @@ function generarVenecitas(cantidad: number) {
   return venecitas;
 }
 
-// Generar spans aleatorios para grid masonry
-function generateRandomSpans(count: number): ('tall' | 'wide' | 'normal')[] {
-  return Array.from({ length: count }, () => {
-    const rand = Math.random();
-    if (rand < 0.3) return 'tall';
-    if (rand < 0.5) return 'wide';
-    return 'normal';
-  });
-}
-
-// ─── Types ────────────────────────────────────────────────────────────
-interface GridItemData {
+// ─── Layout Definitions ────────────────────────────────────────────────────
+interface LayoutConfig {
   id: number;
-  span: 'tall' | 'wide' | 'normal';
-  animation: 'fadeInUp' | 'fadeInLeft' | 'fadeInRight' | 'scaleIn';
-  delay: number;
-  nombre: string;
-  barrio: string;
-  fotos: string[];
+  items: Array<{
+    id: string;
+    area: string; // grid-area value
+  }>;
 }
 
-// Seleccionar imágenes aleatorias de las 20 disponibles + generar metadata mock
-function selectRandomImagesWithMetadata(count: number): GridItemData[] {
-  const allImages = Array.from({ length: 20 }, (_, i) => `images/slice/slice${String(i + 1).padStart(2, '0')}.jpg`);
-  const barrios = ['San Telmo', 'La Boca', 'Retiro', 'San Nicolás', 'Flores', 'Caballito', 'Belgrano', 'Palermo', 'Villa Crespo', 'Mataderos'];
-  const nombres = ['Baldosa', 'Memoria', 'Homenaje', 'Recuerdo', 'Historia', 'Legado', 'Reflejo', 'Huella'];
-  
-  const selected: GridItemData[] = [];
-  const indices = new Set<number>();
-  const spans = generateRandomSpans(count);
+const LAYOUTS: LayoutConfig[] = [
+  {
+    id: 1,
+    items: [
+      { id: 'div1', area: '1 / 1 / 2 / 3' },
+      { id: 'div2', area: '1 / 3 / 2 / 4' },
+      { id: 'div3', area: '2 / 1 / 4 / 2' },
+      { id: 'div4', area: '2 / 2 / 4 / 4' },
+    ]
+  },
+  {
+    id: 2,
+    items: [
+      { id: 'div1', area: '1 / 1 / 3 / 3' },
+      { id: 'div2', area: '1 / 3 / 3 / 4' },
+      { id: 'div3', area: '3 / 2 / 4 / 4' },
+      { id: 'div4', area: '3 / 1 / 4 / 2' },
+    ]
+  },
+  {
+    id: 3,
+    items: [
+      { id: 'div1', area: '1 / 1 / 3 / 2' },
+      { id: 'div2', area: '1 / 2 / 2 / 3' },
+      { id: 'div3', area: '1 / 2 / 2 / 4' },
+      { id: 'div4', area: '3 / 1 / 4 / 2' },
+      { id: 'div5', area: '2 / 2 / 4 / 4' },
+    ]
+  },
+  {
+    id: 4,
+    items: [
+      { id: 'div1', area: '1 / 1 / 3 / 2' },
+      { id: 'div2', area: '3 / 1 / 4 / 3' },
+      { id: 'div3', area: '1 / 2 / 3 / 4' },
+      { id: 'div4', area: '3 / 3 / 4 / 4' },
+    ]
+  }
+];
 
-  while (selected.length < count && indices.size < allImages.length) {
+// Seleccionar imágenes locales sin repetición
+function selectRandomImages(count: number): string[] {
+  const allImages = Array.from({ length: 20 }, (_, i) => `images/slice/slice${String(i + 1).padStart(2, '0')}.jpg`);
+  const selected: string[] = [];
+  const usedIndices = new Set<number>();
+  
+  while (selected.length < count && usedIndices.size < allImages.length) {
     const randomIdx = Math.floor(Math.random() * allImages.length);
-    if (!indices.has(randomIdx)) {
-      indices.add(randomIdx);
-      const barrio = barrios[Math.floor(Math.random() * barrios.length)];
-      const nombre = nombres[Math.floor(Math.random() * nombres.length)];
-      
-      selected.push({
-        id: selected.length,
-        span: spans[selected.length],
-        animation: 'fadeInUp',
-        delay: selected.length * 80,
-        nombre: `${nombre}`,
-        barrio: barrio,
-        fotos: [allImages[randomIdx], allImages[(randomIdx + 1) % allImages.length]],
-      });
+    if (!usedIndices.has(randomIdx)) {
+      usedIndices.add(randomIdx);
+      selected.push(allImages[randomIdx]);
     }
   }
-
+  
   return selected;
 }
 
 // ─── Grid Item Component ────────────────────────────────────────────────────
-function GridItemComponent({ item }: { item: GridItemData }) {
+interface GridItemProps {
+  image: string;
+  area: string;
+  index: number;
+}
+
+function GridItem({ image, area, index }: GridItemProps) {
   const [currentPhotoIdx, setCurrentPhotoIdx] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
   const cycleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const imagesRef = useRef<{ [key: string]: HTMLImageElement }>({});
 
-  const animations: ('fadeInUp' | 'fadeInLeft' | 'fadeInRight' | 'scaleIn')[] = ['fadeInUp', 'fadeInLeft', 'fadeInRight', 'scaleIn'];
-  const animation = animations[item.id % animations.length];
   const slideDirection = currentPhotoIdx % 2 === 0 ? 'from-left' : 'from-right';
+  const photoSlideDelay = currentPhotoIdx * 300;
 
-  // Auto-cycle con pausa en hover
+  // Preload imagen
   useEffect(() => {
-    if (isHovering) {
-      if (cycleTimerRef.current) clearInterval(cycleTimerRef.current);
-      return;
-    }
-
-    cycleTimerRef.current = setInterval(() => {
-      setCurrentPhotoIdx(prev => (prev + 1) % item.fotos.length);
-    }, 4500);
-
-    return () => {
-      if (cycleTimerRef.current) clearInterval(cycleTimerRef.current);
-    };
-  }, [isHovering, item.fotos.length]);
-
-  // Preload imágenes
-  useEffect(() => {
-    item.fotos.forEach((foto, idx) => {
-      const img = new Image();
-      img.src = foto;
-      imagesRef.current[idx] = img;
-    });
-  }, [item.fotos]);
-
-  const currentFoto = item.fotos[currentPhotoIdx];
+    const img = new Image();
+    img.src = image;
+    imagesRef.current[0] = img;
+  }, [image]);
 
   return (
     <div
-      className={`grid-item ${item.span}`}
+      className="grid-item"
       style={{
-        animation: `${animation} 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
-        opacity: 0,
-        animationDelay: `${item.delay}ms`,
+        gridArea: area,
       }}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
-      tabIndex={0}
-      role="button"
-      aria-label={`${item.nombre} en ${item.barrio}`}
     >
       <div className="grid-image-wrapper">
         <img
-          src={currentFoto}
-          alt={`${item.nombre} - foto ${currentPhotoIdx + 1}`}
+          src={image}
+          alt={`Baldosa ${index + 1}`}
           className={`grid-image ${slideDirection}`}
+          style={{
+            animationDelay: `${photoSlideDelay}ms`,
+          }}
         />
       </div>
 
-      {/* Overlay con micro-labels */}
+      {/* Overlay */}
       <div className="grid-overlay">
         <div className="grid-info">
-          <div className="grid-label">{item.nombre}</div>
-          <div className="grid-sublabel">{item.barrio}</div>
+          <div className="grid-label">Baldosa</div>
         </div>
       </div>
-
-      {/* Indicador de múltiples fotos */}
-      {item.fotos.length > 1 && (
-        <div className="grid-indicator">
-          {currentPhotoIdx + 1}/{item.fotos.length}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Logo Filler Component ────────────────────────────────────────────────────
-function LogoFiller() {
-  return (
-    <div
-      className="grid-item-filler"
-      style={{
-        background: 'transparent',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <img
-        src="/images/logo_flores.png"
-        alt="Logo Recorremos Memoria"
-        style={{
-          width: '60%',
-          height: '60%',
-          objectFit: 'contain',
-          opacity: 0.3,
-          filter: 'drop-shadow(0 2px 4px rgba(26, 42, 58, 0.1))',
-        }}
-      />
     </div>
   );
 }
 
 // ─── Image Grid ────────────────────────────────────────────────────────
 function ImageGrid() {
-  const [gridItems, setGridItems] = useState<GridItemData[]>([]);
+  const [layout, setLayout] = useState<LayoutConfig | null>(null);
+  const [images, setImages] = useState<string[]>([]);
 
   useEffect(() => {
-    const items = selectRandomImagesWithMetadata(8);
-    setGridItems(items);
+    // Seleccionar layout aleatorio
+    const randomLayout = LAYOUTS[Math.floor(Math.random() * LAYOUTS.length)];
+    setLayout(randomLayout);
+    
+    // Seleccionar imágenes
+    const selectedImages = selectRandomImages(randomLayout.items.length);
+    setImages(selectedImages);
   }, []);
 
-  if (gridItems.length === 0) return null;
-
-  const fillers = Array.from({ length: Math.max(0, 8 - gridItems.length) });
+  if (!layout || images.length === 0) return null;
 
   return (
     <div
@@ -236,31 +201,30 @@ function ImageGrid() {
         opacity: 0,
         animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 4.4s forwards',
         marginTop: 'var(--space-md)',
-        padding: 'var(--space-md) var(--space-lg)',
+        padding: '0 var(--space-sm)',
         borderTop: '1px solid rgba(37, 99, 235, 0.1)',
+        width: '100%',
       }}
     >
       <style>{`
         .grid-container {
           display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          grid-auto-rows: 180px;
-          grid-auto-flow: dense;
-          gap: 8px;
+          grid-template-columns: repeat(5, 1fr);
+          grid-template-rows: repeat(5, 1fr);
+          gap: 6px;
           width: 100%;
+          aspect-ratio: 1 / 1;
           max-width: 100%;
         }
         
         @media (min-width: 600px) {
           .grid-container {
-            grid-template-columns: repeat(3, 1fr);
             gap: 10px;
           }
         }
         
         @media (min-width: 900px) {
           .grid-container {
-            grid-template-columns: repeat(4, 1fr);
             gap: 12px;
           }
         }
@@ -288,14 +252,6 @@ function ImageGrid() {
           outline-offset: 2px;
         }
         
-        .grid-item.tall {
-          grid-row: span 2;
-        }
-        
-        .grid-item.wide {
-          grid-column: span 2;
-        }
-        
         .grid-image-wrapper {
           position: absolute;
           width: 100%;
@@ -310,11 +266,11 @@ function ImageGrid() {
         }
         
         .grid-image.from-left {
-          animation: slideInFromLeft 0.7s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          animation: slideInFromLeft 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
         
         .grid-image.from-right {
-          animation: slideInFromRight 0.7s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          animation: slideInFromRight 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
         
         @keyframes slideInFromLeft {
@@ -367,42 +323,6 @@ function ImageGrid() {
           font-weight: 600;
           letter-spacing: 0.03em;
           line-height: 1.2;
-          max-width: 100%;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        
-        .grid-sublabel {
-          color: rgba(240, 244, 248, 0.7);
-          font-size: 11px;
-          font-weight: 400;
-          letter-spacing: 0.02em;
-          max-width: 100%;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        
-        .grid-indicator {
-          position: absolute;
-          top: 8px;
-          right: 8px;
-          background: rgba(26, 42, 58, 0.9);
-          color: var(--color-parchment);
-          padding: 4px 8px;
-          border-radius: 6px;
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.05em;
-          z-index: 3;
-          backdrop-filter: blur(4px);
-        }
-        
-        .grid-item-filler {
-          border-radius: 12px;
-          border: 1px solid rgba(37, 99, 235, 0.1);
-          box-shadow: 0 2px 8px rgba(26, 42, 58, 0.04);
         }
         
         @keyframes fadeInUp {
@@ -415,47 +335,16 @@ function ImageGrid() {
             transform: translateY(0);
           }
         }
-        
-        @keyframes fadeInLeft {
-          from {
-            opacity: 0;
-            transform: translateX(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        
-        @keyframes fadeInRight {
-          from {
-            opacity: 0;
-            transform: translateX(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        
-        @keyframes scaleIn {
-          from {
-            opacity: 0;
-            transform: scale(0.8);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
       `}</style>
 
       <div className="grid-container">
-        {gridItems.map((item) => (
-          <GridItemComponent key={item.id} item={item} />
-        ))}
-        {fillers.map((_, idx) => (
-          <LogoFiller key={`filler-${idx}`} />
+        {layout.items.map((item, idx) => (
+          <GridItem
+            key={item.id}
+            image={images[idx]}
+            area={item.area}
+            index={idx}
+          />
         ))}
       </div>
     </div>
@@ -517,7 +406,7 @@ export default function Home() {
         minHeight: 'calc(100vh - 200px)',
         padding: 'var(--space-lg)',
       }}>
-        <div className="container" style={{ textAlign: 'center', maxWidth: '900px', width: '100%' }}>
+        <div className="container" style={{ textAlign: 'center', maxWidth: '100%', width: '100%' }}>
           
           <div className="logo-baldosa-container">
             <div className="baldosa-animada">
@@ -686,7 +575,13 @@ export default function Home() {
             animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 4.25s forwards',
             marginBottom: 'var(--space-sm)',
           }}>
-            <ContadorBaldosas />
+            <div style={{
+              fontSize: '1rem',
+              fontWeight: 500,
+              color: 'var(--color-stone)',
+            }}>
+              Más de 500 baldosas registradas
+            </div>
           </div>
 
           <ImageGrid />
