@@ -64,7 +64,7 @@ interface LayoutConfig {
   id: number;
   items: Array<{
     id: string;
-    area: string; // grid-area value
+    area: string;
   }>;
 }
 
@@ -127,26 +127,44 @@ function selectRandomImages(count: number): string[] {
 
 // ─── Grid Item Component ────────────────────────────────────────────────────
 interface GridItemProps {
-  image: string;
+  images: string[];
   area: string;
   index: number;
 }
 
-function GridItem({ image, area, index }: GridItemProps) {
+function GridItem({ images, area, index }: GridItemProps) {
   const [currentPhotoIdx, setCurrentPhotoIdx] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
   const cycleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const imagesRef = useRef<{ [key: string]: HTMLImageElement }>({});
 
   const slideDirection = currentPhotoIdx % 2 === 0 ? 'from-left' : 'from-right';
-  const photoSlideDelay = currentPhotoIdx * 300;
+  const photoSlideDelay = currentPhotoIdx * 400; // 400ms entre cada slide
 
-  // Preload imagen
+  // Auto-cycle con pausa en hover
   useEffect(() => {
-    const img = new Image();
-    img.src = image;
-    imagesRef.current[0] = img;
-  }, [image]);
+    if (isHovering) {
+      if (cycleTimerRef.current) clearInterval(cycleTimerRef.current);
+      return;
+    }
+
+    cycleTimerRef.current = setInterval(() => {
+      setCurrentPhotoIdx(prev => (prev + 1) % images.length);
+    }, 5000); // Cicla cada 5s
+
+    return () => {
+      if (cycleTimerRef.current) clearInterval(cycleTimerRef.current);
+    };
+  }, [isHovering, images.length]);
+
+  // Preload imágenes
+  useEffect(() => {
+    images.forEach((img) => {
+      const image = new Image();
+      image.src = img;
+    });
+  }, [images]);
+
+  const currentImage = images[currentPhotoIdx];
 
   return (
     <div
@@ -159,8 +177,8 @@ function GridItem({ image, area, index }: GridItemProps) {
     >
       <div className="grid-image-wrapper">
         <img
-          src={image}
-          alt={`Baldosa ${index + 1}`}
+          src={currentImage}
+          alt={`Baldosa ${index + 1} - foto ${currentPhotoIdx + 1}`}
           className={`grid-image ${slideDirection}`}
           style={{
             animationDelay: `${photoSlideDelay}ms`,
@@ -181,15 +199,19 @@ function GridItem({ image, area, index }: GridItemProps) {
 // ─── Image Grid ────────────────────────────────────────────────────────
 function ImageGrid() {
   const [layout, setLayout] = useState<LayoutConfig | null>(null);
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<string[][]>([]);
 
   useEffect(() => {
     // Seleccionar layout aleatorio
     const randomLayout = LAYOUTS[Math.floor(Math.random() * LAYOUTS.length)];
     setLayout(randomLayout);
     
-    // Seleccionar imágenes
-    const selectedImages = selectRandomImages(randomLayout.items.length);
+    // Seleccionar imágenes para cada item (2 imágenes por item)
+    const selectedImages = randomLayout.items.map(() => {
+      const allImages = Array.from({ length: 20 }, (_, i) => `images/slice/slice${String(i + 1).padStart(2, '0')}.jpg`);
+      const shuffled = allImages.sort(() => Math.random() - 0.5);
+      return shuffled.slice(0, 2); // 2 imágenes por grid item
+    });
     setImages(selectedImages);
   }, []);
 
@@ -266,11 +288,11 @@ function ImageGrid() {
         }
         
         .grid-image.from-left {
-          animation: slideInFromLeft 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          animation: slideInFromLeft 1.4s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
         }
         
         .grid-image.from-right {
-          animation: slideInFromRight 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          animation: slideInFromRight 1.4s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
         }
         
         @keyframes slideInFromLeft {
@@ -341,7 +363,7 @@ function ImageGrid() {
         {layout.items.map((item, idx) => (
           <GridItem
             key={item.id}
-            image={images[idx]}
+            images={images[idx] || []}
             area={item.area}
             index={idx}
           />
@@ -405,8 +427,9 @@ export default function Home() {
         justifyContent: 'center',
         minHeight: 'calc(100vh - 200px)',
         padding: 'var(--space-lg)',
+        width: '100%',
       }}>
-        <div className="container" style={{ textAlign: 'center', maxWidth: '100%', width: '100%' }}>
+        <div style={{ textAlign: 'center', width: '100%' }}>
           
           <div className="logo-baldosa-container">
             <div className="baldosa-animada">
@@ -568,23 +591,75 @@ export default function Home() {
             </a>
           </div>
 
+          {/* Contador estilizado */}
           <div style={{
-            display: 'flex',
-            justifyContent: 'center',
             opacity: 0,
             animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 4.25s forwards',
-            marginBottom: 'var(--space-sm)',
+            marginBottom: 'var(--space-lg)',
+            padding: 'var(--space-md) var(--space-lg)',
+            background: 'rgba(37, 99, 235, 0.08)',
+            border: '1px solid rgba(37, 99, 235, 0.2)',
+            borderRadius: '12px',
+            maxWidth: '500px',
+            margin: 'var(--space-lg) auto',
           }}>
-            <div style={{
-              fontSize: '1rem',
-              fontWeight: 500,
+            <p style={{
+              fontSize: '1.1rem',
+              fontWeight: 600,
               color: 'var(--color-stone)',
+              letterSpacing: '0.02em',
+              margin: 0,
             }}>
               Más de 500 baldosas registradas
-            </div>
+            </p>
+            <p style={{
+              fontSize: '0.9rem',
+              color: 'var(--color-concrete)',
+              marginTop: '0.5rem',
+              margin: 0,
+            }}>
+              Historias de memoria en las calles de Buenos Aires
+            </p>
           </div>
 
+          {/* Grid de imágenes */}
           <ImageGrid />
+
+          {/* Bloque inspiracional */}
+          <div style={{
+            opacity: 0,
+            animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 5.2s forwards',
+            marginTop: 'var(--space-xl)',
+            padding: 'var(--space-lg) var(--space-md)',
+            background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(14, 165, 233, 0.08) 100%)',
+            border: '2px solid rgba(37, 99, 235, 0.2)',
+            borderRadius: '16px',
+            maxWidth: '600px',
+            margin: 'var(--space-xl) auto',
+          }}>
+            <h2 style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(1.8rem, 4vw, 2.5rem)',
+              fontWeight: 700,
+              color: 'var(--color-stone)',
+              letterSpacing: '-0.02em',
+              margin: '0 0 var(--space-sm) 0',
+              lineHeight: 1.2,
+            }}>
+              Saliendo a la calle
+            </h2>
+            <p style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(1.3rem, 3.5vw, 1.8rem)',
+              fontWeight: 600,
+              color: 'var(--color-primary)',
+              letterSpacing: '-0.01em',
+              margin: 0,
+              lineHeight: 1.3,
+            }}>
+              Recorremos memoria
+            </p>
+          </div>
         </div>
       </div>
 
