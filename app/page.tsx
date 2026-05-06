@@ -133,14 +133,13 @@ interface GridItemProps {
 }
 
 function GridItem({ images, area, index }: GridItemProps) {
-  // Cada item comienza con diferente foto (offset)
+  // Cada item comienza con offset inicial
   const initialPhotoIdx = index % Math.max(1, images.length);
   const [currentPhotoIdx, setCurrentPhotoIdx] = useState(initialPhotoIdx);
   const [isHovering, setIsHovering] = useState(false);
   const cycleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const slideDirection = currentPhotoIdx % 2 === 0 ? 'from-left' : 'from-right';
-  // Cada item se inicia en diferente momento (escalonado)
   const itemInitialDelay = index * 200; // 200ms entre cada item
 
   // Auto-cycle con pausa en hover - comienza con delay diferenciado
@@ -209,15 +208,13 @@ function ImageGrid() {
   const [images, setImages] = useState<string[][]>([]);
 
   useEffect(() => {
-    // Seleccionar layout aleatorio
     const randomLayout = LAYOUTS[Math.floor(Math.random() * LAYOUTS.length)];
     setLayout(randomLayout);
     
-    // Seleccionar imágenes para cada item (2 imágenes por item)
     const selectedImages = randomLayout.items.map(() => {
       const allImages = Array.from({ length: 20 }, (_, i) => `images/slice/slice${String(i + 1).padStart(2, '0')}.jpg`);
       const shuffled = allImages.sort(() => Math.random() - 0.5);
-      return shuffled.slice(0, 2); // 2 imágenes por grid item
+      return shuffled.slice(0, 2);
     });
     setImages(selectedImages);
   }, []);
@@ -231,12 +228,15 @@ function ImageGrid() {
         animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 4.4s forwards',
         marginTop: 'var(--space-md)',
         marginBottom: 'var(--space-lg)',
-        width: '100vw',
-        marginLeft: 'calc(-50vw + 50%)',
+        width: 'calc(100% + 2 * var(--space-lg))',
+        marginLeft: 'calc(-1 * var(--space-lg))',
+        marginRight: 'calc(-1 * var(--space-lg))',
+        paddingLeft: 'var(--space-lg)',
+        paddingRight: 'var(--space-lg)',
+        paddingTop: 'var(--space-md)',
+        paddingBottom: 'var(--space-md)',
         display: 'flex',
         justifyContent: 'center',
-        paddingLeft: 'var(--space-sm)',
-        paddingRight: 'var(--space-sm)',
         borderTop: '1px solid rgba(37, 99, 235, 0.1)',
       }}
     >
@@ -592,15 +592,12 @@ export default function Home() {
             </a>
           </div>
 
-          {/* Grid de imágenes */}
-          <ImageGrid />
-
-          {/* Contenedor flex: Contador + Bloque inspiracional */}
+          {/* Contenedor flex: Contador + Bloque inspiracional - ANTES del grid */}
           <div style={{
             opacity: 0,
-            animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 5.0s forwards',
+            animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 4.3s forwards',
             marginTop: 'var(--space-xl)',
-            marginBottom: 'var(--space-xl)',
+            marginBottom: 'var(--space-lg)',
             display: 'flex',
             gap: 'var(--space-lg)',
             justifyContent: 'center',
@@ -608,7 +605,7 @@ export default function Home() {
             flexWrap: 'wrap',
             width: '100%',
             maxWidth: '1000px',
-            margin: 'var(--space-xl) auto',
+            margin: 'var(--space-lg) auto var(--space-lg)',
             padding: '0 var(--space-md)',
           }}>
             {/* Bloque Contador */}
@@ -675,6 +672,9 @@ export default function Home() {
               </p>
             </div>
           </div>
+
+          {/* Grid de imágenes */}
+          <ImageGrid />
         </div>
       </div>
 
