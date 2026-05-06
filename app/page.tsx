@@ -133,28 +133,35 @@ interface GridItemProps {
 }
 
 function GridItem({ images, area, index }: GridItemProps) {
-  const [currentPhotoIdx, setCurrentPhotoIdx] = useState(0);
+  // Cada item comienza con diferente foto (offset)
+  const initialPhotoIdx = index % Math.max(1, images.length);
+  const [currentPhotoIdx, setCurrentPhotoIdx] = useState(initialPhotoIdx);
   const [isHovering, setIsHovering] = useState(false);
   const cycleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const slideDirection = currentPhotoIdx % 2 === 0 ? 'from-left' : 'from-right';
-  const photoSlideDelay = currentPhotoIdx * 400; // 400ms entre cada slide
+  // Cada item se inicia en diferente momento (escalonado)
+  const itemInitialDelay = index * 200; // 200ms entre cada item
 
-  // Auto-cycle con pausa en hover
+  // Auto-cycle con pausa en hover - comienza con delay diferenciado
   useEffect(() => {
     if (isHovering) {
       if (cycleTimerRef.current) clearInterval(cycleTimerRef.current);
       return;
     }
 
-    cycleTimerRef.current = setInterval(() => {
-      setCurrentPhotoIdx(prev => (prev + 1) % images.length);
-    }, 5000); // Cicla cada 5s
+    // Cada item comienza su ciclo en diferente tiempo
+    const initialTimeout = setTimeout(() => {
+      cycleTimerRef.current = setInterval(() => {
+        setCurrentPhotoIdx(prev => (prev + 1) % images.length);
+      }, 5000); // Cicla cada 5s
+    }, itemInitialDelay); // Delay inicial diferenciado
 
     return () => {
+      clearTimeout(initialTimeout);
       if (cycleTimerRef.current) clearInterval(cycleTimerRef.current);
     };
-  }, [isHovering, images.length]);
+  }, [isHovering, images.length, itemInitialDelay]);
 
   // Preload imágenes
   useEffect(() => {
@@ -181,7 +188,7 @@ function GridItem({ images, area, index }: GridItemProps) {
           alt={`Baldosa ${index + 1} - foto ${currentPhotoIdx + 1}`}
           className={`grid-image ${slideDirection}`}
           style={{
-            animationDelay: `${photoSlideDelay}ms`,
+            animationDelay: `${itemInitialDelay}ms`,
           }}
         />
       </div>
@@ -223,9 +230,14 @@ function ImageGrid() {
         opacity: 0,
         animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 4.4s forwards',
         marginTop: 'var(--space-md)',
-        padding: '0 var(--space-sm)',
+        marginBottom: 'var(--space-lg)',
+        width: '100vw',
+        marginLeft: 'calc(-50vw + 50%)',
+        display: 'flex',
+        justifyContent: 'center',
+        paddingLeft: 'var(--space-sm)',
+        paddingRight: 'var(--space-sm)',
         borderTop: '1px solid rgba(37, 99, 235, 0.1)',
-        width: '100%',
       }}
     >
       <style>{`
@@ -236,7 +248,7 @@ function ImageGrid() {
           gap: 6px;
           width: 100%;
           aspect-ratio: 1 / 1;
-          max-width: 100%;
+          max-width: 800px;
         }
         
         @media (min-width: 600px) {
@@ -345,17 +357,6 @@ function ImageGrid() {
           font-weight: 600;
           letter-spacing: 0.03em;
           line-height: 1.2;
-        }
-        
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
         }
       `}</style>
 
@@ -591,74 +592,88 @@ export default function Home() {
             </a>
           </div>
 
-          {/* Contador estilizado */}
-          <div style={{
-            opacity: 0,
-            animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 4.25s forwards',
-            marginBottom: 'var(--space-lg)',
-            padding: 'var(--space-md) var(--space-lg)',
-            background: 'rgba(37, 99, 235, 0.08)',
-            border: '1px solid rgba(37, 99, 235, 0.2)',
-            borderRadius: '12px',
-            maxWidth: '500px',
-            margin: 'var(--space-lg) auto',
-          }}>
-            <p style={{
-              fontSize: '1.1rem',
-              fontWeight: 600,
-              color: 'var(--color-stone)',
-              letterSpacing: '0.02em',
-              margin: 0,
-            }}>
-              Más de 500 baldosas registradas
-            </p>
-            <p style={{
-              fontSize: '0.9rem',
-              color: 'var(--color-concrete)',
-              marginTop: '0.5rem',
-              margin: 0,
-            }}>
-              Historias de memoria en las calles de Buenos Aires
-            </p>
-          </div>
-
           {/* Grid de imágenes */}
           <ImageGrid />
 
-          {/* Bloque inspiracional */}
+          {/* Contenedor flex: Contador + Bloque inspiracional */}
           <div style={{
             opacity: 0,
-            animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 5.2s forwards',
+            animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 5.0s forwards',
             marginTop: 'var(--space-xl)',
-            padding: 'var(--space-lg) var(--space-md)',
-            background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(14, 165, 233, 0.08) 100%)',
-            border: '2px solid rgba(37, 99, 235, 0.2)',
-            borderRadius: '16px',
-            maxWidth: '600px',
+            marginBottom: 'var(--space-xl)',
+            display: 'flex',
+            gap: 'var(--space-lg)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            width: '100%',
+            maxWidth: '1000px',
             margin: 'var(--space-xl) auto',
+            padding: '0 var(--space-md)',
           }}>
-            <h2 style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(1.8rem, 4vw, 2.5rem)',
-              fontWeight: 700,
-              color: 'var(--color-stone)',
-              letterSpacing: '-0.02em',
-              margin: '0 0 var(--space-sm) 0',
-              lineHeight: 1.2,
+            {/* Bloque Contador */}
+            <div style={{
+              flex: '1 1 280px',
+              minWidth: '260px',
+              padding: 'var(--space-lg) var(--space-lg)',
+              background: 'rgba(37, 99, 235, 0.08)',
+              border: '1px solid rgba(37, 99, 235, 0.2)',
+              borderRadius: '14px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              textAlign: 'center',
             }}>
-              Saliendo a la calle
-            </h2>
-            <p style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(1.3rem, 3.5vw, 1.8rem)',
-              fontWeight: 600,
-              color: 'var(--color-primary)',
-              letterSpacing: '-0.01em',
-              margin: 0,
-              lineHeight: 1.3,
+              <p style={{
+                fontSize: 'clamp(1rem, 3vw, 1.3rem)',
+                fontWeight: 700,
+                color: 'var(--color-stone)',
+                letterSpacing: '0.02em',
+                margin: 0,
+                lineHeight: 1.3,
+              }}>
+                Más de 500 baldosas registradas
+              </p>
+            </div>
+
+            {/* Bloque Inspiracional */}
+            <div style={{
+              flex: '1 1 280px',
+              minWidth: '260px',
+              padding: 'var(--space-lg) var(--space-lg)',
+              background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(14, 165, 233, 0.08) 100%)',
+              border: '2px solid rgba(37, 99, 235, 0.2)',
+              borderRadius: '14px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              textAlign: 'center',
             }}>
-              Recorremos memoria
-            </p>
+              <h2 style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 'clamp(1.5rem, 3.5vw, 2rem)',
+                fontWeight: 700,
+                color: 'var(--color-stone)',
+                letterSpacing: '-0.02em',
+                margin: '0 0 var(--space-xs) 0',
+                lineHeight: 1.2,
+              }}>
+                Saliendo a la calle
+              </h2>
+              <p style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 'clamp(1.2rem, 3vw, 1.6rem)',
+                fontWeight: 600,
+                color: 'var(--color-primary)',
+                letterSpacing: '-0.01em',
+                margin: 0,
+                lineHeight: 1.3,
+              }}>
+                Recorremos memoria
+              </p>
+            </div>
           </div>
         </div>
       </div>
