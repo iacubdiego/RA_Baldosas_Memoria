@@ -57,7 +57,23 @@ function formatearDistancia(m: number): string {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
-export default function LocationARScanner() {
+interface LocationARScannerProps {
+  /** Si viene seteada (sin coordsForzadas), saltea GPS y entra directo a la AR con esta baldosa. */
+  baldosaForzada?: Baldosa | null
+  /** Si viene seteada junto a coordsForzadas, la proximidad se chequea solo contra esta baldosa. */
+  baldosaUnica?: Baldosa | null
+  /** Coordenadas simuladas — reemplazan al GPS real. */
+  coordsForzadas?: { lat: number; lng: number } | null
+  /** Modo desarrollo: deshabilita PATCH a vecesEscaneada y muestra chip MODO TEST. */
+  modoTest?: boolean
+}
+
+export default function LocationARScanner({
+  baldosaForzada = null,
+  baldosaUnica   = null,
+  coordsForzadas = null,
+  modoTest       = false,
+}: LocationARScannerProps = {}) {
   const [fase, setFase] = useState<FaseExperiencia>('verificando')
   const [baldosas, setBaldosas] = useState<Baldosa[]>([])
   const [baldosaCercana, setBaldosaCercana] = useState<Baldosa | null>(null)
@@ -212,6 +228,13 @@ export default function LocationARScanner() {
 
   // ── 1. Cargar todas las baldosas al montar ─────────────────────────────────
   useEffect(() => {
+    // MODO TEST: si tenemos baldosa forzada o única, no hace falta traer toda la lista
+    if (modoTest && (baldosaForzada || baldosaUnica)) {
+      const b = baldosaForzada || baldosaUnica
+      if (b) setBaldosas([b])
+      return
+    }
+
     async function fetchBaldosas() {
       try {
         const res  = await fetch('/api/baldosas')
@@ -223,10 +246,26 @@ export default function LocationARScanner() {
       }
     }
     fetchBaldosas()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // ── 2. Arrancar GPS al montar ─────────────────────────────────────────────
   useEffect(() => {
+    // MODO TEST con baldosa forzada y sin coords: saltar GPS, AR directa
+    if (modoTest && baldosaForzada && !coordsForzadas) {
+      setBaldosaActiva(baldosaForzada)
+      setFase('ar')
+      return
+    }
+
+    // MODO TEST con coords forzadas: saltar GPS real, ir a "caminando".
+    // El useEffect de simulación más abajo procesará la proximidad.
+    if (modoTest && coordsForzadas) {
+      setFase('caminando')
+      return
+    }
+
+    // Flujo normal — GPS real
     if (!navigator.geolocation) {
       window.location.href = '/mapa'
       return
@@ -236,6 +275,42 @@ export default function LocationARScanner() {
     return () => clearTimeout(t)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // ── 2.b MODO TEST: simulación de GPS con coords forzadas ────────────────────
+  // Cuando hay coordsForzadas, replicamos la lógica del watcher real pero usando
+  // las coordenadas pasadas por prop. Si la baldosa más cercana está dentro del
+  // RADIO_ACTIVACION_M, activa AR automáticamente.
+  useEffect(() => {
+    if (!modoTest || !coordsForzadas || baldosas.length === 0) return
+    if (fase === 'ar') return
+
+    const lista = baldosaUnica ? [baldosaUnica] : baldosas
+    let minDist = Infinity
+    let masProxima: Baldosa | null = null
+
+    for (const b of lista) {
+      const d = calcularDistancia(coordsForzadas.lat, coordsForzadas.lng, b.lat, b.lng)
+      if (d < minDist) {
+        minDist = d
+        masProxima = b
+      }
+    }
+
+    setDistancia(minDist < Infinity ? Math.round(minDist) : null)
+
+    if (masProxima && minDist <= RADIO_ACTIVACION_M) {
+      setBaldosaCercana(masProxima)
+      if (!autoLanzadoRef.current) {
+        autoLanzadoRef.current = true
+        // ⚠ NO hacemos PATCH en modo test
+        setTimeout(() => {
+          setBaldosaActiva(masProxima!)
+          setFase('ar')
+        }, 50)
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modoTest, coordsForzadas, baldosas, baldosaUnica])
 
   // ── 3. Pedir permisos y arrancar watcher GPS ───────────────────────────────
   const iniciarGPS = useCallback(async () => {
@@ -299,8 +374,10 @@ export default function LocationARScanner() {
             if (prev === 'ar') return prev
             if (!autoLanzadoRef.current) {
               autoLanzadoRef.current = true
-              const id = masProxima!.codigo || masProxima!.id
-              fetch(`/api/baldosas/${id}`, { method: 'PATCH' }).catch(() => {})
+              if (!modoTest) {
+                const id = masProxima!.codigo || masProxima!.id
+                fetch(`/api/baldosas/${id}`, { method: 'PATCH' }).catch(() => {})
+              }
               setTimeout(() => {
                 setBaldosaActiva(masProxima!)
                 setFase('ar')
@@ -970,10 +1047,12 @@ export default function LocationARScanner() {
 
   const marcarVisitadaYVerAR = useCallback(() => {
     if (!baldosaCercana) return
-    const id = baldosaCercana.codigo || baldosaCercana.id
-    fetch(`/api/baldosas/${id}`, { method: 'PATCH' }).catch(() => {})
+    if (!modoTest) {
+      const id = baldosaCercana.codigo || baldosaCercana.id
+      fetch(`/api/baldosas/${id}`, { method: 'PATCH' }).catch(() => {})
+    }
     verEscenaAR()
-  }, [baldosaCercana, verEscenaAR])
+  }, [baldosaCercana, verEscenaAR, modoTest])
 
   const cerrarAR = useCallback(() => {
     const bgVideo = document.getElementById('camara-bg') as HTMLVideoElement | null
@@ -984,8 +1063,8 @@ export default function LocationARScanner() {
     const arContainer = document.getElementById('ar-container')
     if (arContainer) arContainer.innerHTML = ''
 
-    window.location.href = '/mapa'
-  }, [])
+    window.location.href = modoTest ? '/scanner/test' : '/mapa'
+  }, [modoTest])
 
   const volverACaminar = useCallback(() => {
     const bgVideo = document.getElementById('camara-bg') as HTMLVideoElement | null
@@ -1001,8 +1080,8 @@ export default function LocationARScanner() {
     setScriptsOk(false)
     setArListo(false)
     setHudListo(false)
-    window.location.href = '/mapa'
-  }, [])
+    window.location.href = modoTest ? '/scanner/test' : '/mapa'
+  }, [modoTest])
 
   const escanearYGuardar = useCallback(async () => {
     if (!baldosaActiva || escaneando || fotoOk) return
@@ -1176,6 +1255,29 @@ export default function LocationARScanner() {
       <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', overflow: 'hidden', background: '#000', zIndex: 9999 }}>
         {/* Contenedor donde se monta A-Frame */}
         <div id="ar-container" style={{ width: '100%', height: '100%' }} />
+
+        {/* Chip MODO TEST */}
+        {modoTest && (
+          <div style={{
+            position:       'absolute',
+            top:            'calc(env(safe-area-inset-top, 0px) + 8px)',
+            left:           '50%',
+            transform:      'translateX(-50%)',
+            zIndex:          250,
+            padding:        '0.25rem 0.85rem',
+            background:     'rgba(252, 165, 165, 0.18)',
+            color:          '#fca5a5',
+            border:         '1px solid rgba(252, 165, 165, 0.45)',
+            borderRadius:   '999px',
+            fontSize:       '0.7rem',
+            fontWeight:     700,
+            letterSpacing:  '0.12em',
+            pointerEvents:  'none',
+            backdropFilter: 'blur(6px)',
+          }}>
+            MODO TEST · sin GPS · no cuenta
+          </div>
+        )}
 
         {/* Overlay de carga */}
         {!arListo && (
