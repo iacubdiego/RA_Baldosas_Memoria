@@ -40,12 +40,28 @@ const userIcon = new L.Icon({
   iconSize: [28, 28], iconAnchor: [14, 14],
 })
 
+// Recorrido escolar: círculo rojo con borde blanco
+const recorridoIcon = new L.DivIcon({
+  className: '',
+  html: `<div style="width:16px;height:16px;background:#c0392b;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 2px #c0392b;"></div>`,
+  iconSize: [16,16], iconAnchor: [8,8],
+})
+
+// Escuela: marcador con emoji
+const escuelaIcon = new L.DivIcon({
+  className: '',
+  html: `<div style="width:30px;height:30px;background:#1a2a3a;border:3px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 2px 6px rgba(0,0,0,0.4);">🏫</div>`,
+  iconSize: [30,30], iconAnchor: [15,15],
+})
+
 const RADIO_MAXIMO   = 100   // metros — debe estar a menos de 100m para escanear
 const LIMIT_CERCANAS = 20
 
 interface Pin { id:string; codigo:string; nombre:string; direccion:string; barrio:string; lat:number; lng:number; vecesEscaneada?:number; fotosUrls?:string[] }
 interface BaldosaCercana { id:string; codigo:string; nombre:string; lat:number; lng:number; direccion:string; barrio:string; mensajeAR:string; distancia?:number; vecesEscaneada?:number; fotosUrls?:string[] }
-interface MapViewProps { initialLocation: { lat:number; lng:number } }
+interface BaldosaRecorrido { id:string; codigo:string; nombre:string; lat:number; lng:number; direccion:string }
+interface DatosRecorrido { id:string; nombre:string; direccion:string; barrio:string; lat:number; lng:number; baldosas:BaldosaRecorrido[]; ruta_geojson: any }
+interface MapViewProps { initialLocation: { lat:number; lng:number }; recorrido?: DatosRecorrido }
 
 function calcularDistancia(lat1:number,lng1:number,lat2:number,lng2:number):number {
   const R=6371e3, ph1=(lat1*Math.PI)/180, ph2=(lat2*Math.PI)/180
@@ -124,7 +140,7 @@ function FotosSlider({ fotos, nombre }: { fotos: string[]; nombre: string }) {
   )
 }
 
-export default function MapView({ initialLocation }:MapViewProps) {
+export default function MapView({ initialLocation, recorrido }:MapViewProps) {
   const [pins,setPins]=useState<Pin[]>([])
   const [loadingPins,setLoadingPins]=useState(true)
   const [userLocation,setUserLocation]=useState<{lat:number;lng:number}|null>(null)
@@ -308,19 +324,42 @@ export default function MapView({ initialLocation }:MapViewProps) {
 
   const topBotones = destino ? `${bannerHeight + 10}px` : '12px'
 
+  // ─── Datos derivados del recorrido escolar ───────────────────────────────
+  const idsRecorrido = new Set(recorrido?.baldosas.map(b => b.id) ?? [])
+  const coordsPolilinea: [number,number][] = recorrido
+    ? [
+        [recorrido.lat, recorrido.lng],
+        ...recorrido.baldosas.map(b => [b.lat, b.lng] as [number,number]),
+        [recorrido.lat, recorrido.lng],
+      ]
+    : []
+
   return (
     <div style={{position:'relative',width:'100%',height:'100dvh'}}>
 
       <MapContainer center={[userLocation?.lat??initialLocation.lat,userLocation?.lng??initialLocation.lng]} zoom={13} style={{width:'100%',height:'100%'}} zoomControl={false}>
         <TileLayer attribution='&copy; <a href="https://www.ign.gob.ar/AreaServicios/Argenmap/IntroduccionV2" target="_blank">Instituto Geográfico Nacional</a> + <a href="https://www.osm.org/copyright" target="_blank">OpenStreetMap</a>' url="https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/capabaseargenmap@EPSG:3857@png/{z}/{x}/{-y}.png"/>
         {ruta.length>1&&<Polyline positions={ruta} pathOptions={{color:'#2563eb',weight:5,opacity:0.9}}/>}
+        {/* Polilínea punteada del recorrido escolar — siempre visible */}
+        {coordsPolilinea.length>1&&<Polyline positions={coordsPolilinea} pathOptions={{color:'#c0392b',weight:3,opacity:0.8,dashArray:'8, 7'}}/>}
+        {/* Marcador de la escuela */}
+        {recorrido&&(
+          <Marker position={[recorrido.lat,recorrido.lng]} icon={escuelaIcon}>
+            <Popup>
+              <div style={{fontFamily:'sans-serif',minWidth:'160px'}}>
+                <strong style={{fontSize:'0.9rem'}}>{recorrido.nombre}</strong>
+                <p style={{fontSize:'0.78rem',color:'#4a6b7c',margin:'4px 0 0'}}>{recorrido.direccion}</p>
+              </div>
+            </Popup>
+          </Marker>
+        )}
         {userLocation&&<Marker position={[userLocation.lat,userLocation.lng]} icon={userIcon}><Popup><div style={{fontFamily:'sans-serif',textAlign:'center'}}><strong>Tu ubicación</strong></div></Popup></Marker>}
         {pins.map(pin=>{
           const dist=userLocation?calcularDistancia(userLocation.lat,userLocation.lng,pin.lat,pin.lng):null
           const cerca=dist!==null&&dist<=RADIO_MAXIMO
           const esDestino=destino?.id===pin.id
           return(
-            <Marker key={pin.id} position={[pin.lat,pin.lng]} icon={esDestino?destinoIcon:baldosaIcon}>
+            <Marker key={pin.id} position={[pin.lat,pin.lng]} icon={esDestino?destinoIcon:idsRecorrido.has(pin.id)?recorridoIcon:baldosaIcon}>
               <Popup>
                 <div style={{fontFamily:'sans-serif',minWidth:'200px',maxWidth:'240px'}}>
                   <h3 style={{fontSize:'0.95rem',color:'#1a2a3a',margin:'0 0 4px'}}>{pin.nombre}</h3>

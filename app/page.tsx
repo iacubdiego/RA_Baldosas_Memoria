@@ -72,46 +72,55 @@ const LAYOUTS: LayoutConfig[] = [
   {
     id: 1,
     items: [
-      { id: 'div1', area: '1 / 1 / 2 / 3' },
-      { id: 'div2', area: '1 / 3 / 2 / 4' },
-      { id: 'div3', area: '2 / 1 / 3 / 2' },
-      { id: 'div4', area: '2 / 2 / 3 / 4' },
-      { id: 'div5', area: '3 / 1 / 4 / 4' },
-      { id: 'div6', area: '4 / 1 / 6 / 4' },
+      { id: 'div1', area: '1 / 1 / 3 / 3' },
+      { id: 'div2', area: '1 / 3 / 3 / 4' },
+      { id: 'div3', area: '3 / 2 / 4 / 4' },
+      { id: 'div4', area: '4 / 3 / 5 / 4' },
+      { id: 'div5', area: '4 / 1 / 5 / 3' },
+      { id: 'div6', area: '3 / 1 / 4 / 2' },
     ]
   },
   {
     id: 2,
     items: [
-      { id: 'div1', area: '1 / 1 / 2 / 3' },
-      { id: 'div2', area: '1 / 3 / 2 / 4' },
-      { id: 'div3', area: '2 / 1 / 3 / 4' },
-      { id: 'div4', area: '3 / 1 / 4 / 2' },
-      { id: 'div5', area: '3 / 2 / 4 / 4' },
-      { id: 'div6', area: '4 / 1 / 6 / 4' },
+      { id: 'div1', area: '1 / 2 / 2 / 4' },
+      { id: 'div2', area: '1 / 1 / 3 / 2' },
+      { id: 'div3', area: '2 / 2 / 4 / 4' },
+      { id: 'div4', area: '4 / 3 / 5 / 4' },
+      { id: 'div5', area: '4 / 1 / 5 / 3' },
+      { id: 'div6', area: '3 / 1 / 4 / 2' },
     ]
   },
   {
     id: 3,
     items: [
       { id: 'div1', area: '1 / 1 / 2 / 2' },
-      { id: 'div2', area: '1 / 2 / 2 / 3' },
-      { id: 'div3', area: '1 / 3 / 2 / 4' },
-      { id: 'div4', area: '2 / 1 / 3 / 4' },
-      { id: 'div5', area: '3 / 1 / 4 / 2' },
-      { id: 'div6', area: '3 / 2 / 4 / 4' },
-      { id: 'div7', area: '4 / 1 / 6 / 4' },
+      { id: 'div2', area: '1 / 2 / 2 / 4' },
+      { id: 'div3', area: '2 / 1 / 4 / 3' },
+      { id: 'div4', area: '2 / 3 / 3 / 4' },
+      { id: 'div5', area: '3 / 3 / 5 / 4' },
+      { id: 'div6', area: '4 / 1 / 5 / 3' },
     ]
   },
   {
     id: 4,
     items: [
-      { id: 'div1', area: '1 / 1 / 2 / 2' },
-      { id: 'div2', area: '1 / 2 / 3 / 4' },
-      { id: 'div3', area: '2 / 1 / 3 / 2' },
-      { id: 'div4', area: '3 / 1 / 4 / 3' },
-      { id: 'div5', area: '3 / 3 / 4 / 4' },
-      { id: 'div6', area: '4 / 1 / 6 / 4' },
+      { id: 'div1', area: '1 / 1 / 3 / 3' },
+      { id: 'div2', area: '3 / 2 / 5 / 4' },
+      { id: 'div3', area: '1 / 3 / 2 / 4' },
+      { id: 'div4', area: '2 / 3 / 3 / 4' },
+      { id: 'div5', area: '3 / 1 / 5 / 2' },
+    ]
+  },
+  {
+    id: 5,
+    items: [
+      { id: 'div1', area: '3 / 2 / 5 / 4' },
+      { id: 'div2', area: '4 / 1 / 5 / 2' },
+      { id: 'div3', area: '2 / 1 / 4 / 2' },
+      { id: 'div4', area: '1 / 1 / 2 / 3' },
+      { id: 'div5', area: '1 / 3 / 3 / 4' },
+      { id: 'div6', area: '2 / 2 / 3 / 3' },
     ]
   }
 ];
@@ -150,7 +159,7 @@ function GridItem({ images, area, index }: GridItemProps) {
   // Direcciones de animación variadas
   const directions = ['from-left', 'from-right', 'from-top', 'from-bottom'];
   const slideDirection = directions[index % directions.length];
-  const itemInitialDelay = index * 200; // 200ms entre cada item
+  const itemInitialDelay = index * 300; // 200ms entre cada item
 
   // Auto-cycle con pausa en hover - comienza con delay diferenciado
   useEffect(() => {
@@ -163,7 +172,7 @@ function GridItem({ images, area, index }: GridItemProps) {
     const initialTimeout = setTimeout(() => {
       cycleTimerRef.current = setInterval(() => {
         setCurrentPhotoIdx(prev => (prev + 1) % images.length);
-      }, 5000 + (index * 800)); // 5s base + delay escalonado por item
+      }, 9000 + (index * 2400)); // 18s base + delay escalonado (tiempo duplicado)
     }, itemInitialDelay); // Delay inicial diferenciado
 
     return () => {
@@ -268,7 +277,7 @@ function ImageGrid() {
         .grid-container {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          grid-template-rows: repeat(6, 1fr);
+          grid-template-rows: repeat(4, 1fr);
           gap: 2px;
           width: 100%;
           aspect-ratio: 1 / 1;
@@ -299,12 +308,6 @@ function ImageGrid() {
           outline-offset: 2px;
         }
         
-        .grid-item:hover {
-          border-color: rgba(37, 99, 235, 0.3);
-          box-shadow: 0 8px 24px rgba(26, 42, 58, 0.15);
-          transform: translateY(-4px);
-        }
-        
         .grid-item:focus-visible {
           outline: 2px solid var(--color-primary);
           outline-offset: 2px;
@@ -324,19 +327,19 @@ function ImageGrid() {
         }
         
         .grid-image.from-left {
-          animation: slideInFromLeft 2.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          animation: slideInFromLeft 3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
         
         .grid-image.from-right {
-          animation: slideInFromRight 2.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          animation: slideInFromRight 3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
         
         .grid-image.from-top {
-          animation: slideInFromTop 2.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          animation: slideInFromTop 3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
         
         .grid-image.from-bottom {
-          animation: slideInFromBottom 2.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          animation: slideInFromBottom 3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
         
         @keyframes slideInFromLeft {
@@ -535,7 +538,10 @@ export default function Home() {
               alignItems: 'center',
               justifyContent: 'center',
               padding: '1.5rem 2.5rem',
-              background: 'linear-gradient(135deg, var(--color-stone) 0%, var(--color-concrete) 100%)',
+              background: `linear-gradient(135deg, rgba(26, 42, 58, 0.75) 0%, rgba(45, 74, 94, 0.75) 100%), url('images/map-bg.png')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundAttachment: 'fixed',
               color: 'var(--color-parchment)',
               border: 'none',
               borderRadius: '16px',
@@ -546,6 +552,7 @@ export default function Home() {
               maxWidth: '420px',
               width: '100%',
               cursor: 'pointer',
+              position: 'relative',
             }}
             onMouseEnter={e => {
               const el = e.currentTarget as HTMLAnchorElement
