@@ -153,33 +153,36 @@ function GridItem({ images, area, index }: GridItemProps) {
   // Cada item comienza con offset inicial
   const initialPhotoIdx = index % Math.max(1, images.length);
   const [currentPhotoIdx, setCurrentPhotoIdx] = useState(initialPhotoIdx);
-  const [isHovering, setIsHovering] = useState(false);
+  const [prevPhotoIdx, setPrevPhotoIdx] = useState(initialPhotoIdx);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const cycleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Direcciones de animación variadas
+  // Direcciones de animación variadas - CAMBIA CON CADA FOTO
   const directions = ['from-left', 'from-right', 'from-top', 'from-bottom'];
-  const slideDirection = directions[index % directions.length];
-  const itemInitialDelay = index * 300; // 200ms entre cada item
+  const slideDirection = directions[currentPhotoIdx % directions.length];
+  const itemInitialDelay = index * 300;
 
-  // Auto-cycle con pausa en hover - comienza con delay diferenciado
+  // ✅ SIN HOVER - Ciclo continuo
   useEffect(() => {
-    if (isHovering) {
-      if (cycleTimerRef.current) clearInterval(cycleTimerRef.current);
-      return;
-    }
-
     // Cada item comienza su ciclo en diferente tiempo
     const initialTimeout = setTimeout(() => {
       cycleTimerRef.current = setInterval(() => {
+        setPrevPhotoIdx(currentPhotoIdx);
         setCurrentPhotoIdx(prev => (prev + 1) % images.length);
-      }, 9000 + (index * 2400)); // 18s base + delay escalonado (tiempo duplicado)
-    }, itemInitialDelay); // Delay inicial diferenciado
+        setIsTransitioning(true);
+        
+        // Termina la transición después de que la animación complete
+        setTimeout(() => {
+          setIsTransitioning(false);
+        }, 3000); // Coincide con la duración de la animación (3s)
+      }, 9000 + (index * 2400)); // ✅ 9s base + delay escalonado
+    }, itemInitialDelay);
 
     return () => {
       clearTimeout(initialTimeout);
       if (cycleTimerRef.current) clearInterval(cycleTimerRef.current);
     };
-  }, [isHovering, images.length, itemInitialDelay]);
+  }, [images.length, itemInitialDelay, index, currentPhotoIdx]);
 
   // Preload imágenes
   useEffect(() => {
@@ -190,6 +193,7 @@ function GridItem({ images, area, index }: GridItemProps) {
   }, [images]);
 
   const currentImage = images[currentPhotoIdx];
+  const prevImage = images[prevPhotoIdx];
 
   return (
     <div
@@ -197,25 +201,29 @@ function GridItem({ images, area, index }: GridItemProps) {
       style={{
         gridArea: area,
       }}
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
     >
       <div className="grid-image-wrapper">
+        {/* Imagen saliente (cuando hay transición) */}
+        {isTransitioning && (
+          <img
+            src={prevImage}
+            alt={`Baldosa ${index + 1} - foto anterior`}
+            className={`grid-image grid-image-exit ${slideDirection}`}
+            style={{
+              animationDelay: '0ms',
+            }}
+          />
+        )}
+        
+        {/* Imagen entrante */}
         <img
           src={currentImage}
           alt={`Baldosa ${index + 1} - foto ${currentPhotoIdx + 1}`}
           className={`grid-image ${slideDirection}`}
           style={{
-            animationDelay: `${itemInitialDelay}ms`,
+            animationDelay: '0ms',
           }}
         />
-      </div>
-
-      {/* Overlay */}
-      <div className="grid-overlay">
-        <div className="grid-info">
-          <div className="grid-label">Baldosa</div>
-        </div>
       </div>
     </div>
   );
@@ -263,9 +271,6 @@ function ImageGrid() {
         marginBottom: 'var(--space-lg)',
         width: 'calc(100% + 2 * var(--space-lg))',
         marginLeft: 'calc(-1 * var(--space-lg))',
-        marginRight: 'calc(-1 * var(--space-lg))',
-        paddingLeft: 'var(--space-lg)',
-        paddingRight: 'var(--space-lg)',
         paddingTop: 'var(--space-md)',
         paddingBottom: 'var(--space-md)',
         display: 'flex',
@@ -386,34 +391,82 @@ function ImageGrid() {
           }
         }
         
-        .grid-overlay {
+        /* ═══ ANIMACIONES DE SALIDA (dirección opuesta) ═══ */
+        
+        .grid-image-exit.from-left {
+          animation: slideOutToRight 3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
           position: absolute;
-          inset: 0;
-          background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(26, 42, 58, 0.5) 100%);
-          opacity: 0;
-          transition: opacity 0.3s ease;
-          display: flex;
-          align-items: flex-end;
-          padding: 12px;
-          z-index: 2;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
         }
         
-        .grid-item:hover .grid-overlay {
-          opacity: 1;
+        .grid-image-exit.from-right {
+          animation: slideOutToLeft 3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
         }
         
-        .grid-info {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
+        .grid-image-exit.from-top {
+          animation: slideOutToBottom 3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
         }
         
-        .grid-label {
-          color: var(--color-parchment);
-          font-size: 12px;
-          font-weight: 600;
-          letter-spacing: 0.03em;
-          line-height: 1.2;
+        .grid-image-exit.from-bottom {
+          animation: slideOutToTop 3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        
+        @keyframes slideOutToRight {
+          from {
+            opacity: 1;
+            transform: translateX(0);
+          }
+          to {
+            opacity: 0;
+            transform: translateX(100%);
+          }
+        }
+        
+        @keyframes slideOutToLeft {
+          from {
+            opacity: 1;
+            transform: translateX(0);
+          }
+          to {
+            opacity: 0;
+            transform: translateX(-100%);
+          }
+        }
+        
+        @keyframes slideOutToBottom {
+          from {
+            opacity: 1;
+            transform: translateY(0);
+          }
+          to {
+            opacity: 0;
+            transform: translateY(100%);
+          }
+        }
+        
+        @keyframes slideOutToTop {
+          from {
+            opacity: 1;
+            transform: translateY(0);
+          }
+          to {
+            opacity: 0;
+            transform: translateY(-100%);
+          }
         }
       `}</style>
 
@@ -684,54 +737,17 @@ export default function Home() {
               textAlign: 'center',
             }}>
               <p style={{
-                fontSize: 'clamp(1rem, 3vw, 1.3rem)',
+                fontSize: 'clamp(1.4rem, 3vw, 1.3rem)',
                 fontWeight: 700,
                 color: 'var(--color-stone)',
                 letterSpacing: '0.02em',
                 margin: 0,
                 lineHeight: 1.3,
               }}>
-                Más de 500 baldosas registradas
-              </p>
-            </div>
-
-            {/* Bloque Inspiracional */}
-            <div style={{
-              flex: '1 1 280px',
-              minWidth: '260px',
-              padding: 'var(--space-lg) var(--space-lg)',
-              background: 'transparent',
-              border: 'none',
-              borderRadius: '14px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center',
-              textAlign: 'center',
-            }}>
-              <h2 style={{
-                fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif",
-                fontSize: 'clamp(2rem, 5vw, 3.2rem)',
-                fontWeight: 400,
-                fontStyle: 'italic',
-                color: '#000000',
-                letterSpacing: '-0.02em',
-                margin: '0 0 var(--space-xs) 0',
-                lineHeight: 1.1,
-              }}>
-                Saliendo a la calle
-              </h2>
-              <p style={{
-                fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif",
-                fontSize: 'clamp(1.8rem, 4.5vw, 2.8rem)',
-                fontWeight: 400,
-                fontStyle: 'italic',
-                color: '#000000',
-                letterSpacing: '-0.01em',
-                margin: 0,
-                lineHeight: 1.2,
-              }}>
+                Más de 500 baldosas y espacios de memoria.<br /><br />
+                Saliendo a la calle<br />
                 Recorremos memoria
+
               </p>
             </div>
           </div>
