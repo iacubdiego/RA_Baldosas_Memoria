@@ -4,7 +4,13 @@ import { usePathname } from 'next/navigation'
 
 export default function FooterWrapper() {
   const pathname = usePathname()
-  const sinFooter = pathname.startsWith('/scanner') || pathname.startsWith('/mapa')
+  // Detalle del recorrido de una escuela (mapa fullscreen): /recorridos/escuela/[mongoId]
+  // Solo matchea el mapa, NO /recorridos/escuela/[id]/info ni el listado
+  const esDetalleRecorrido = /^\/recorridos\/escuela\/[0-9a-fA-F]{24}\/?$/.test(pathname)
+  const sinFooter =
+    pathname.startsWith('/scanner') ||
+    pathname.startsWith('/mapa') ||
+    esDetalleRecorrido
   if (sinFooter) return null
 
   return (

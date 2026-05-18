@@ -40,18 +40,26 @@ const userIcon = new L.Icon({
   iconSize: [28, 28], iconAnchor: [14, 14],
 })
 
-// Recorrido escolar: círculo rojo con borde blanco
-const recorridoIcon = new L.DivIcon({
-  className: '',
-  html: `<div style="width:16px;height:16px;background:#c0392b;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 2px #c0392b;"></div>`,
-  iconSize: [16,16], iconAnchor: [8,8],
+// Recorrido escolar: png con fondo azul (pendiente)
+const recorridoIcon = new L.Icon({
+  iconUrl: '/images/logo_flores_fondo_azul.png',
+  iconSize: [36, 44],
+  iconAnchor: [18, 44],
+  popupAnchor: [0, -44],
 })
 
-// Escuela: marcador con emoji
+// Recorrido escolar: baldosa ya escaneada/marcada (tilde verde)
+const recorridoMarcadaIcon = new L.DivIcon({
+  className: '',
+  html: `<div style="width:20px;height:20px;background:#16a34a;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 2px #16a34a;display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:bold;line-height:1;">✓</div>`,
+  iconSize: [20,20], iconAnchor: [10,10],
+})
+
+// Escuela: marcador con emoji (más grande que las baldosas — es el punto central)
 const escuelaIcon = new L.DivIcon({
   className: '',
-  html: `<div style="width:30px;height:30px;background:#1a2a3a;border:3px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 2px 6px rgba(0,0,0,0.4);">🏫</div>`,
-  iconSize: [30,30], iconAnchor: [15,15],
+  html: `<div style="width:46px;height:46px;background:#1a2a3a;border:3px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 3px 10px rgba(0,0,0,0.45);">🏫</div>`,
+  iconSize: [46,46], iconAnchor: [23,23],
 })
 
 const RADIO_MAXIMO   = 100   // metros — debe estar a menos de 100m para escanear
@@ -79,9 +87,23 @@ function normalizar(texto:string):string {
   return texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
 }
 
-function MapFitter({pins}:{pins:Pin[]}) {
+function MapFitter({pins, recorrido}:{pins:Pin[]; recorrido?:DatosRecorrido}) {
   const map=useMap(), done=useRef(false)
-  useEffect(()=>{ if(pins.length>0&&!done.current){done.current=true; map.fitBounds(L.latLngBounds(pins.map(p=>[p.lat,p.lng] as [number,number])),{padding:[50,50],maxZoom:15})} },[pins,map])
+  useEffect(()=>{
+    if(done.current) return
+    if(recorrido && recorrido.baldosas.length>0){
+      // Modo recorrido: centrar en las baldosas del recorrido + la escuela
+      done.current=true
+      const puntos: [number,number][] = [
+        [recorrido.lat, recorrido.lng],
+        ...recorrido.baldosas.map(b => [b.lat, b.lng] as [number,number])
+      ]
+      map.fitBounds(L.latLngBounds(puntos), {padding:[60,60], maxZoom:16})
+    } else if(pins.length>0){
+      done.current=true
+      map.fitBounds(L.latLngBounds(pins.map(p=>[p.lat,p.lng] as [number,number])),{padding:[50,50],maxZoom:15})
+    }
+  },[pins,recorrido,map])
   return null
 }
 
@@ -292,8 +314,13 @@ export default function MapView({ initialLocation, recorrido }:MapViewProps) {
   useEffect(()=>{
     if(recorridoAutoRef.current||!userLocation||pins.length===0)return
     recorridoAutoRef.current=true
+    // Si hay recorrido escolar, restringir a sus baldosas; si no, todas
+    const candidatas = recorrido
+      ? pins.filter(p => recorrido.baldosas.some(b => b.id === p.id))
+      : pins
+    if(candidatas.length===0) return
     let minDist=Infinity, masCercana:Pin|null=null
-    for(const p of pins){
+    for(const p of candidatas){
       const d=calcularDistancia(userLocation.lat,userLocation.lng,p.lat,p.lng)
       if(d<minDist){minDist=d;masCercana=p}
     }
@@ -324,8 +351,170 @@ export default function MapView({ initialLocation, recorrido }:MapViewProps) {
 
   const topBotones = destino ? `${bannerHeight + 10}px` : '12px'
 
+  // ─── Estado del recorrido escolar ────────────────────────────────────────
+  // Persiste en localStorage bajo la key `recorrido:${escuelaId}`.
+  // Estructura: { iniciado: number(timestamp ms), marcadas: string[] }
+  const STORAGE_KEY = recorrido ? `recorrido:${recorrido.id}` : null
+  const PENDING_KEY = recorrido ? `recorrido_pending:${recorrido.id}` : null
+
+  const [recorridoIniciado, setRecorridoIniciado] = useState(false)
+  const [baldosasMarcadas, setBaldosasMarcadas]   = useState<Set<string>>(new Set())
+  const [mostrarCertificado, setMostrarCertificado] = useState(false)
+  const [mostrarPanelProgreso, setMostrarPanelProgreso] = useState(false)
+  const yaMostroCertificadoRef = useRef(false)
+
+  // Cargar estado guardado + procesar pending al montar
+  useEffect(() => {
+    if (!STORAGE_KEY || !recorrido) return
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      const guardado = raw ? JSON.parse(raw) : null
+      let marcadasIniciales: string[] = guardado?.marcadas ?? []
+      const iniciado = Boolean(guardado?.iniciado)
+
+      // Procesar baldosa pendiente (si volvió del scanner)
+      if (PENDING_KEY) {
+        const pending = localStorage.getItem(PENDING_KEY)
+        if (pending && recorrido.baldosas.some(b => b.id === pending)) {
+          if (!marcadasIniciales.includes(pending)) {
+            marcadasIniciales = [...marcadasIniciales, pending]
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+              iniciado: guardado?.iniciado ?? Date.now(),
+              marcadas: marcadasIniciales,
+            }))
+          }
+          localStorage.removeItem(PENDING_KEY)
+        }
+      }
+
+      if (iniciado) setRecorridoIniciado(true)
+      if (marcadasIniciales.length > 0) setBaldosasMarcadas(new Set(marcadasIniciales))
+    } catch (e) {
+      console.error('Error leyendo estado de recorrido:', e)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recorrido?.id])
+
+  const comenzarRecorrido = () => {
+    if (!STORAGE_KEY) return
+    setRecorridoIniciado(true)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      iniciado: Date.now(),
+      marcadas: Array.from(baldosasMarcadas),
+    }))
+  }
+
+  const reiniciarRecorrido = () => {
+    if (!STORAGE_KEY) return
+    if (!confirm('¿Reiniciar el recorrido? Vas a perder el progreso guardado.')) return
+    localStorage.removeItem(STORAGE_KEY)
+    if (PENDING_KEY) localStorage.removeItem(PENDING_KEY)
+    setRecorridoIniciado(false)
+    setBaldosasMarcadas(new Set())
+    setMostrarPanelProgreso(false)
+    yaMostroCertificadoRef.current = false
+  }
+
+  /** Guarda que el usuario está yendo a escanear una baldosa del recorrido,
+   *  para que al volver del scanner la marque automáticamente. */
+  const prepararEscaneoRecorrido = (baldosaId: string) => {
+    if (!PENDING_KEY || !recorridoIniciado) return
+    if (!recorrido?.baldosas.some(b => b.id === baldosaId)) return
+    localStorage.setItem(PENDING_KEY, baldosaId)
+  }
+
+  const descargarCertificado = async () => {
+    if (!recorrido) return
+    try {
+      const { jsPDF } = await import('jspdf')
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+      // A4 landscape: 297 x 210 mm
+      const W = 297, H = 210, CX = W / 2
+
+      // Borde decorativo doble
+      doc.setDrawColor(26, 42, 58)
+      doc.setLineWidth(1.2)
+      doc.rect(12, 12, W - 24, H - 24)
+      doc.setLineWidth(0.3)
+      doc.rect(16, 16, W - 32, H - 32)
+
+      // Eyebrow
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(11)
+      doc.setTextColor(74, 107, 124)
+      doc.text('RECORREMOS MEMORIA', CX, 38, { align: 'center', charSpace: 1.2 })
+
+      // Título
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(34)
+      doc.setTextColor(26, 42, 58)
+      doc.text('Recorrido completado', CX, 56, { align: 'center' })
+
+      // Línea separadora
+      doc.setDrawColor(37, 99, 235)
+      doc.setLineWidth(0.6)
+      doc.line(CX - 30, 66, CX + 30, 66)
+
+      // "Se certifica que..."
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(14)
+      doc.setTextColor(45, 74, 94)
+      doc.text('Se certifica que', CX, 84, { align: 'center' })
+
+      // Nombre de la escuela
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(22)
+      doc.setTextColor(26, 42, 58)
+      const nombreLineas = doc.splitTextToSize(recorrido.nombre, 240)
+      doc.text(nombreLineas, CX, 100, { align: 'center' })
+
+      // Cuerpo
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(13)
+      doc.setTextColor(45, 74, 94)
+      const total = recorrido.baldosas.length
+      const cuerpo =
+        `completó el recorrido por la memoria visitando las ${total} ` +
+        `baldosa${total !== 1 ? 's' : ''} que homenajean a víctimas del ` +
+        `terrorismo de Estado en su barrio.`
+      const cuerpoLineas = doc.splitTextToSize(cuerpo, 220)
+      doc.text(cuerpoLineas, CX, 130, { align: 'center' })
+
+      // Fecha
+      const fecha = new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })
+      doc.setFontSize(12)
+      doc.setTextColor(74, 107, 124)
+      doc.text(`Ciudad Autónoma de Buenos Aires, ${fecha}`, CX, 165, { align: 'center' })
+
+      // Pie
+      doc.setFontSize(9)
+      doc.setTextColor(120, 134, 148)
+      doc.text('recorremosmemoria · proyecto colaborativo', CX, 185, { align: 'center' })
+
+      const safeName = recorrido.nombre
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase()
+      doc.save(`certificado-${safeName || 'recorrido'}.pdf`)
+    } catch (e) {
+      console.error('Error generando certificado:', e)
+      alert('No se pudo generar el certificado. Probá de nuevo.')
+    }
+  }
+
   // ─── Datos derivados del recorrido escolar ───────────────────────────────
   const idsRecorrido = new Set(recorrido?.baldosas.map(b => b.id) ?? [])
+  const totalRecorrido = idsRecorrido.size
+  const marcadasCount = baldosasMarcadas.size
+  const recorridoCompletado = recorridoIniciado && totalRecorrido > 0 && marcadasCount >= totalRecorrido
+
+  // Mostrar modal de certificado una sola vez cuando se completa el recorrido
+  useEffect(() => {
+    if (recorridoCompletado && !yaMostroCertificadoRef.current) {
+      yaMostroCertificadoRef.current = true
+      setMostrarCertificado(true)
+    }
+  }, [recorridoCompletado])
+
   const coordsPolilinea: [number,number][] = recorrido
     ? [
         [recorrido.lat, recorrido.lng],
@@ -335,7 +524,7 @@ export default function MapView({ initialLocation, recorrido }:MapViewProps) {
     : []
 
   return (
-    <div style={{position:'relative',width:'100%',height:'100dvh'}}>
+    <div style={{position:'relative',width:'100%',height:'100%'}}>
 
       <MapContainer center={[userLocation?.lat??initialLocation.lat,userLocation?.lng??initialLocation.lng]} zoom={13} style={{width:'100%',height:'100%'}} zoomControl={false}>
         <TileLayer attribution='&copy; <a href="https://www.ign.gob.ar/AreaServicios/Argenmap/IntroduccionV2" target="_blank">Instituto Geográfico Nacional</a> + <a href="https://www.osm.org/copyright" target="_blank">OpenStreetMap</a>' url="https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/capabaseargenmap@EPSG:3857@png/{z}/{x}/{-y}.png"/>
@@ -359,7 +548,7 @@ export default function MapView({ initialLocation, recorrido }:MapViewProps) {
           const cerca=dist!==null&&dist<=RADIO_MAXIMO
           const esDestino=destino?.id===pin.id
           return(
-            <Marker key={pin.id} position={[pin.lat,pin.lng]} icon={esDestino?destinoIcon:idsRecorrido.has(pin.id)?recorridoIcon:baldosaIcon}>
+            <Marker key={pin.id} position={[pin.lat,pin.lng]} icon={esDestino?destinoIcon:idsRecorrido.has(pin.id)?(baldosasMarcadas.has(pin.id)?recorridoMarcadaIcon:recorridoIcon):baldosaIcon}>
               <Popup>
                 <div style={{fontFamily:'sans-serif',minWidth:'200px',maxWidth:'240px'}}>
                   <h3 style={{fontSize:'0.95rem',color:'#1a2a3a',margin:'0 0 4px'}}>{pin.nombre}</h3>
@@ -378,7 +567,7 @@ export default function MapView({ initialLocation, recorrido }:MapViewProps) {
                   {/* Botón escanear en popup — activo solo si estás cerca */}
                   <a
                     href={cerca ? '/scanner' : undefined}
-                    onClick={cerca ? undefined : e=>e.preventDefault()}
+                    onClick={cerca ? () => prepararEscaneoRecorrido(pin.id) : e=>e.preventDefault()}
                     style={{
                       display:'block',
                       marginTop:'6px',
@@ -415,7 +604,7 @@ export default function MapView({ initialLocation, recorrido }:MapViewProps) {
             </Marker>
           )
         })}
-        <MapFitter pins={pins}/>
+        <MapFitter pins={pins} recorrido={recorrido}/>
         <RouteController userLocation={userLocation} destino={destino}/>
         <FlyTo target={flyTarget}/>
       </MapContainer>
@@ -424,8 +613,8 @@ export default function MapView({ initialLocation, recorrido }:MapViewProps) {
       {!busquedaAbierta ? (
         <>
           <a
-            href="/"
-            aria-label="Volver al inicio"
+            href={recorrido ? "/recorridos/escuela" : "/"}
+            aria-label={recorrido ? "Volver a Escuelas" : "Volver al inicio"}
             style={{
               position:'absolute',
               top:topBotones,
@@ -446,37 +635,106 @@ export default function MapView({ initialLocation, recorrido }:MapViewProps) {
             }}
           >
             <img src="/images/logo_flores.png" alt="Inicio" style={{width:'24px',height:'24px',objectFit:'contain'}}/>
-            <span style={{fontSize:'0.88rem',fontWeight:600}}>Volver</span>
+            <span style={{fontSize:'0.88rem',fontWeight:600}}>{recorrido ? 'Escuelas' : 'Volver'}</span>
           </a>
-          <button
-            onClick={abrirBusqueda}
-            aria-label="Buscar baldosa"
-            style={{
-              position:'absolute',
-              top:topBotones,
-              right:'12px',
-              zIndex:450,
-              height:'42px',
-              borderRadius:'21px',
-              border:'none',
-              background:'white',
-              boxShadow:'0 2px 12px rgba(0,0,0,0.25)',
-              cursor:'pointer',
-              display:'flex',
-              alignItems:'center',
-              justifyContent:'center',
-              gap:'6px',
-              padding:'0 16px',
-              color:'#1a2a3a',
-              transition:'top 0.25s ease',
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="8.5" cy="8.5" r="6"/>
-              <line x1="13" y1="13" x2="18" y2="18"/>
-            </svg>
-            <span style={{fontSize:'0.88rem',fontWeight:600}}>Buscar</span>
-          </button>
+          {recorrido ? (
+            // ── Modo recorrido escolar: botón "Comenzar" o chip contador ──
+            !recorridoIniciado ? (
+              <button
+                onClick={comenzarRecorrido}
+                aria-label="Comenzar recorrido"
+                style={{
+                  position:'absolute',
+                  top:topBotones,
+                  right:'12px',
+                  zIndex:450,
+                  height:'42px',
+                  borderRadius:'21px',
+                  border:'none',
+                  background:'#c0392b',
+                  boxShadow:'0 2px 12px rgba(192,57,43,0.45)',
+                  cursor:'pointer',
+                  display:'flex',
+                  alignItems:'center',
+                  justifyContent:'center',
+                  gap:'6px',
+                  padding:'0 16px',
+                  color:'white',
+                  fontFamily:'inherit',
+                  transition:'top 0.25s ease',
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                <span style={{fontSize:'0.88rem',fontWeight:700,letterSpacing:'0.01em'}}>Comenzar recorrido</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setMostrarPanelProgreso(true)}
+                aria-label={`${marcadasCount} de ${totalRecorrido} baldosas marcadas — ver progreso`}
+                title="Ver progreso del recorrido"
+                style={{
+                  position:'absolute',
+                  top:topBotones,
+                  right:'12px',
+                  zIndex:450,
+                  height:'42px',
+                  borderRadius:'21px',
+                  border:'none',
+                  background:recorridoCompletado ? '#16a34a' : 'white',
+                  boxShadow:'0 2px 12px rgba(0,0,0,0.25)',
+                  cursor:'pointer',
+                  display:'flex',
+                  alignItems:'center',
+                  justifyContent:'center',
+                  gap:'8px',
+                  padding:'0 16px',
+                  color:recorridoCompletado ? 'white' : '#1a2a3a',
+                  fontFamily:'inherit',
+                  transition:'top 0.25s ease, background 0.3s',
+                }}
+              >
+                {recorridoCompletado
+                  ? <span style={{fontSize:'1rem'}}>🎉</span>
+                  : <img src="/images/logo_flores_fondo_azul.png" alt="" style={{width:'22px',height:'22px',objectFit:'contain',flexShrink:0}}/>
+                }
+                <span style={{fontSize:'0.95rem',fontWeight:700,letterSpacing:'0.01em'}}>
+                  {marcadasCount} / {totalRecorrido}
+                </span>
+              </button>
+            )
+          ) : (
+            <button
+              onClick={abrirBusqueda}
+              aria-label="Buscar baldosa"
+              style={{
+                position:'absolute',
+                top:topBotones,
+                right:'12px',
+                zIndex:450,
+                height:'42px',
+                borderRadius:'21px',
+                border:'none',
+                background:'white',
+                boxShadow:'0 2px 12px rgba(0,0,0,0.25)',
+                cursor:'pointer',
+                display:'flex',
+                alignItems:'center',
+                justifyContent:'center',
+                gap:'6px',
+                padding:'0 16px',
+                color:'#1a2a3a',
+                transition:'top 0.25s ease',
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="8.5" cy="8.5" r="6"/>
+                <line x1="13" y1="13" x2="18" y2="18"/>
+              </svg>
+              <span style={{fontSize:'0.88rem',fontWeight:600}}>Buscar</span>
+            </button>
+          )}
         </>
       ) : (
         <div style={{
@@ -626,6 +884,7 @@ export default function MapView({ initialLocation, recorrido }:MapViewProps) {
               </div>
               <a
                 href="/scanner"
+                onClick={() => { if (destino) prepararEscaneoRecorrido(destino.id) }}
                 style={{
                   background:'white',
                   color:'#1d4ed8',
@@ -650,8 +909,8 @@ export default function MapView({ initialLocation, recorrido }:MapViewProps) {
         </div>
       )}
 
-      {/* Botón abrir panel */}
-      {!panelAbierto&&(
+      {/* Botón abrir panel — solo en modo /mapa general, no en recorrido escolar */}
+      {!panelAbierto&&!recorrido&&(
         <button onClick={abrirPanel} style={{
           position:'absolute',
           bottom:'calc(env(safe-area-inset-bottom, 0px) + 1.2rem)',
@@ -679,10 +938,14 @@ export default function MapView({ initialLocation, recorrido }:MapViewProps) {
         return (
           <a
             href={enRango ? '/scanner' : undefined}
-            onClick={enRango ? undefined : e => e.preventDefault()}
+            onClick={enRango
+              ? () => { if (destino) prepararEscaneoRecorrido(destino.id) }
+              : e => e.preventDefault()}
             style={{
               position: 'absolute',
-              bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5.5rem)',
+              bottom: recorrido
+                ? 'calc(env(safe-area-inset-bottom, 0px) + 1.2rem)'
+                : 'calc(env(safe-area-inset-bottom, 0px) + 5.5rem)',
               left: '1rem', right: '1rem',
               zIndex: 401,
               background: enRango ? '#1d4ed8' : '#1a2a3a',
@@ -858,6 +1121,338 @@ export default function MapView({ initialLocation, recorrido }:MapViewProps) {
           </div>
         </div>
       )}
+
+      {/* ── Panel de progreso del recorrido ─────────────────────── */}
+      {mostrarPanelProgreso && recorrido && (
+        <div
+          style={{
+            position:'absolute', inset:0, zIndex:550,
+            background:'rgba(10,18,28,0.6)',
+            backdropFilter:'blur(3px)',
+            display:'flex', alignItems:'flex-end', justifyContent:'center',
+            fontFamily:'sans-serif',
+          }}
+          onClick={() => setMostrarPanelProgreso(false)}
+        >
+          <style>{`@media(min-width:768px){.progreso-panel{border-radius:16px!important;margin-bottom:2rem!important;max-height:80vh!important}}`}</style>
+          <div
+            className="progreso-panel"
+            onClick={e => e.stopPropagation()}
+            style={{
+              width:'100%',
+              maxWidth:'480px',
+              background:'white',
+              borderRadius:'20px 20px 0 0',
+              boxShadow:'0 -8px 40px rgba(0,0,0,0.25)',
+              maxHeight:'85vh',
+              display:'flex',
+              flexDirection:'column',
+              overflow:'hidden',
+            }}
+          >
+            {/* Header */}
+            <div style={{
+              flexShrink:0,
+              padding:'14px 20px 16px',
+              borderBottom:'1px solid #f0f0f0',
+              position:'relative',
+            }}>
+              <div style={{width:'40px',height:'4px',background:'#e5e7eb',borderRadius:'2px',margin:'0 auto 12px'}}/>
+              <button
+                onClick={() => setMostrarPanelProgreso(false)}
+                style={{
+                  position:'absolute',
+                  top:'14px', right:'16px',
+                  background:'#f3f4f6',
+                  border:'none',
+                  borderRadius:'50%',
+                  width:'32px', height:'32px',
+                  cursor:'pointer',
+                  color:'#6b7280',
+                  fontSize:'1rem',
+                  display:'flex',
+                  alignItems:'center',
+                  justifyContent:'center',
+                }}
+              >
+                ✕
+              </button>
+              <p style={{
+                fontSize:'0.72rem',
+                color:'#8b9aa8',
+                textTransform:'uppercase',
+                letterSpacing:'0.08em',
+                fontWeight:600,
+                margin:'0 0 2px',
+              }}>
+                Progreso del recorrido
+              </p>
+              <h2 style={{
+                fontSize:'1.15rem',
+                fontWeight:700,
+                color:'#1a2a3a',
+                margin:0,
+                paddingRight:'40px',
+                lineHeight:1.3,
+              }}>
+                {recorrido.nombre}
+              </h2>
+
+              {/* Contador visual */}
+              <div style={{
+                marginTop:'14px',
+                display:'flex',
+                alignItems:'center',
+                gap:'12px',
+              }}>
+                <div style={{
+                  fontSize:'1.6rem',
+                  fontWeight:700,
+                  color: recorridoCompletado ? '#16a34a' : '#1a2a3a',
+                  lineHeight:1,
+                }}>
+                  {marcadasCount} <span style={{color:'#9ca3af',fontWeight:500,fontSize:'1.1rem'}}>/ {totalRecorrido}</span>
+                </div>
+                <div style={{
+                  flex:1,
+                  height:'8px',
+                  background:'#f0f0f0',
+                  borderRadius:'4px',
+                  overflow:'hidden',
+                }}>
+                  <div style={{
+                    width: `${totalRecorrido > 0 ? (marcadasCount / totalRecorrido) * 100 : 0}%`,
+                    height:'100%',
+                    background: recorridoCompletado ? '#16a34a' : '#c0392b',
+                    transition:'width 0.4s ease, background 0.3s',
+                    borderRadius:'4px',
+                  }}/>
+                </div>
+              </div>
+            </div>
+
+            {/* Lista scrollable de baldosas */}
+            <div style={{
+              overflowY:'auto',
+              padding:'10px 14px',
+              flex:1,
+            }}>
+              <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
+                {recorrido.baldosas.map((b, idx) => {
+                  const marcada = baldosasMarcadas.has(b.id)
+                  return (
+                    <div
+                      key={b.id}
+                      style={{
+                        display:'flex',
+                        alignItems:'center',
+                        gap:'12px',
+                        padding:'10px 12px',
+                        background: marcada ? 'rgba(22,163,74,0.06)' : 'white',
+                        border:'1px solid ' + (marcada ? 'rgba(22,163,74,0.25)' : '#e5e7eb'),
+                        borderRadius:'10px',
+                      }}
+                    >
+                      {/* Indicador de estado */}
+                      <div style={{
+                        flexShrink:0,
+                        width:'24px',
+                        height:'24px',
+                        borderRadius:'50%',
+                        background: marcada ? '#16a34a' : 'transparent',
+                        border: marcada ? 'none' : '2px solid #d1d5db',
+                        display:'flex',
+                        alignItems:'center',
+                        justifyContent:'center',
+                        color:'white',
+                        fontSize:'0.75rem',
+                        fontWeight:700,
+                      }}>
+                        {marcada ? '✓' : ''}
+                      </div>
+
+                      {/* Texto */}
+                      <div style={{minWidth:0, flex:1}}>
+                        <p style={{
+                          fontSize:'0.88rem',
+                          fontWeight:600,
+                          color: marcada ? '#1a2a3a' : '#4a6b7c',
+                          margin:0,
+                          overflow:'hidden',
+                          textOverflow:'ellipsis',
+                          whiteSpace:'nowrap',
+                        }}>
+                          {idx + 1}. {b.nombre}
+                        </p>
+                        {b.direccion && (
+                          <p style={{
+                            fontSize:'0.76rem',
+                            color:'#6b7280',
+                            margin:'1px 0 0',
+                            overflow:'hidden',
+                            textOverflow:'ellipsis',
+                            whiteSpace:'nowrap',
+                          }}>
+                            {b.direccion}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Estado textual */}
+                      <span style={{
+                        flexShrink:0,
+                        fontSize:'0.7rem',
+                        fontWeight:600,
+                        color: marcada ? '#16a34a' : '#9ca3af',
+                        textTransform:'uppercase',
+                        letterSpacing:'0.05em',
+                      }}>
+                        {marcada ? 'Visitada' : 'Pendiente'}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Footer con acciones */}
+            <div style={{
+              flexShrink:0,
+              padding:'12px 20px 16px',
+              borderTop:'1px solid #f0f0f0',
+              background:'#fafafa',
+            }}>
+              {recorridoCompletado && (
+                <button
+                  onClick={descargarCertificado}
+                  style={{
+                    width:'100%',
+                    padding:'0.9rem 1rem',
+                    background:'#1a2a3a',
+                    color:'white',
+                    border:'none',
+                    borderRadius:'12px',
+                    fontSize:'0.95rem',
+                    fontWeight:700,
+                    cursor:'pointer',
+                    letterSpacing:'0.01em',
+                    fontFamily:'inherit',
+                    marginBottom:'8px',
+                  }}
+                >
+                  📄 Descargar certificado PDF
+                </button>
+              )}
+
+              <button
+                onClick={reiniciarRecorrido}
+                style={{
+                  width:'100%',
+                  padding:'0.55rem 1rem',
+                  background:'transparent',
+                  color:'#9ca3af',
+                  border:'none',
+                  borderRadius:'8px',
+                  fontSize:'0.78rem',
+                  fontWeight:500,
+                  cursor:'pointer',
+                  fontFamily:'inherit',
+                  textDecoration:'underline',
+                  textUnderlineOffset:'2px',
+                }}
+              >
+                Reiniciar recorrido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal de felicitación + certificado ────────────────────── */}
+      {mostrarCertificado && recorrido && (
+        <div
+          style={{
+            position:'absolute', inset:0, zIndex:600,
+            background:'rgba(10,18,28,0.78)',
+            backdropFilter:'blur(4px)',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            padding:'1.5rem',
+          }}
+          onClick={() => setMostrarCertificado(false)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background:'white',
+              borderRadius:'20px',
+              padding:'2rem 1.75rem 1.75rem',
+              maxWidth:'380px',
+              width:'100%',
+              boxShadow:'0 24px 64px rgba(0,0,0,0.5)',
+              textAlign:'center',
+              fontFamily:'sans-serif',
+            }}
+          >
+            <div style={{fontSize:'3rem', marginBottom:'0.5rem'}}>🎉</div>
+            <h2 style={{
+              fontSize:'1.4rem',
+              fontWeight:700,
+              color:'#1a2a3a',
+              margin:'0 0 0.5rem',
+              lineHeight:1.25,
+            }}>
+              ¡Recorrido completado!
+            </h2>
+            <p style={{
+              fontSize:'0.95rem',
+              color:'#4a6b7c',
+              margin:'0 0 1.25rem',
+              lineHeight:1.5,
+            }}>
+              Visitaron las {totalRecorrido} baldosa{totalRecorrido !== 1 ? 's' : ''} del recorrido de {recorrido.nombre}.
+            </p>
+
+            <button
+              onClick={descargarCertificado}
+              style={{
+                width:'100%',
+                padding:'0.95rem 1rem',
+                background:'#1a2a3a',
+                color:'white',
+                border:'none',
+                borderRadius:'12px',
+                fontSize:'1rem',
+                fontWeight:700,
+                cursor:'pointer',
+                letterSpacing:'0.01em',
+                marginBottom:'0.5rem',
+                fontFamily:'inherit',
+              }}
+            >
+              📄 Descargar certificado PDF
+            </button>
+
+            <button
+              onClick={() => setMostrarCertificado(false)}
+              style={{
+                width:'100%',
+                padding:'0.7rem 1rem',
+                background:'transparent',
+                color:'#4a6b7c',
+                border:'none',
+                borderRadius:'10px',
+                fontSize:'0.88rem',
+                fontWeight:500,
+                cursor:'pointer',
+                fontFamily:'inherit',
+              }}
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

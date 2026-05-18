@@ -1,16 +1,12 @@
 /**
- * Layout exclusivo para /recorridos
- * Omite navbar y footer del layout global, igual que /mapa
+ * Layout de /recorridos
+ * Passthrough. El layout fullscreen (que oculta navbar/footer y fija la
+ * pantalla) se movió a /recorridos/escuela/[id]/layout.tsx, donde sí hace
+ * falta porque el mapa ocupa toda la viewport.
+ *
+ * El listado de escuelas (/recorridos/escuela) usa el layout global con
+ * navbar + footer + scroll normal.
  */
 export default function RecorridosLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{
-      position: 'fixed',
-      inset:     0,
-      overflow: 'hidden',
-      background: '#f0f4f8',
-    }}>
-      {children}
-    </div>
-  )
+  return <>{children}</>
 }

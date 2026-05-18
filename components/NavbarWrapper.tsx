@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from 'react'
 
 const LINKS = [
   { href: '/mapa',              label: 'Mapa' },
+  { href: '/recorridos/escuela', label: 'Escuelas' },
   { href: '/colaborar',          label: 'Colaborar' },
   { href: '/quienes-somos',     label: '¿Quiénes somos?' },
   { href: '/como-funciona',     label: '¿Cómo funciona?' },
@@ -15,8 +16,13 @@ export default function NavbarWrapper() {
   const esMapa = pathname === '/mapa'
   const esHome = pathname === '/'
 
-  // En el mapa no se muestra la navbar — el mapa tiene su propia UI
-  if (esMapa) return null
+  // Detalle del recorrido de una escuela (mapa fullscreen): /recorridos/escuela/[mongoId]
+  // Solo matchea el mapa, NO /recorridos/escuela/[id]/info ni el listado
+  const esDetalleRecorrido = /^\/recorridos\/escuela\/[0-9a-fA-F]{24}\/?$/.test(pathname)
+
+  // En el mapa y en el detalle de recorrido no se muestra la navbar
+  // — tienen su propia UI fullscreen
+  if (esMapa || esDetalleRecorrido) return null
 
   const [visible, setVisible] = useState(esHome ? 0 : 1)
 
@@ -62,11 +68,6 @@ export default function NavbarWrapper() {
     const t = setTimeout(() => setVisible(1), 2500)
     return () => clearTimeout(t)
   }, [esHome])
-
-  // Colores según contexto (home transparente / resto oscuro)
-  const textColor   = esHome ? 'var(--color-stone)'    : 'var(--color-parchment)'
-  const linkHoverBg = esHome ? 'rgba(26,42,58,0.08)'   : 'rgba(255,255,255,0.1)'
-  const activeColor = esHome ? 'var(--color-primary)'  : 'white'
 
   return (
     <>
