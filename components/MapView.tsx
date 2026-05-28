@@ -65,11 +65,18 @@ const escuelaIcon = new L.DivIcon({
 const RADIO_MAXIMO   = 100   // metros — debe estar a menos de 100m para escanear
 const LIMIT_CERCANAS = 20
 
-interface Pin { id:string; codigo:string; nombre:string; direccion:string; barrio:string; lat:number; lng:number; vecesEscaneada?:number; fotosUrls?:string[] }
+interface Pin { id:string; codigo:string; nombre:string; direccion:string; barrio:string; lat:number; lng:number; vecesEscaneada?:number; fotosUrls?:string[]; categoria?:string }
 interface BaldosaCercana { id:string; codigo:string; nombre:string; lat:number; lng:number; direccion:string; barrio:string; mensajeAR:string; distancia?:number; vecesEscaneada?:number; fotosUrls?:string[] }
 interface BaldosaRecorrido { id:string; codigo:string; nombre:string; lat:number; lng:number; direccion:string }
 interface DatosRecorrido { id:string; nombre:string; direccion:string; barrio:string; lat:number; lng:number; baldosas:BaldosaRecorrido[]; ruta_geojson: any }
-interface MapViewProps { initialLocation: { lat:number; lng:number }; recorrido?: DatosRecorrido }
+interface MapViewProps {
+  initialLocation: { lat:number; lng:number };
+  recorrido?: DatosRecorrido;
+  /** Radio en metros desde la escuela (solo en modo recorrido). Default 500. */
+  filtroRadio?: number;
+  /** Categorías permitidas (solo en modo recorrido). Si undefined o vacío, todas. */
+  filtroCategorias?: string[];
+}
 
 function calcularDistancia(lat1:number,lng1:number,lat2:number,lng2:number):number {
   const R=6371e3, ph1=(lat1*Math.PI)/180, ph2=(lat2*Math.PI)/180
@@ -87,18 +94,22 @@ function normalizar(texto:string):string {
   return texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
 }
 
-function MapFitter({pins, recorrido}:{pins:Pin[]; recorrido?:DatosRecorrido}) {
+function MapFitter({pins, recorrido, filtroRadio}:{pins:Pin[]; recorrido?:DatosRecorrido; filtroRadio?:number}) {
   const map=useMap(), done=useRef(false)
   useEffect(()=>{
     if(done.current) return
-    if(recorrido && recorrido.baldosas.length>0){
-      // Modo recorrido: centrar en las baldosas del recorrido + la escuela
+    if(recorrido){
+      // Modo recorrido: centrar en la escuela con un radio de "filtroRadio" metros
       done.current=true
-      const puntos: [number,number][] = [
-        [recorrido.lat, recorrido.lng],
-        ...recorrido.baldosas.map(b => [b.lat, b.lng] as [number,number])
-      ]
-      map.fitBounds(L.latLngBounds(puntos), {padding:[60,60], maxZoom:16})
+      const radio = filtroRadio ?? 500
+      // Convertir metros a un padding de bounds: aprox 1° lat = 111111m
+      const deltaLat = radio / 111111
+      const deltaLng = radio / (111111 * Math.cos(recorrido.lat * Math.PI / 180))
+      const bounds = L.latLngBounds(
+        [recorrido.lat - deltaLat, recorrido.lng - deltaLng],
+        [recorrido.lat + deltaLat, recorrido.lng + deltaLng],
+      )
+      map.fitBounds(bounds, {padding:[40,40], maxZoom:17})
     } else if(pins.length>0){
       done.current=true
       map.fitBounds(L.latLngBounds(pins.map(p=>[p.lat,p.lng] as [number,number])),{padding:[50,50],maxZoom:15})
@@ -162,7 +173,12 @@ function FotosSlider({ fotos, nombre }: { fotos: string[]; nombre: string }) {
   )
 }
 
-export default function MapView({ initialLocation, recorrido }:MapViewProps) {
+export default function MapView({
+  initialLocation,
+  recorrido,
+  filtroRadio = 500,
+  filtroCategorias,
+}: MapViewProps) {
   const [pins,setPins]=useState<Pin[]>([])
   const [loadingPins,setLoadingPins]=useState(true)
   const [userLocation,setUserLocation]=useState<{lat:number;lng:number}|null>(null)
@@ -171,6 +187,14 @@ export default function MapView({ initialLocation, recorrido }:MapViewProps) {
   const [cercanas,setCercanas]=useState<BaldosaCercana[]>([])
   const [loadingCercanas,setLoadingCercanas]=useState(false)
   const [cargado,setCargado]=useState(false)
+  // Resetear caché del panel cuando cambian los filtros (modo escuela)
+  useEffect(() => {
+    if (!recorrido) return
+    setCargado(false)
+    setCercanas([])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtroRadio, filtroCategorias?.join(',')])
+
   const [destino,setDestino]=useState<BaldosaCercana|null>(null)
   const [detalle,setDetalle]=useState<Pin|BaldosaCercana|null>(null)
   const [loadingDetalle,setLoadingDetalle]=useState(false)
@@ -252,6 +276,21 @@ export default function MapView({ initialLocation, recorrido }:MapViewProps) {
     setPanelAbierto(true)
     if(cargado)return
     setLoadingCercanas(true); setCargado(true)
+
+    // ── Modo escuela: lista local de baldosas filtradas (idsRecorrido) ──
+    if(recorrido){
+      // Origen para calcular distancia: ubicación del usuario si está, si no la escuela
+      const origen = userLocation ?? { lat: recorrido.lat, lng: recorrido.lng }
+      const lista:BaldosaCercana[] = pins
+        .filter(p => idsRecorrido.has(p.id))
+        .map(p => ({...p, mensajeAR:'', distancia: calcularDistancia(origen.lat, origen.lng, p.lat, p.lng)}))
+        .sort((a,b)=>(a.distancia??0)-(b.distancia??0))
+      setCercanas(lista)
+      setLoadingCercanas(false)
+      return
+    }
+
+    // ── Modo /mapa general (sin escuela): comportamiento original ──
     if(userLocation){
       const{lat,lng}=userLocation
       fetch(`/api/baldosas/nearby?lat=${lat}&lng=${lng}&radius=5000`).then(r=>r.json()).then(d=>{
@@ -316,7 +355,7 @@ export default function MapView({ initialLocation, recorrido }:MapViewProps) {
     recorridoAutoRef.current=true
     // Si hay recorrido escolar, restringir a sus baldosas; si no, todas
     const candidatas = recorrido
-      ? pins.filter(p => recorrido.baldosas.some(b => b.id === p.id))
+      ? pins.filter(p => idsRecorrido.has(p.id))
       : pins
     if(candidatas.length===0) return
     let minDist=Infinity, masCercana:Pin|null=null
@@ -502,7 +541,24 @@ export default function MapView({ initialLocation, recorrido }:MapViewProps) {
   }
 
   // ─── Datos derivados del recorrido escolar ───────────────────────────────
-  const idsRecorrido = new Set(recorrido?.baldosas.map(b => b.id) ?? [])
+  // ─── Baldosas del recorrido escolar (filtradas por radio + categorías) ──
+  // Antes venían curadas en recorrido.baldosas. Ahora se calculan en cliente.
+  const idsRecorrido = useMemo(() => {
+    if (!recorrido) return new Set<string>()
+    const set = new Set<string>()
+    for (const p of pins) {
+      // Filtro de distancia desde la escuela (haversine, línea recta)
+      const dist = calcularDistancia(recorrido.lat, recorrido.lng, p.lat, p.lng)
+      if (dist > filtroRadio) continue
+      // Filtro de categorías (si está definido y tiene items)
+      // Si el pin no trae categoría, se lo deja pasar para no romper el filtro.
+      if (filtroCategorias && filtroCategorias.length > 0 && p.categoria) {
+        if (!filtroCategorias.includes(p.categoria)) continue
+      }
+      set.add(p.id)
+    }
+    return set
+  }, [recorrido, pins, filtroRadio, filtroCategorias])
   const totalRecorrido = idsRecorrido.size
   const marcadasCount = baldosasMarcadas.size
   const recorridoCompletado = recorridoIniciado && totalRecorrido > 0 && marcadasCount >= totalRecorrido
@@ -515,22 +571,12 @@ export default function MapView({ initialLocation, recorrido }:MapViewProps) {
     }
   }, [recorridoCompletado])
 
-  const coordsPolilinea: [number,number][] = recorrido
-    ? [
-        [recorrido.lat, recorrido.lng],
-        ...recorrido.baldosas.map(b => [b.lat, b.lng] as [number,number]),
-        [recorrido.lat, recorrido.lng],
-      ]
-    : []
-
   return (
     <div style={{position:'relative',width:'100%',height:'100%'}}>
 
       <MapContainer center={[userLocation?.lat??initialLocation.lat,userLocation?.lng??initialLocation.lng]} zoom={13} style={{width:'100%',height:'100%'}} zoomControl={false}>
         <TileLayer attribution='&copy; <a href="https://www.ign.gob.ar/AreaServicios/Argenmap/IntroduccionV2" target="_blank">Instituto Geográfico Nacional</a> + <a href="https://www.osm.org/copyright" target="_blank">OpenStreetMap</a>' url="https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/capabaseargenmap@EPSG:3857@png/{z}/{x}/{-y}.png"/>
         {ruta.length>1&&<Polyline positions={ruta} pathOptions={{color:'#2563eb',weight:5,opacity:0.9}}/>}
-        {/* Polilínea punteada del recorrido escolar — siempre visible */}
-        {coordsPolilinea.length>1&&<Polyline positions={coordsPolilinea} pathOptions={{color:'#c0392b',weight:3,opacity:0.8,dashArray:'8, 7'}}/>}
         {/* Marcador de la escuela */}
         {recorrido&&(
           <Marker position={[recorrido.lat,recorrido.lng]} icon={escuelaIcon}>
@@ -604,7 +650,7 @@ export default function MapView({ initialLocation, recorrido }:MapViewProps) {
             </Marker>
           )
         })}
-        <MapFitter pins={pins} recorrido={recorrido}/>
+        <MapFitter pins={pins} recorrido={recorrido} filtroRadio={filtroRadio}/>
         <RouteController userLocation={userLocation} destino={destino}/>
         <FlyTo target={flyTarget}/>
       </MapContainer>
@@ -909,8 +955,8 @@ export default function MapView({ initialLocation, recorrido }:MapViewProps) {
         </div>
       )}
 
-      {/* Botón abrir panel — solo en modo /mapa general, no en recorrido escolar */}
-      {!panelAbierto&&!recorrido&&(
+      {/* Botón abrir panel — siempre, también en modo recorrido escolar */}
+      {!panelAbierto&&(
         <button onClick={abrirPanel} style={{
           position:'absolute',
           bottom:'calc(env(safe-area-inset-bottom, 0px) + 1.2rem)',
@@ -943,9 +989,7 @@ export default function MapView({ initialLocation, recorrido }:MapViewProps) {
               : e => e.preventDefault()}
             style={{
               position: 'absolute',
-              bottom: recorrido
-                ? 'calc(env(safe-area-inset-bottom, 0px) + 1.2rem)'
-                : 'calc(env(safe-area-inset-bottom, 0px) + 5.5rem)',
+              bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5.5rem)',
               left: '1rem', right: '1rem',
               zIndex: 401,
               background: enRango ? '#1d4ed8' : '#1a2a3a',

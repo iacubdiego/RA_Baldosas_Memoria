@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 
 // MapView se importa dinámico igual que en /mapa para evitar SSR de Leaflet
@@ -27,11 +27,25 @@ interface DatosRecorrido {
 
 const BANNER_HEIGHT = 58 // px — banner superior (sin contar safe-area-inset-top)
 
+// Defaults razonables si la URL no trae filtros
+const DEFAULT_RADIO = 500
+const CATEGORIAS_TODAS = ['artista','politico','historico','deportista','cultural','otro']
+
 export default function RecorridoEscuelaPage() {
   const { id } = useParams<{ id: string }>()
+  const searchParams = useSearchParams()
   const [recorrido, setRecorrido] = useState<DatosRecorrido | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Lectura de filtros desde URL (con defaults razonables)
+  const radioParam = Number(searchParams.get('radio'))
+  const filtroRadio = Number.isFinite(radioParam) && radioParam > 0 ? radioParam : DEFAULT_RADIO
+
+  const catsParam = searchParams.get('cats')
+  const filtroCategorias = catsParam
+    ? catsParam.split(',').map(s => s.trim()).filter(Boolean)
+    : CATEGORIAS_TODAS
 
   useEffect(() => {
     if (!id) return
@@ -82,17 +96,16 @@ export default function RecorridoEscuelaPage() {
   }
 
   const initialLocation = { lat: recorrido.lat, lng: recorrido.lng }
-  const detalleHref = `/recorridos/escuela/${recorrido.id}/info`
 
   return (
     // Wrapper fullscreen — antes vivía en layout.tsx, ahora va dentro del page
-    // para que solo aplique al mapa y no a /info
+    // para que solo aplique al mapa
     <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', background: '#f0f4f8' }}>
 
-      {/* Banner superior — clickeable + botón explícito */}
+      {/* Banner superior — info de la escuela + botón "Cambiar filtros" */}
       <a
-        href={detalleHref}
-        aria-label="Ver detalles del recorrido"
+        href="/recorridos/escuela"
+        aria-label="Volver al listado y cambiar filtros"
         style={{
           position: 'absolute',
           top: 0, left: 0, right: 0,
@@ -127,7 +140,7 @@ export default function RecorridoEscuelaPage() {
               lineHeight: 1.1,
               marginBottom: '2px',
             }}>
-              Recorrido por la memoria
+              {filtroRadio} m · {filtroCategorias.length} categoría{filtroCategorias.length !== 1 ? 's' : ''}
             </div>
             <div style={{
               fontSize: '0.95rem',
@@ -141,7 +154,7 @@ export default function RecorridoEscuelaPage() {
             </div>
           </div>
 
-          {/* Botón explícito de detalle */}
+          {/* Botón "Cambiar filtros" */}
           <div
             style={{
               flexShrink: 0,
@@ -159,11 +172,14 @@ export default function RecorridoEscuelaPage() {
             }}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="16" x2="12" y2="12"/>
-              <line x1="12" y1="8" x2="12.01" y2="8"/>
+              <line x1="4" y1="6" x2="20" y2="6"/>
+              <line x1="4" y1="12" x2="20" y2="12"/>
+              <line x1="4" y1="18" x2="20" y2="18"/>
+              <circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/>
+              <circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/>
+              <circle cx="7" cy="18" r="2" fill="currentColor" stroke="none"/>
             </svg>
-            Ver detalle
+            Cambiar filtros
           </div>
         </div>
       </a>
@@ -180,6 +196,8 @@ export default function RecorridoEscuelaPage() {
         <MapView
           initialLocation={initialLocation}
           recorrido={recorrido}
+          filtroRadio={filtroRadio}
+          filtroCategorias={filtroCategorias}
         />
       </div>
     </div>
