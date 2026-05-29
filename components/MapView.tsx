@@ -1023,7 +1023,11 @@ export default function MapView({
             <div>
               <div style={{width:'40px',height:'4px',background:'#e5e7eb',borderRadius:'2px',margin:'0 auto 8px'}}/>
               <p style={{fontSize:'1rem',fontWeight:700,color:'#1a2a3a',margin:0}}>
-                {userLocation?`${LIMIT_CERCANAS} baldosas más cercanas`:`Primeras ${LIMIT_CERCANAS} baldosas`}
+                {recorrido
+                  ? `${cercanas.length} baldosa${cercanas.length !== 1 ? 's' : ''}${userLocation ? ' (más cercana primero)' : ''}`
+                  : userLocation
+                    ? `${cercanas.length} baldosa${cercanas.length !== 1 ? 's' : ''} más cercana${cercanas.length !== 1 ? 's' : ''}`
+                    : `Primeras ${cercanas.length} baldosa${cercanas.length !== 1 ? 's' : ''}`}
               </p>
               {!userLocation&&!loadingLocation&&<p style={{fontSize:'0.75rem',color:'#6b7280',margin:'2px 0 0'}}>Activá el GPS para ordenar por distancia</p>}
             </div>

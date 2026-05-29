@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import EscuelaAnimada from '@/components/EscuelaAnimada'
 
 interface EscuelaItem {
   id: string
@@ -30,13 +31,14 @@ const RADIO_MIN = 100
 const RADIO_MAX = 1500
 const RADIO_STEP = 50
 
-const HERO_IMAGE = '/images/escuelas-hero.jpg'
+const ESCUELAS_POR_PAGINA = 12
 
 export default function EscuelasIndexPage() {
   const [escuelas, setEscuelas] = useState<EscuelaItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filtro, setFiltro] = useState('')
+  const [pagina, setPagina] = useState(1)
 
   // ── Filtros del recorrido ──
   const [radio, setRadio] = useState<number>(DEFAULT_RADIO)
@@ -65,6 +67,20 @@ export default function EscuelasIndexPage() {
     )
   }, [escuelas, filtro])
 
+  // ── Paginación ──
+  const totalPaginas = Math.max(1, Math.ceil(escuelasFiltradas.length / ESCUELAS_POR_PAGINA))
+  // Cuando cambia el filtro, volver a la página 1 para no quedar en una vacía
+  useEffect(() => { setPagina(1) }, [filtro])
+  // Si la página actual queda fuera de rango (porque cambió la lista), corregirla
+  useEffect(() => {
+    if (pagina > totalPaginas) setPagina(totalPaginas)
+  }, [pagina, totalPaginas])
+
+  const escuelasVisibles = useMemo(() => {
+    const inicio = (pagina - 1) * ESCUELAS_POR_PAGINA
+    return escuelasFiltradas.slice(inicio, inicio + ESCUELAS_POR_PAGINA)
+  }, [escuelasFiltradas, pagina])
+
   const toggleCategoria = (id: string) => {
     setCatsSeleccionadas(prev =>
       prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
@@ -84,28 +100,70 @@ export default function EscuelasIndexPage() {
 
   return (
     <div className="hero-background">
+      <style dangerouslySetInnerHTML={{ __html: `
+        .ea-hero-fullscreen {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: var(--space-md);
+          /* En desktop: tamaño moderado, deja ver el contenido debajo */
+          min-height: 360px;
+          margin-bottom: var(--space-md);
+        }
+        /* En mobile: toma toda la pantalla menos la navbar */
+        @media (max-width: 768px) {
+          .ea-hero-fullscreen {
+            min-height: calc(100dvh - 110px);
+            padding: var(--space-sm);
+            margin-bottom: var(--space-md);
+          }
+          /* Chevron sutil que invita a hacer scroll */
+          .ea-hero-fullscreen::after {
+            content: "";
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            width: 24px;
+            height: 24px;
+            border-right: 2px solid var(--color-dust);
+            border-bottom: 2px solid var(--color-dust);
+            transform: translateX(-50%) rotate(45deg);
+            opacity: 0;
+            animation: ea-chevron-fade 1.5s ease-out 4.8s forwards, ea-chevron-bounce 2s ease-in-out 4.8s infinite;
+          }
+        }
+        @keyframes ea-chevron-fade {
+          from { opacity: 0; }
+          to   { opacity: 0.55; }
+        }
+        @keyframes ea-chevron-bounce {
+          0%, 100% { transform: translateX(-50%) rotate(45deg) translateY(0); }
+          50%      { transform: translateX(-50%) rotate(45deg) translateY(6px); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .ea-hero-fullscreen::after { animation: none !important; opacity: 0.4 !important; }
+        }
+      ` }} />
+
+      {/* ── HERO: animación de la escuela ────────────────────────────────
+        En mobile ocupa casi toda la viewport para que sea lo único visible
+        al entrar. En desktop es un hero de tamaño normal con el contenido
+        debajo visible sin scroll. */}
+      <div className="ea-hero-fullscreen" style={{ position: 'relative' }}>
+        <EscuelaAnimada />
+      </div>
+
       <div style={{
         position: 'relative',
         zIndex: 1,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        padding: 'var(--space-lg)',
+        padding: 'var(--space-lg) var(--space-md)',
         width: '100%',
       }}>
         <div style={{ textAlign: 'center', width: '100%', maxWidth: '900px' }}>
-
-          {/* ── HERO: imagen central ── */}
-          <div className="logo-baldosa-container">
-            <div className="baldosa-animada">
-              <img
-                src={HERO_IMAGE}
-                alt="Recorridos de la memoria realizados por escuelas"
-                className="baldosa-img"
-                loading="eager"
-              />
-            </div>
-          </div>
 
           {/* ── Título ── */}
           <div style={{
@@ -329,7 +387,7 @@ export default function EscuelasIndexPage() {
                 gap: 'var(--space-sm)',
                 textAlign: 'left',
               }}>
-                {escuelasFiltradas.map(e => (
+                {escuelasVisibles.map(e => (
                   <a
                     key={e.id}
                     href={hrefParaEscuela(e.id)}
@@ -391,6 +449,82 @@ export default function EscuelasIndexPage() {
                     </div>
                   </a>
                 ))}
+              </div>
+            )}
+
+            {/* ── Paginado ── */}
+            {!loading && !error && totalPaginas > 1 && (
+              <div style={{
+                marginTop: 'var(--space-md)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                flexWrap: 'wrap',
+                color: 'var(--color-dust)',
+                fontSize: '0.85rem',
+              }}>
+                <button
+                  onClick={() => setPagina(p => Math.max(1, p - 1))}
+                  disabled={pagina === 1}
+                  style={{
+                    padding: '8px 14px',
+                    border: '1.5px solid ' + (pagina === 1 ? 'rgba(74,107,124,0.15)' : 'rgba(37, 99, 235, 0.25)'),
+                    background: pagina === 1 ? 'transparent' : 'rgba(255,255,255,0.85)',
+                    color: pagina === 1 ? 'rgba(74,107,124,0.4)' : 'var(--color-primary)',
+                    borderRadius: '8px',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: pagina === 1 ? 'not-allowed' : 'pointer',
+                    fontFamily: 'inherit',
+                    letterSpacing: '0.01em',
+                    textTransform: 'none',
+                  }}
+                >
+                  ← Anterior
+                </button>
+
+                <span style={{
+                  padding: '0 12px',
+                  fontWeight: 600,
+                  color: 'var(--color-stone)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}>
+                  Página {pagina} de {totalPaginas}
+                </span>
+
+                <button
+                  onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))}
+                  disabled={pagina === totalPaginas}
+                  style={{
+                    padding: '8px 14px',
+                    border: '1.5px solid ' + (pagina === totalPaginas ? 'rgba(74,107,124,0.15)' : 'rgba(37, 99, 235, 0.25)'),
+                    background: pagina === totalPaginas ? 'transparent' : 'rgba(255,255,255,0.85)',
+                    color: pagina === totalPaginas ? 'rgba(74,107,124,0.4)' : 'var(--color-primary)',
+                    borderRadius: '8px',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: pagina === totalPaginas ? 'not-allowed' : 'pointer',
+                    fontFamily: 'inherit',
+                    letterSpacing: '0.01em',
+                    textTransform: 'none',
+                  }}
+                >
+                  Siguiente →
+                </button>
+              </div>
+            )}
+
+            {/* Texto auxiliar bajo el paginado */}
+            {!loading && !error && escuelasFiltradas.length > 0 && (
+              <div style={{
+                textAlign: 'center',
+                marginTop: '8px',
+                fontSize: '0.75rem',
+                color: 'var(--color-dust)',
+                opacity: 0.7,
+              }}>
+                Mostrando {escuelasVisibles.length} de {escuelasFiltradas.length} escuela{escuelasFiltradas.length !== 1 ? 's' : ''}
               </div>
             )}
           </div>

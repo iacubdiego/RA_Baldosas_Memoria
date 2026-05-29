@@ -20,9 +20,65 @@ export default function NavbarWrapper() {
   // Solo matchea el mapa, NO /recorridos/escuela/[id]/info ni el listado
   const esDetalleRecorrido = /^\/recorridos\/escuela\/[0-9a-fA-F]{24}\/?$/.test(pathname)
 
+  // Listado de escuelas: navbar minimalista (solo logo, fondo blanco)
+  const esListadoEscuelas = pathname === '/recorridos/escuela' || pathname === '/recorridos/escuela/'
+
   // En el mapa y en el detalle de recorrido no se muestra la navbar
   // — tienen su propia UI fullscreen
   if (esMapa || esDetalleRecorrido) return null
+
+  // Listado de escuelas: navbar minimalista (solo logo con link al home)
+  if (esListadoEscuelas) {
+    return (
+      <nav style={{
+        background: '#ffffff',
+        borderBottom: '1px solid rgba(26,42,58,0.08)',
+        boxShadow: '0 1px 4px rgba(26,42,58,0.04)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+      }}>
+        <div style={{
+          maxWidth: '1200px',
+          margin: '0 auto',
+          padding: '0.65rem 1.25rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <a
+            href="/"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.65rem',
+              textDecoration: 'none',
+              color: 'var(--color-stone)',
+              transition: 'opacity 0.15s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
+            onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+          >
+            <img
+              src="/images/logo_flores.png"
+              alt="Inicio"
+              style={{ width: '38px', height: '38px', objectFit: 'contain' }}
+            />
+            <span style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '1.35rem',
+              fontWeight: 700,
+              letterSpacing: '-0.02em',
+              whiteSpace: 'nowrap',
+              color: 'var(--color-stone)',
+            }}>
+              Recorremos Memoria
+            </span>
+          </a>
+        </div>
+      </nav>
+    )
+  }
 
   const [visible, setVisible] = useState(esHome ? 0 : 1)
 
