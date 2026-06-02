@@ -15,7 +15,17 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Recorremos Memoria',
     description: 'Descubrí las baldosas por la memoria cerca tuyo con realidad aumentada',
-    images: ['/images/icon-512.png'],
+    url: 'https://ra-baldosas-memoria.vercel.app',
+    siteName: 'Recorremos Memoria',
+    type: 'website',
+    images: [
+      {
+        url: 'https://ra-baldosas-memoria.vercel.app/images/icon-512.png',
+        width: 512,
+        height: 512,
+        alt: 'Recorremos Memoria',
+      },
+    ],
   },
 }
 
