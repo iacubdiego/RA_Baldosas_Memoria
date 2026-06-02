@@ -67,16 +67,20 @@ function latLngToPixel(lat: number, lng: number, zoom: number) {
 
 /**
  * Calcula el zoom óptimo para que un círculo del radio dado entre dentro
- * del ancho de la imagen con un poco de margen.
+ * de la imagen con un poco de margen. Usa la dimensión MÁS CHICA (entre
+ * ancho y alto) para garantizar que el círculo completo se vea en la imagen
+ * — antes solo consideraba el ancho, lo cual cortaba baldosas que estaban
+ * dentro del radio pero fuera del rectángulo del mapa.
  */
-function calcularZoom(centerLat: number, radio: number, width: number): number {
+function calcularZoom(centerLat: number, radio: number, width: number, height: number): number {
   // En Web Mercator a zoom z, un píxel cubre:
   //   metros/px = (cos(lat) * 2πR) / (256 * 2^z)
-  // Despejando z para que (radio * 2 * margin) entre en width píxeles:
+  // Despejando z para que (radio * 2 * margin) entre en min(width, height) píxeles:
   const margin = 1.2
   const earthR = 6378137 // m
   const cosLat = Math.cos((centerLat * Math.PI) / 180)
-  const metersPerPx = (radio * 2 * margin) / width
+  const dimensionMenor = Math.min(width, height)
+  const metersPerPx = (radio * 2 * margin) / dimensionMenor
   const z = Math.log2((cosLat * 2 * Math.PI * earthR) / (256 * metersPerPx))
   return Math.max(10, Math.min(18, Math.round(z)))
 }
@@ -220,7 +224,7 @@ async function getIconoEscuela(): Promise<Buffer | null> {
  */
 export async function generarMapaEstaticoIGN(opts: StaticMapOptions): Promise<Buffer> {
   const { centerLat, centerLng, width, height } = opts
-  const zoom = calcularZoom(centerLat, opts.radio, width)
+  const zoom = calcularZoom(centerLat, opts.radio, width, height)
 
   // Coordenadas globales del centro en píxeles
   const center = latLngToPixel(centerLat, centerLng, zoom)
