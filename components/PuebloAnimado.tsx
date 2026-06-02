@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 
+const PANUELO = '/images/logo_flores_fondo_azul.png'
+
 /**
  * PuebloAnimado
  * ────────────────────────────────────────────────────────────────────
@@ -105,35 +107,35 @@ export default function PuebloAnimado() {
 
         .pa-persona { opacity: 0; }
 
-        @keyframes pa-p1{0%{transform:translate(200px,365px)}18%{transform:translate(120px,393px)}22%,30%{transform:translate(50px,393px)}100%{transform:translate(-30px,393px)}}
-        @keyframes pa-p2{0%{transform:translate(195px,365px)}20%{transform:translate(140px,398px)}24%,32%{transform:translate(90px,398px)}100%{transform:translate(-40px,398px)}}
-        @keyframes pa-p3{0%{transform:translate(195px,365px)}22%{transform:translate(150px,403px)}26%,34%{transform:translate(70px,403px)}100%{transform:translate(-30px,403px)}}
-        @keyframes pa-p4{0%{transform:translate(358px,360px)}22%{transform:translate(230px,393px)}26%,34%{transform:translate(105px,393px)}100%{transform:translate(-30px,393px)}}
-        @keyframes pa-p5{0%{transform:translate(358px,360px)}24%{transform:translate(250px,398px)}28%,36%{transform:translate(50px,398px)}100%{transform:translate(-40px,398px)}}
-        @keyframes pa-p6{0%{transform:translate(358px,360px)}26%{transform:translate(270px,403px)}30%,38%{transform:translate(90px,403px)}100%{transform:translate(-30px,403px)}}
-        @keyframes pa-p7{0%{transform:translate(525px,360px)}25%{transform:translate(380px,393px)}29%,37%{transform:translate(105px,393px)}100%{transform:translate(-30px,393px)}}
-        @keyframes pa-p8{0%{transform:translate(525px,360px)}27%{transform:translate(420px,398px)}31%,39%{transform:translate(50px,398px)}100%{transform:translate(-40px,398px)}}
-        @keyframes pa-p9{0%{transform:translate(525px,360px)}25%{transform:translate(620px,393px)}29%,37%{transform:translate(905px,393px)}100%{transform:translate(1030px,393px)}}
-        @keyframes pa-p10{0%{transform:translate(525px,360px)}27%{transform:translate(660px,398px)}31%,39%{transform:translate(945px,398px)}100%{transform:translate(1030px,398px)}}
-        @keyframes pa-p11{0%{transform:translate(698px,365px)}23%{transform:translate(800px,393px)}27%,35%{transform:translate(890px,393px)}100%{transform:translate(1030px,393px)}}
-        @keyframes pa-p12{0%{transform:translate(698px,365px)}21%{transform:translate(820px,398px)}25%,33%{transform:translate(925px,398px)}100%{transform:translate(1030px,398px)}}
-        @keyframes pa-p13{0%{transform:translate(856px,360px)}22%{transform:translate(890px,393px)}26%,34%{transform:translate(905px,393px)}100%{transform:translate(1030px,393px)}}
-        @keyframes pa-p14{0%{transform:translate(856px,360px)}24%{transform:translate(910px,398px)}28%,36%{transform:translate(960px,398px)}100%{transform:translate(1030px,398px)}}
+        @keyframes pa-p1{0%{transform:translate(211px,365px)}30%{transform:translate(125.5px,393px)}45%,60%{transform:translate(50px,393px)}100%{transform:translate(-30px,393px)}}
+        @keyframes pa-p2{0%{transform:translate(206px,365px)}30%{transform:translate(145.5px,398px)}45%,60%{transform:translate(90px,398px)}100%{transform:translate(-40px,398px)}}
+        @keyframes pa-p3{0%{transform:translate(206px,365px)}30%{transform:translate(155.5px,403px)}45%,60%{transform:translate(70px,403px)}100%{transform:translate(-30px,403px)}}
+        @keyframes pa-p4{0%{transform:translate(351px,360px)}30%{transform:translate(226.5px,393px)}45%,60%{transform:translate(105px,393px)}100%{transform:translate(-30px,393px)}}
+        @keyframes pa-p5{0%{transform:translate(351px,360px)}30%{transform:translate(246.5px,398px)}45%,60%{transform:translate(50px,398px)}100%{transform:translate(-40px,398px)}}
+        @keyframes pa-p6{0%{transform:translate(351px,360px)}30%{transform:translate(266.5px,403px)}45%,60%{transform:translate(90px,403px)}100%{transform:translate(-30px,403px)}}
+        @keyframes pa-p7{0%{transform:translate(503px,360px)}30%{transform:translate(369px,393px)}45%,60%{transform:translate(105px,393px)}100%{transform:translate(-30px,393px)}}
+        @keyframes pa-p8{0%{transform:translate(503px,360px)}30%{transform:translate(409px,398px)}45%,60%{transform:translate(50px,398px)}100%{transform:translate(-40px,398px)}}
+        @keyframes pa-p9{0%{transform:translate(503px,360px)}30%{transform:translate(609px,393px)}45%,60%{transform:translate(905px,393px)}100%{transform:translate(1030px,393px)}}
+        @keyframes pa-p10{0%{transform:translate(503px,360px)}30%{transform:translate(649px,398px)}45%,60%{transform:translate(945px,398px)}100%{transform:translate(1030px,398px)}}
+        @keyframes pa-p11{0%{transform:translate(661px,365px)}30%{transform:translate(781.5px,393px)}45%,60%{transform:translate(890px,393px)}100%{transform:translate(1030px,393px)}}
+        @keyframes pa-p12{0%{transform:translate(661px,365px)}30%{transform:translate(801.5px,398px)}45%,60%{transform:translate(925px,398px)}100%{transform:translate(1030px,398px)}}
+        @keyframes pa-p13{0%{transform:translate(806px,360px)}30%{transform:translate(865px,393px)}45%,60%{transform:translate(905px,393px)}100%{transform:translate(1030px,393px)}}
+        @keyframes pa-p14{0%{transform:translate(806px,360px)}30%{transform:translate(885px,398px)}45%,60%{transform:translate(960px,398px)}100%{transform:translate(1030px,398px)}}
 
-        .pa-activo .pa-p1{animation:pa-aparece-p 1.5s ease-out 1.6s both, pa-p1 16s cubic-bezier(0.4,0,0.2,1) 1.6s both}
-        .pa-activo .pa-p2{animation:pa-aparece-p 1.5s ease-out 1.9s both, pa-p2 16s cubic-bezier(0.4,0,0.2,1) 1.9s both}
-        .pa-activo .pa-p3{animation:pa-aparece-p 1.5s ease-out 2.2s both, pa-p3 16s cubic-bezier(0.4,0,0.2,1) 2.2s both}
-        .pa-activo .pa-p4{animation:pa-aparece-p 1.5s ease-out 2.0s both, pa-p4 16s cubic-bezier(0.4,0,0.2,1) 2.0s both}
-        .pa-activo .pa-p5{animation:pa-aparece-p 1.5s ease-out 2.3s both, pa-p5 16s cubic-bezier(0.4,0,0.2,1) 2.3s both}
-        .pa-activo .pa-p6{animation:pa-aparece-p 1.5s ease-out 2.6s both, pa-p6 16s cubic-bezier(0.4,0,0.2,1) 2.6s both}
-        .pa-activo .pa-p7{animation:pa-aparece-p 1.5s ease-out 1.8s both, pa-p7 16s cubic-bezier(0.4,0,0.2,1) 1.8s both}
-        .pa-activo .pa-p8{animation:pa-aparece-p 1.5s ease-out 2.5s both, pa-p8 16s cubic-bezier(0.4,0,0.2,1) 2.5s both}
-        .pa-activo .pa-p9{animation:pa-aparece-p 1.5s ease-out 2.1s both, pa-p9 16s cubic-bezier(0.4,0,0.2,1) 2.1s both}
-        .pa-activo .pa-p10{animation:pa-aparece-p 1.5s ease-out 2.4s both, pa-p10 16s cubic-bezier(0.4,0,0.2,1) 2.4s both}
-        .pa-activo .pa-p11{animation:pa-aparece-p 1.5s ease-out 2.7s both, pa-p11 16s cubic-bezier(0.4,0,0.2,1) 2.7s both}
-        .pa-activo .pa-p12{animation:pa-aparece-p 1.5s ease-out 2.2s both, pa-p12 16s cubic-bezier(0.4,0,0.2,1) 2.2s both}
-        .pa-activo .pa-p13{animation:pa-aparece-p 1.5s ease-out 2.8s both, pa-p13 16s cubic-bezier(0.4,0,0.2,1) 2.8s both}
-        .pa-activo .pa-p14{animation:pa-aparece-p 1.5s ease-out 2.5s both, pa-p14 16s cubic-bezier(0.4,0,0.2,1) 2.5s both}
+        .pa-activo .pa-p1{animation:pa-aparece-p 1.5s ease-out 1.6s both, pa-p1 20s cubic-bezier(0.4,0,0.2,1) 1.6s both}
+        .pa-activo .pa-p2{animation:pa-aparece-p 1.5s ease-out 1.9s both, pa-p2 20s cubic-bezier(0.4,0,0.2,1) 1.9s both}
+        .pa-activo .pa-p3{animation:pa-aparece-p 1.5s ease-out 2.2s both, pa-p3 20s cubic-bezier(0.4,0,0.2,1) 2.2s both}
+        .pa-activo .pa-p4{animation:pa-aparece-p 1.5s ease-out 2.0s both, pa-p4 20s cubic-bezier(0.4,0,0.2,1) 2.0s both}
+        .pa-activo .pa-p5{animation:pa-aparece-p 1.5s ease-out 2.3s both, pa-p5 20s cubic-bezier(0.4,0,0.2,1) 2.3s both}
+        .pa-activo .pa-p6{animation:pa-aparece-p 1.5s ease-out 2.6s both, pa-p6 20s cubic-bezier(0.4,0,0.2,1) 2.6s both}
+        .pa-activo .pa-p7{animation:pa-aparece-p 1.5s ease-out 1.8s both, pa-p7 20s cubic-bezier(0.4,0,0.2,1) 1.8s both}
+        .pa-activo .pa-p8{animation:pa-aparece-p 1.5s ease-out 2.5s both, pa-p8 20s cubic-bezier(0.4,0,0.2,1) 2.5s both}
+        .pa-activo .pa-p9{animation:pa-aparece-p 1.5s ease-out 2.1s both, pa-p9 20s cubic-bezier(0.4,0,0.2,1) 2.1s both}
+        .pa-activo .pa-p10{animation:pa-aparece-p 1.5s ease-out 2.4s both, pa-p10 20s cubic-bezier(0.4,0,0.2,1) 2.4s both}
+        .pa-activo .pa-p11{animation:pa-aparece-p 1.5s ease-out 2.7s both, pa-p11 20s cubic-bezier(0.4,0,0.2,1) 2.7s both}
+        .pa-activo .pa-p12{animation:pa-aparece-p 1.5s ease-out 2.2s both, pa-p12 20s cubic-bezier(0.4,0,0.2,1) 2.2s both}
+        .pa-activo .pa-p13{animation:pa-aparece-p 1.5s ease-out 2.8s both, pa-p13 20s cubic-bezier(0.4,0,0.2,1) 2.8s both}
+        .pa-activo .pa-p14{animation:pa-aparece-p 1.5s ease-out 2.5s both, pa-p14 20s cubic-bezier(0.4,0,0.2,1) 2.5s both}
 
         @media (prefers-reduced-motion: reduce) {
           .pa-activo .pa-ed, .pa-activo .pa-suelo, .pa-activo .pa-panuelo,
@@ -148,6 +150,39 @@ export default function PuebloAnimado() {
           }
         }
       ` }} />
+
+      {/* ── Título de la animación ── */}
+      <div
+        style={{
+          textAlign: 'center',
+          marginBottom: 'var(--space-md, 24px)',
+          padding: '0 var(--space-md, 24px)',
+        }}
+      >
+        <h2
+          style={{
+            fontSize: 'clamp(1.5rem, 4vw, 2.25rem)',
+            fontWeight: 700,
+            color: 'var(--color-stone, #1a2a3a)',
+            margin: 0,
+            lineHeight: 1.15,
+            letterSpacing: '-0.01em',
+          }}
+        >
+          Saliendo a la calle
+        </h2>
+        <p
+          style={{
+            fontSize: 'clamp(1rem, 2.5vw, 1.35rem)',
+            color: 'var(--color-concrete, #2d4a5e)',
+            margin: '8px 0 0',
+            fontWeight: 500,
+            letterSpacing: '0.01em',
+          }}
+        >
+          Recorremos Memoria
+        </p>
+      </div>
 
       <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" className={`pa-svg ${activo ? 'pa-activo' : ''}`}>
 
@@ -175,113 +210,113 @@ export default function PuebloAnimado() {
           </g>
         </g>
 
-        {/* ── PAÑUELOS a los costados ── */}
+        {/* ── PAÑUELOS a los costados (PNG real, posicionados sobre el suelo) ── */}
         <g className="pa-panuelo pa-pa-izq">
-          <g className="pa-panuelo-inner" transform="translate(45 280)">
-            <circle cx="0" cy="0" r="48" fill="#2563eb" opacity="0.18" />
-            <circle cx="0" cy="0" r="36" fill="#2563eb" opacity="0.32" />
-            <path d="M -30 -8 L -28 -22 L 30 -22 L 32 -8 L 28 12 L -28 12 Z" fill="#ffffff" stroke="#1a2a3a" strokeWidth="2" />
-            <path d="M -30 12 L -35 32 L -20 22 Z" fill="#ffffff" stroke="#1a2a3a" strokeWidth="2" />
-            <path d="M 30 12 L 35 32 L 20 22 Z" fill="#ffffff" stroke="#1a2a3a" strokeWidth="2" />
-            <g fill="#ec4899"><circle cx="14" cy="-8" r="4" /><circle cx="18" cy="-13" r="3" /></g>
-            <g fill="#fbbf24"><circle cx="8" cy="-15" r="3.5" /><circle cx="22" cy="-6" r="3" /></g>
-            <g fill="#22c55e"><path d="M 5 -18 L 8 -22 L 11 -18 Z" /></g>
+          <g className="pa-panuelo-inner">
+            <image
+              href={PANUELO}
+              x="-5"
+              y="275"
+              width="128"
+              height="128"
+              preserveAspectRatio="xMidYMid meet"
+            />
           </g>
         </g>
 
         <g className="pa-panuelo pa-pa-der">
-          <g className="pa-panuelo-inner" transform="translate(955 280)">
-            <circle cx="0" cy="0" r="48" fill="#2563eb" opacity="0.18" />
-            <circle cx="0" cy="0" r="36" fill="#2563eb" opacity="0.32" />
-            <path d="M -30 -8 L -28 -22 L 30 -22 L 32 -8 L 28 12 L -28 12 Z" fill="#ffffff" stroke="#1a2a3a" strokeWidth="2" />
-            <path d="M -30 12 L -35 32 L -20 22 Z" fill="#ffffff" stroke="#1a2a3a" strokeWidth="2" />
-            <path d="M 30 12 L 35 32 L 20 22 Z" fill="#ffffff" stroke="#1a2a3a" strokeWidth="2" />
-            <g fill="#ec4899"><circle cx="14" cy="-8" r="4" /><circle cx="18" cy="-13" r="3" /></g>
-            <g fill="#fbbf24"><circle cx="8" cy="-15" r="3.5" /><circle cx="22" cy="-6" r="3" /></g>
-            <g fill="#22c55e"><path d="M 5 -18 L 8 -22 L 11 -18 Z" /></g>
+          <g className="pa-panuelo-inner">
+            <image
+              href={PANUELO}
+              x="877"
+              y="275"
+              width="128"
+              height="128"
+              preserveAspectRatio="xMidYMid meet"
+            />
           </g>
         </g>
 
         {/* ── EDIFICIO 1: CASA ── */}
         <g className="pa-ed pa-ed1">
-          <rect x="120" y="280" width="140" height="100" fill="#f0f4f8" stroke="#1a2a3a" strokeWidth="2.5" />
-          <path d="M 105 280 L 190 220 L 275 280 Z" fill="#2d4a5e" stroke="#1a2a3a" strokeWidth="2.5" strokeLinejoin="round" />
-          <rect x="180" y="320" width="26" height="60" fill="#2d4a5e" stroke="#1a2a3a" strokeWidth="2" />
-          <circle cx="200" cy="352" r="1.8" fill="#2563eb" />
-          <rect x="130" y="305" width="28" height="26" fill="#0ea5e9" stroke="#1a2a3a" strokeWidth="1.8" opacity="0.92" />
-          <line x1="144" y1="305" x2="144" y2="331" stroke="#1a2a3a" strokeWidth="0.8" opacity="0.6" />
-          <line x1="130" y1="318" x2="158" y2="318" stroke="#1a2a3a" strokeWidth="0.8" opacity="0.6" />
-          <rect x="225" y="305" width="28" height="26" fill="#0ea5e9" stroke="#1a2a3a" strokeWidth="1.8" opacity="0.92" />
-          <line x1="239" y1="305" x2="239" y2="331" stroke="#1a2a3a" strokeWidth="0.8" opacity="0.6" />
-          <line x1="225" y1="318" x2="253" y2="318" stroke="#1a2a3a" strokeWidth="0.8" opacity="0.6" />
-          <rect x="188" y="377" width="10" height="3" fill="#4a6b7c" />
+          <rect x="131" y="280" width="140" height="100" fill="#f0f4f8" stroke="#1a2a3a" strokeWidth="2.5" />
+          <path d="M 116 280  L 201 220  L 286 280  Z" fill="#2d4a5e" stroke="#1a2a3a" strokeWidth="2.5" strokeLinejoin="round" />
+          <rect x="191" y="320" width="26" height="60" fill="#2d4a5e" stroke="#1a2a3a" strokeWidth="2" />
+          <circle cx="211" cy="352" r="1.8" fill="#2563eb" />
+          <rect x="141" y="305" width="28" height="26" fill="#0ea5e9" stroke="#1a2a3a" strokeWidth="1.8" opacity="0.92" />
+          <line x1="155" y1="305" x2="155" y2="331" stroke="#1a2a3a" strokeWidth="0.8" opacity="0.6" />
+          <line x1="141" y1="318" x2="169" y2="318" stroke="#1a2a3a" strokeWidth="0.8" opacity="0.6" />
+          <rect x="236" y="305" width="28" height="26" fill="#0ea5e9" stroke="#1a2a3a" strokeWidth="1.8" opacity="0.92" />
+          <line x1="250" y1="305" x2="250" y2="331" stroke="#1a2a3a" strokeWidth="0.8" opacity="0.6" />
+          <line x1="236" y1="318" x2="264" y2="318" stroke="#1a2a3a" strokeWidth="0.8" opacity="0.6" />
+          <rect x="199" y="377" width="10" height="3" fill="#4a6b7c" />
         </g>
 
         {/* ── EDIFICIO 2: DEPARTAMENTOS ── */}
         <g className="pa-ed pa-ed2">
-          <rect x="295" y="190" width="120" height="190" fill="#f0f4f8" stroke="#1a2a3a" strokeWidth="2.5" />
-          <rect x="295" y="190" width="120" height="12" fill="#2d4a5e" stroke="#1a2a3a" strokeWidth="2.5" />
+          <rect x="288" y="190" width="120" height="190" fill="#f0f4f8" stroke="#1a2a3a" strokeWidth="2.5" />
+          <rect x="288" y="190" width="120" height="12" fill="#2d4a5e" stroke="#1a2a3a" strokeWidth="2.5" />
           <g fill="#0ea5e9" stroke="#1a2a3a" strokeWidth="1.5" opacity="0.92">
-            <rect x="307" y="212" width="22" height="24" /><rect x="338" y="212" width="22" height="24" /><rect x="378" y="212" width="22" height="24" />
-            <rect x="307" y="246" width="22" height="24" /><rect x="338" y="246" width="22" height="24" /><rect x="378" y="246" width="22" height="24" />
-            <rect x="307" y="280" width="22" height="24" /><rect x="338" y="280" width="22" height="24" /><rect x="378" y="280" width="22" height="24" />
+            <rect x="300" y="212" width="22" height="24" /><rect x="331" y="212" width="22" height="24" /><rect x="371" y="212" width="22" height="24" />
+            <rect x="300" y="246" width="22" height="24" /><rect x="331" y="246" width="22" height="24" /><rect x="371" y="246" width="22" height="24" />
+            <rect x="300" y="280" width="22" height="24" /><rect x="331" y="280" width="22" height="24" /><rect x="371" y="280" width="22" height="24" />
           </g>
-          <rect x="346" y="320" width="24" height="60" fill="#2d4a5e" stroke="#1a2a3a" strokeWidth="2" />
-          <line x1="358" y1="320" x2="358" y2="380" stroke="#1a2a3a" strokeWidth="0.8" />
-          <circle cx="354" cy="352" r="1.6" fill="#2563eb" />
-          <rect x="338" y="377" width="14" height="3" fill="#4a6b7c" />
+          <rect x="339" y="320" width="24" height="60" fill="#2d4a5e" stroke="#1a2a3a" strokeWidth="2" />
+          <line x1="351" y1="320" x2="351" y2="380" stroke="#1a2a3a" strokeWidth="0.8" />
+          <circle cx="347" cy="352" r="1.6" fill="#2563eb" />
+          <rect x="331" y="377" width="14" height="3" fill="#4a6b7c" />
         </g>
 
         {/* ── EDIFICIO 3: ESCUELA con bandera argentina ── */}
         <g className="pa-ed pa-ed3">
-          <rect x="445" y="190" width="160" height="190" rx="4" fill="#f0f4f8" stroke="#1a2a3a" strokeWidth="2.5" />
-          <path d="M 430 190 L 525 140 L 620 190 Z" fill="#2d4a5e" stroke="#1a2a3a" strokeWidth="2.5" strokeLinejoin="round" />
-          <line x1="525" y1="140" x2="525" y2="112" stroke="#4a6b7c" strokeWidth="2" strokeLinecap="round" />
-          <rect x="497" y="115" width="28" height="6" fill="#75AADB" stroke="#1a2a3a" strokeWidth="0.7" />
-          <rect x="497" y="121" width="28" height="6" fill="#ffffff" stroke="#1a2a3a" strokeWidth="0.7" />
-          <rect x="497" y="127" width="28" height="6" fill="#75AADB" stroke="#1a2a3a" strokeWidth="0.7" />
-          <circle cx="511" cy="124" r="2" fill="#F6B40E" stroke="#1a2a3a" strokeWidth="0.5" />
-          <circle cx="525" cy="178" r="7" fill="#f0f4f8" stroke="#1a2a3a" strokeWidth="1.5" />
-          <line x1="525" y1="178" x2="525" y2="174" stroke="#1a2a3a" strokeWidth="1" />
-          <line x1="525" y1="178" x2="528" y2="179.5" stroke="#1a2a3a" strokeWidth="1" />
-          <rect x="508" y="320" width="34" height="60" fill="#2d4a5e" stroke="#1a2a3a" strokeWidth="2" />
-          <line x1="525" y1="320" x2="525" y2="380" stroke="#1a2a3a" strokeWidth="1" />
-          <circle cx="521" cy="352" r="1.6" fill="#2563eb" />
-          <circle cx="529" cy="352" r="1.6" fill="#2563eb" />
+          <rect x="423" y="190" width="160" height="190" rx="4" fill="#f0f4f8" stroke="#1a2a3a" strokeWidth="2.5" />
+          <path d="M 408 190  L 503 140  L 598 190  Z" fill="#2d4a5e" stroke="#1a2a3a" strokeWidth="2.5" strokeLinejoin="round" />
+          <line x1="503" y1="140" x2="503" y2="112" stroke="#4a6b7c" strokeWidth="2" strokeLinecap="round" />
+          <rect x="475" y="115" width="28" height="6" fill="#75AADB" stroke="#1a2a3a" strokeWidth="0.7" />
+          <rect x="475" y="121" width="28" height="6" fill="#ffffff" stroke="#1a2a3a" strokeWidth="0.7" />
+          <rect x="475" y="127" width="28" height="6" fill="#75AADB" stroke="#1a2a3a" strokeWidth="0.7" />
+          <circle cx="489" cy="124" r="2" fill="#F6B40E" stroke="#1a2a3a" strokeWidth="0.5" />
+          <circle cx="503" cy="178" r="7" fill="#f0f4f8" stroke="#1a2a3a" strokeWidth="1.5" />
+          <line x1="503" y1="178" x2="503" y2="174" stroke="#1a2a3a" strokeWidth="1" />
+          <line x1="503" y1="178" x2="506" y2="179.5" stroke="#1a2a3a" strokeWidth="1" />
+          <rect x="486" y="320" width="34" height="60" fill="#2d4a5e" stroke="#1a2a3a" strokeWidth="2" />
+          <line x1="503" y1="320" x2="503" y2="380" stroke="#1a2a3a" strokeWidth="1" />
+          <circle cx="499" cy="352" r="1.6" fill="#2563eb" />
+          <circle cx="507" cy="352" r="1.6" fill="#2563eb" />
           <g fill="#0ea5e9" stroke="#1a2a3a" strokeWidth="1.5" opacity="0.92">
-            <rect x="460" y="210" width="24" height="28" /><rect x="490" y="210" width="24" height="28" />
-            <rect x="538" y="210" width="24" height="28" /><rect x="568" y="210" width="24" height="28" />
-            <rect x="460" y="280" width="24" height="28" /><rect x="490" y="280" width="24" height="28" />
-            <rect x="538" y="280" width="24" height="28" /><rect x="568" y="280" width="24" height="28" />
+            <rect x="438" y="210" width="24" height="28" /><rect x="468" y="210" width="24" height="28" />
+            <rect x="516" y="210" width="24" height="28" /><rect x="546" y="210" width="24" height="28" />
+            <rect x="438" y="280" width="24" height="28" /><rect x="468" y="280" width="24" height="28" />
+            <rect x="516" y="280" width="24" height="28" /><rect x="546" y="280" width="24" height="28" />
           </g>
         </g>
 
         {/* ── EDIFICIO 4: DEPARTAMENTOS ALTOS ── */}
         <g className="pa-ed pa-ed4">
-          <rect x="635" y="160" width="125" height="220" fill="#f0f4f8" stroke="#1a2a3a" strokeWidth="2.5" />
-          <rect x="635" y="160" width="125" height="14" fill="#2d4a5e" stroke="#1a2a3a" strokeWidth="2.5" />
+          <rect x="598" y="160" width="125" height="220" fill="#f0f4f8" stroke="#1a2a3a" strokeWidth="2.5" />
+          <rect x="598" y="160" width="125" height="14" fill="#2d4a5e" stroke="#1a2a3a" strokeWidth="2.5" />
           <g fill="#0ea5e9" stroke="#1a2a3a" strokeWidth="1.5" opacity="0.92">
-            <rect x="650" y="185" width="22" height="26" /><rect x="680" y="185" width="22" height="26" /><rect x="722" y="185" width="22" height="26" />
-            <rect x="650" y="221" width="22" height="26" /><rect x="680" y="221" width="22" height="26" /><rect x="722" y="221" width="22" height="26" />
-            <rect x="650" y="257" width="22" height="26" /><rect x="680" y="257" width="22" height="26" /><rect x="722" y="257" width="22" height="26" />
-            <rect x="650" y="293" width="22" height="26" /><rect x="680" y="293" width="22" height="26" /><rect x="722" y="293" width="22" height="26" />
+            <rect x="613" y="185" width="22" height="26" /><rect x="643" y="185" width="22" height="26" /><rect x="685" y="185" width="22" height="26" />
+            <rect x="613" y="221" width="22" height="26" /><rect x="643" y="221" width="22" height="26" /><rect x="685" y="221" width="22" height="26" />
+            <rect x="613" y="257" width="22" height="26" /><rect x="643" y="257" width="22" height="26" /><rect x="685" y="257" width="22" height="26" />
+            <rect x="613" y="293" width="22" height="26" /><rect x="643" y="293" width="22" height="26" /><rect x="685" y="293" width="22" height="26" />
           </g>
-          <rect x="685" y="335" width="26" height="45" fill="#2d4a5e" stroke="#1a2a3a" strokeWidth="2" />
-          <line x1="698" y1="335" x2="698" y2="380" stroke="#1a2a3a" strokeWidth="0.8" />
+          <rect x="648" y="335" width="26" height="45" fill="#2d4a5e" stroke="#1a2a3a" strokeWidth="2" />
+          <line x1="661" y1="335" x2="661" y2="380" stroke="#1a2a3a" strokeWidth="0.8" />
         </g>
 
         {/* ── EDIFICIO 5: DEPARTAMENTOS ── */}
         <g className="pa-ed pa-ed5">
-          <rect x="785" y="200" width="135" height="180" fill="#f0f4f8" stroke="#1a2a3a" strokeWidth="2.5" />
-          <rect x="785" y="200" width="135" height="13" fill="#2d4a5e" stroke="#1a2a3a" strokeWidth="2.5" />
+          <rect x="735" y="200" width="135" height="180" fill="#f0f4f8" stroke="#1a2a3a" strokeWidth="2.5" />
+          <rect x="735" y="200" width="135" height="13" fill="#2d4a5e" stroke="#1a2a3a" strokeWidth="2.5" />
           <g fill="#0ea5e9" stroke="#1a2a3a" strokeWidth="1.5" opacity="0.92">
-            <rect x="798" y="225" width="22" height="24" /><rect x="828" y="225" width="22" height="24" /><rect x="884" y="225" width="22" height="24" />
-            <rect x="798" y="258" width="22" height="24" /><rect x="828" y="258" width="22" height="24" /><rect x="884" y="258" width="22" height="24" />
-            <rect x="798" y="291" width="22" height="24" /><rect x="828" y="291" width="22" height="24" /><rect x="884" y="291" width="22" height="24" />
+            <rect x="748" y="225" width="22" height="24" /><rect x="778" y="225" width="22" height="24" /><rect x="834" y="225" width="22" height="24" />
+            <rect x="748" y="258" width="22" height="24" /><rect x="778" y="258" width="22" height="24" /><rect x="834" y="258" width="22" height="24" />
+            <rect x="748" y="291" width="22" height="24" /><rect x="778" y="291" width="22" height="24" /><rect x="834" y="291" width="22" height="24" />
           </g>
-          <rect x="843" y="330" width="26" height="50" fill="#2d4a5e" stroke="#1a2a3a" strokeWidth="2" />
-          <line x1="856" y1="330" x2="856" y2="380" stroke="#1a2a3a" strokeWidth="0.8" />
-          <rect x="836" y="377" width="14" height="3" fill="#4a6b7c" />
+          <rect x="793" y="330" width="26" height="50" fill="#2d4a5e" stroke="#1a2a3a" strokeWidth="2" />
+          <line x1="806" y1="330" x2="806" y2="380" stroke="#1a2a3a" strokeWidth="0.8" />
+          <rect x="786" y="377" width="14" height="3" fill="#4a6b7c" />
         </g>
 
         {/* ── PERSONAS (14 siluetas) ── */}
