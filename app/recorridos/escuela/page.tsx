@@ -14,17 +14,6 @@ interface EscuelaItem {
   ruta_geojson: GeoJSON.LineString | null
 }
 
-// Categorías disponibles (matchean con el enum del modelo Baldosa).
-// Estas etiquetas las puede ajustar Diego más adelante.
-const CATEGORIAS = [
-  { id: 'artista',    label: 'Artistas' },
-  { id: 'politico',   label: 'Políticxs' },
-  { id: 'historico',  label: 'Históricxs' },
-  { id: 'deportista', label: 'Deportistas' },
-  { id: 'cultural',   label: 'Culturales' },
-  { id: 'otro',       label: 'Otros' },
-]
-
 // Defaults razonables si el usuario no toca nada
 const DEFAULT_RADIO = 500
 const RADIO_MIN = 100
@@ -42,9 +31,6 @@ export default function EscuelasIndexPage() {
 
   // ── Filtros del recorrido ──
   const [radio, setRadio] = useState<number>(DEFAULT_RADIO)
-  const [catsSeleccionadas, setCatsSeleccionadas] = useState<string[]>(
-    CATEGORIAS.map(c => c.id) // todas marcadas por default
-  )
 
   useEffect(() => {
     fetch('/api/escuelas')
@@ -81,20 +67,10 @@ export default function EscuelasIndexPage() {
     return escuelasFiltradas.slice(inicio, inicio + ESCUELAS_POR_PAGINA)
   }, [escuelasFiltradas, pagina])
 
-  const toggleCategoria = (id: string) => {
-    setCatsSeleccionadas(prev =>
-      prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
-    )
-  }
-
-  /** Arma el href hacia el mapa con los filtros como query params */
+  /** Arma el href hacia el mapa con el filtro de radio como query param */
   const hrefParaEscuela = (escuelaId: string) => {
     const params = new URLSearchParams()
     params.set('radio', String(radio))
-    if (catsSeleccionadas.length > 0 && catsSeleccionadas.length < CATEGORIAS.length) {
-      // Si están todas seleccionadas, no incluir el param (URL más limpia)
-      params.set('cats', catsSeleccionadas.join(','))
-    }
     return `/recorridos/escuela/${escuelaId}?${params.toString()}`
   }
 
@@ -268,60 +244,6 @@ export default function EscuelasIndexPage() {
                 <span>{RADIO_MAX} m</span>
               </div>
             </div>
-
-            {/* ── Checkboxes de categorías ── */}
-            <div>
-              <p style={{
-                fontSize: '0.9rem',
-                fontWeight: 600,
-                color: 'var(--color-stone)',
-                margin: '0 0 8px',
-              }}>
-                Categorías
-              </p>
-              <div style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '6px',
-              }}>
-                {CATEGORIAS.map(c => {
-                  const activo = catsSeleccionadas.includes(c.id)
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => toggleCategoria(c.id)}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: '999px',
-                        border: '1.5px solid ' + (activo ? 'var(--color-primary)' : 'rgba(74,107,124,0.25)'),
-                        background: activo ? 'rgba(37, 99, 235, 0.12)' : 'transparent',
-                        color: activo ? 'var(--color-primary)' : 'var(--color-dust)',
-                        fontSize: '0.82rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        fontFamily: 'inherit',
-                        letterSpacing: '0.01em',
-                        textTransform: 'none',
-                        transition: 'all 0.15s',
-                      }}
-                    >
-                      {activo && '✓ '}{c.label}
-                    </button>
-                  )
-                })}
-              </div>
-              {catsSeleccionadas.length === 0 && (
-                <p style={{
-                  fontSize: '0.78rem',
-                  color: '#c0392b',
-                  marginTop: '8px',
-                  marginBottom: 0,
-                }}>
-                  Si no elegís categorías, no se va a mostrar ninguna baldosa.
-                </p>
-              )}
-            </div>
           </div>
 
           {/* ── Buscador + Listado ── */}
@@ -441,7 +363,7 @@ export default function EscuelasIndexPage() {
                       alignItems: 'center',
                     }}>
                       <span>
-                        Radio {radio} m · {catsSeleccionadas.length} categoría{catsSeleccionadas.length !== 1 ? 's' : ''}
+                        Radio {radio} m
                       </span>
                       <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
                         Ver en el mapa →

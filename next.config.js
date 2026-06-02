@@ -9,6 +9,9 @@ const nextConfig = {
       },
     ],
   },
+  experimental: {
+    serverComponentsExternalPackages: ['pdfkit'],
+  },
   webpack: (config) => {
     config.module.rules.push({
       test: /\.html$/,

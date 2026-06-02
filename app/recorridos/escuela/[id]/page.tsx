@@ -27,9 +27,8 @@ interface DatosRecorrido {
 
 const BANNER_HEIGHT = 58 // px — banner superior (sin contar safe-area-inset-top)
 
-// Defaults razonables si la URL no trae filtros
+// Default razonable si la URL no trae filtros
 const DEFAULT_RADIO = 500
-const CATEGORIAS_TODAS = ['artista','politico','historico','deportista','cultural','otro']
 
 export default function RecorridoEscuelaPage() {
   const { id } = useParams<{ id: string }>()
@@ -37,15 +36,47 @@ export default function RecorridoEscuelaPage() {
   const [recorrido, setRecorrido] = useState<DatosRecorrido | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [descargandoPDF, setDescargandoPDF] = useState(false)
+  const [errorPDF, setErrorPDF] = useState<string | null>(null)
 
-  // Lectura de filtros desde URL (con defaults razonables)
+  // Lectura del filtro de radio desde URL (con default razonable)
   const radioParam = Number(searchParams.get('radio'))
   const filtroRadio = Number.isFinite(radioParam) && radioParam > 0 ? radioParam : DEFAULT_RADIO
 
-  const catsParam = searchParams.get('cats')
-  const filtroCategorias = catsParam
-    ? catsParam.split(',').map(s => s.trim()).filter(Boolean)
-    : CATEGORIAS_TODAS
+  /** Descarga el PDF del recorrido. Maneja loading + errores. */
+  const descargarPDF = async () => {
+    if (descargandoPDF || !id) return
+    setDescargandoPDF(true)
+    setErrorPDF(null)
+    try {
+      const res = await fetch(`/api/escuelas/${id}/pdf?radio=${filtroRadio}`)
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data?.error || 'No se pudo generar el PDF')
+      }
+      const blob = await res.blob()
+      // Filename desde el header Content-Disposition si está
+      const cd = res.headers.get('content-disposition') || ''
+      const match = cd.match(/filename="([^"]+)"/)
+      const nombre = match?.[1] || `recorrido-${id}.pdf`
+      // Descarga
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = nombre
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (e: any) {
+      setErrorPDF(e.message || 'Error al descargar')
+      // Auto-ocultar el error tras unos segundos
+      setTimeout(() => setErrorPDF(null), 5000)
+    } finally {
+      setDescargandoPDF(false)
+    }
+  }
+
 
   useEffect(() => {
     if (!id) return
@@ -102,10 +133,8 @@ export default function RecorridoEscuelaPage() {
     // para que solo aplique al mapa
     <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', background: '#f0f4f8' }}>
 
-      {/* Banner superior — info de la escuela + botón "Cambiar filtros" */}
-      <a
-        href="/recorridos/escuela"
-        aria-label="Volver al listado y cambiar filtros"
+      {/* Banner superior — info de la escuela + botones de acción */}
+      <div
         style={{
           position: 'absolute',
           top: 0, left: 0, right: 0,
@@ -116,7 +145,6 @@ export default function RecorridoEscuelaPage() {
           backdropFilter: 'blur(8px)',
           WebkitBackdropFilter: 'blur(8px)',
           color: '#fff',
-          textDecoration: 'none',
           boxShadow: '0 2px 14px rgba(0,0,0,0.3)',
           display: 'flex',
         }}
@@ -127,11 +155,20 @@ export default function RecorridoEscuelaPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '10px',
+          gap: '8px',
           minWidth: 0,
         }}>
-          {/* Info de la escuela */}
-          <div style={{ minWidth: 0, flex: 1 }}>
+          {/* Info de la escuela — clickeable, vuelve al listado */}
+          <a
+            href="/recorridos/escuela"
+            aria-label="Volver al listado y cambiar filtros"
+            style={{
+              minWidth: 0,
+              flex: 1,
+              color: '#fff',
+              textDecoration: 'none',
+            }}
+          >
             <div style={{
               fontSize: '0.7rem',
               opacity: 0.65,
@@ -140,7 +177,7 @@ export default function RecorridoEscuelaPage() {
               lineHeight: 1.1,
               marginBottom: '2px',
             }}>
-              {filtroRadio} m · {filtroCategorias.length} categoría{filtroCategorias.length !== 1 ? 's' : ''}
+              {filtroRadio} m de radio
             </div>
             <div style={{
               fontSize: '0.95rem',
@@ -152,10 +189,61 @@ export default function RecorridoEscuelaPage() {
             }}>
               {recorrido.nombre}
             </div>
-          </div>
+          </a>
+
+          {/* Botón "Descargar PDF" */}
+          <button
+            type="button"
+            onClick={descargarPDF}
+            disabled={descargandoPDF}
+            aria-label="Descargar el recorrido en PDF"
+            title={errorPDF ?? 'Descargar PDF del recorrido'}
+            style={{
+              flexShrink: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '7px 12px',
+              background: descargandoPDF ? 'rgba(255,255,255,0.08)' : 'rgba(37,99,235,0.4)',
+              border: '1px solid ' + (descargandoPDF ? 'rgba(255,255,255,0.15)' : 'rgba(37,99,235,0.65)'),
+              borderRadius: '999px',
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              color: '#fff',
+              whiteSpace: 'nowrap',
+              cursor: descargandoPDF ? 'wait' : 'pointer',
+              fontFamily: 'inherit',
+              transition: 'background 0.15s',
+            }}
+          >
+            {descargandoPDF ? (
+              <>
+                <span style={{
+                  display: 'inline-block',
+                  width: '12px', height: '12px',
+                  border: '2px solid rgba(255,255,255,0.4)',
+                  borderTopColor: '#fff',
+                  borderRadius: '50%',
+                  animation: 'ra-spin 0.8s linear infinite',
+                }} />
+                Generando…
+              </>
+            ) : (
+              <>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                PDF
+              </>
+            )}
+          </button>
 
           {/* Botón "Cambiar filtros" */}
-          <div
+          <a
+            href="/recorridos/escuela"
+            aria-label="Volver al listado y cambiar filtros"
             style={{
               flexShrink: 0,
               display: 'inline-flex',
@@ -169,6 +257,7 @@ export default function RecorridoEscuelaPage() {
               fontWeight: 600,
               color: '#fff',
               whiteSpace: 'nowrap',
+              textDecoration: 'none',
             }}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
@@ -179,10 +268,31 @@ export default function RecorridoEscuelaPage() {
               <circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/>
               <circle cx="7" cy="18" r="2" fill="currentColor" stroke="none"/>
             </svg>
-            Cambiar filtros
-          </div>
+            Filtros
+          </a>
         </div>
-      </a>
+        <style dangerouslySetInnerHTML={{ __html: `@keyframes ra-spin { to { transform: rotate(360deg); } }` }} />
+      </div>
+
+      {/* Toast de error de PDF (si lo hay) */}
+      {errorPDF && (
+        <div style={{
+          position: 'absolute',
+          top: `calc(${BANNER_HEIGHT}px + env(safe-area-inset-top, 0px) + 12px)`,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1001,
+          background: '#c0392b',
+          color: '#fff',
+          padding: '8px 14px',
+          borderRadius: '8px',
+          fontSize: '0.82rem',
+          fontWeight: 600,
+          boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
+        }}>
+          {errorPDF}
+        </div>
+      )}
 
       {/* Mapa — debajo del banner, ocupa el resto de la pantalla */}
       <div style={{
@@ -197,7 +307,6 @@ export default function RecorridoEscuelaPage() {
           initialLocation={initialLocation}
           recorrido={recorrido}
           filtroRadio={filtroRadio}
-          filtroCategorias={filtroCategorias}
         />
       </div>
     </div>

@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import PuebloAnimado from '@/components/PuebloAnimado'
 
 // Generar posiciones aleatorias para venecitas en el perímetro
 function generarVenecitas(cantidad: number) {
@@ -706,52 +707,17 @@ export default function Home() {
             </a>
           </div>
 
-          {/* Contenedor flex: Contador + Bloque inspiracional - ANTES del grid */}
+          {/* Hero animado del pueblo — reemplaza al Bloque Contador */}
           <div style={{
             opacity: 0,
             animation: 'slideUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) 4.3s forwards',
-            marginTop: 'var(--space-xl)',
-            marginBottom: 'var(--space-lg)',
-            display: 'flex',
-            gap: 'var(--space-lg)',
-            justifyContent: 'center',
-            alignItems: 'center',
-            flexWrap: 'wrap',
             width: '100%',
             maxWidth: '1000px',
-            margin: 'var(--space-lg) auto var(--space-lg)',
+            margin: 'var(--space-lg) auto',
             padding: '0 var(--space-md)',
           }}>
-            {/* Bloque Contador */}
-            <div style={{
-              flex: '1 1 280px',
-              minWidth: '260px',
-              padding: 'var(--space-lg) var(--space-lg)',
-              background: 'rgba(37, 99, 235, 0.08)',
-              border: '1px solid rgba(37, 99, 235, 0.2)',
-              borderRadius: '14px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center',
-              textAlign: 'center',
-            }}>
-              <p style={{
-                fontSize: 'clamp(1.4rem, 3vw, 1.3rem)',
-                fontWeight: 700,
-                color: 'var(--color-stone)',
-                letterSpacing: '0.02em',
-                margin: 0,
-                lineHeight: 1.3,
-              }}>
-                Más de 500 baldosas y espacios de memoria.<br /><br />
-                Saliendo a la calle<br />
-                Recorremos memoria
-
-              </p>
-            </div>
+          <PuebloAnimado />
           </div>
-
           {/* Grid de imágenes */}
           <ImageGrid />
         </div>
