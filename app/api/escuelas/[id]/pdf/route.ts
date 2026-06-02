@@ -514,8 +514,8 @@ export async function GET(
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase().slice(0, 60)}.pdf`
 
-    return new NextResponse(pdfBuf, {
-      status: 200,
+    return new NextResponse(new Uint8Array(pdfBuf), {
+        status: 200,
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${filename}"`,
