@@ -302,23 +302,59 @@ export default function MapView({
     }
   }
 
-  const fetchRutaOSRM=async(origen:{lat:number;lng:number},dest:{lat:number;lng:number})=>{
+  /**
+   * Calcula la ruta peatonal entre dos puntos.
+   * Intenta primero OpenRouteService (foot-walking); si falla o no hay key,
+   * cae automáticamente a OSRM público. Si ambos fallan, traza línea recta.
+   */
+  const fetchRuta=async(origen:{lat:number;lng:number},dest:{lat:number;lng:number})=>{
     setLoadingRuta(true)
+
+    // ── 1. OpenRouteService ──────────────────────────────────────────────────
+    const orsKey = process.env.NEXT_PUBLIC_ORS_API_KEY
+    if (orsKey) {
+      try {
+        const orsUrl = `https://api.openrouteservice.org/v2/directions/foot-walking?api_key=${orsKey}&start=${origen.lng},${origen.lat}&end=${dest.lng},${dest.lat}`
+        const res = await fetch(orsUrl)
+        if (res.status === 429 || res.status === 403) {
+          // Límite diario agotado o key inválida → caer a OSRM
+          console.warn(`ORS respondió ${res.status}, usando OSRM de respaldo`)
+        } else if (res.ok) {
+          const data = await res.json()
+          const coords = data.features?.[0]?.geometry?.coordinates as [number,number][]|undefined
+          if (coords && coords.length > 0) {
+            setRuta(coords.map(([lng, lat]) => [lat, lng]))
+            setLoadingRuta(false)
+            return
+          }
+        }
+      } catch(e) {
+        console.warn('ORS falló, usando OSRM de respaldo:', e)
+      }
+    }
+
+    // ── 2. OSRM público (respaldo) ───────────────────────────────────────────
     try {
-      const url=`https://router.project-osrm.org/route/v1/foot/${origen.lng},${origen.lat};${dest.lng},${dest.lat}?overview=full&geometries=geojson`
-      const res=await fetch(url)
+      const osrmUrl=`https://router.project-osrm.org/route/v1/foot/${origen.lng},${origen.lat};${dest.lng},${dest.lat}?overview=full&geometries=geojson`
+      const res=await fetch(osrmUrl)
       const data=await res.json()
       if(data.routes&&data.routes[0]){
         const coords:[number,number][]=data.routes[0].geometry.coordinates.map(([lng,lat]:[number,number])=>[lat,lng])
         setRuta(coords)
+        setLoadingRuta(false)
+        return
       }
     } catch(e) {
-      console.error('Error OSRM:',e)
-      if(userLocation) setRuta([[userLocation.lat,userLocation.lng],[dest.lat,dest.lng]])
-    } finally {
-      setLoadingRuta(false)
+      console.warn('OSRM también falló:', e)
     }
+
+    // ── 3. Línea recta como último recurso ───────────────────────────────────
+    if(userLocation) setRuta([[userLocation.lat,userLocation.lng],[dest.lat,dest.lng]])
+    setLoadingRuta(false)
   }
+
+  /** @deprecated usar fetchRuta — se mantiene como alias para compatibilidad */
+  const fetchRutaOSRM = fetchRuta
 
   const verDetalle=async(id:string,datosBasicos:Pin|BaldosaCercana)=>{
     setDetalle(datosBasicos)
@@ -374,7 +410,7 @@ export default function MapView({
 
 
 
-  // ruta viene de OSRM (se actualiza en iniciarRecorrido)
+  // ruta viene de fetchRuta (ORS con fallback OSRM — se actualiza en iniciarRecorrido)
 
   // Medir alto real del banner de recorrido para posicionar botones debajo
   const bannerRef = useRef<HTMLDivElement>(null)
