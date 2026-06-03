@@ -76,7 +76,7 @@ function calcularZoom(centerLat: number, radio: number, width: number, height: n
   // En Web Mercator a zoom z, un píxel cubre:
   //   metros/px = (cos(lat) * 2πR) / (256 * 2^z)
   // Despejando z para que (radio * 2 * margin) entre en min(width, height) píxeles:
-  const margin = 1.05
+  const margin = 1.4
   const earthR = 6378137 // m
   const cosLat = Math.cos((centerLat * Math.PI) / 180)
   const dimensionMenor = Math.min(width, height)
@@ -165,7 +165,7 @@ function calcularPosicionesYRadioSVG(
 // ─── Iconos de marcadores (cargados una vez, cacheados) ───────────────────
 
 const ICON_SIZE_BALDOSA = 32
-const ICON_SIZE_ESCUELA = 40
+const ICON_SIZE_ESCUELA = 80
 
 let cacheIconoBaldosa: Buffer | null = null
 let cacheIconoEscuela: Buffer | null = null

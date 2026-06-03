@@ -319,7 +319,7 @@ export async function GET(
     // Dimensiones
     const LOGO_SIZE = 90
     const mapaW = Math.round(CONTENT_W * 0.78)
-    const mapaH = Math.round(mapaW * 0.65)
+    const mapaH = Math.round(mapaW * 0.55)
     const mapaX = MARGIN + Math.round((CONTENT_W - mapaW) / 2)
 
     let yCursor = MARGIN
@@ -358,10 +358,10 @@ export async function GET(
       })
     yCursor = doc.y + 6
 
-    // Filtros en otro párrafo abajo
+    // Cantidad de baldosas (sin mencionar el radio aplicado)
     doc.fontSize(12).fillColor(C_CONCRETE).font('Helvetica')
       .text(
-        `Radio de ${radio} metros · ${baldosas.length} baldosa${baldosas.length !== 1 ? 's' : ''}`,
+        `${baldosas.length} baldosa${baldosas.length !== 1 ? 's' : ''}`,
         MARGIN, yCursor, { width: CONTENT_W, align: 'center' },
       )
     yCursor = doc.y + 22
@@ -432,15 +432,41 @@ export async function GET(
     for (let i = 0; i < baldosasConFotos.length; i++) {
       const b = baldosasConFotos[i]
 
-      // Estimar altura del bloque para decidir si necesita salto de página.
-      // No hay que ser exacto: es una cota para evitar que un bloque corte feo.
+      // Calcular altura REAL del bloque usando heightOfString (precisa, no
+      // pesimista). Esto evita saltos de página innecesarios.
       const tieneFotos = b.fotosProcesadas.length > 0
+      const nFotos = b.fotosProcesadas.length
+      const altoFotos = tieneFotos
+        ? (nFotos === 1 ? 200 : nFotos === 2 ? 200 : 135) + 10
+        : 0
+
+      // Título (Helvetica-Bold 13)
+      doc.font('Helvetica-Bold').fontSize(13)
+      const altoTitulo = doc.heightOfString(b.nombre || 'Sin nombre', { width: CONTENT_W })
+
+      // Meta (Helvetica 8.5)
+      const metaPreview = [b.direccion, b.barrio].filter(Boolean).join(' · ')
+      doc.font('Helvetica').fontSize(8.5)
+      const altoMeta = metaPreview ? doc.heightOfString(metaPreview, { width: CONTENT_W }) + 3 : 0
+
+      // Descripción (Helvetica 9.5)
+      doc.font('Helvetica').fontSize(9.5)
+      const altoDesc = b.descripcion
+        ? doc.heightOfString(truncar(b.descripcion, MAX_DESC_CHARS), { width: CONTENT_W, align: 'justify' }) + 2
+        : 0
+
+      // InfoExtendida (mismo tamaño y fuente)
+      const altoInfo = b.infoExtendida
+        ? doc.heightOfString(truncar(b.infoExtendida, MAX_INFO_EXT_CHARS), { width: CONTENT_W, align: 'justify' }) + 2
+        : 0
+
       const altoEstim =
-        20 +                              // título + meta
-        (b.descripcion ? 80 : 0) +
-        (b.infoExtendida ? 60 : 0) +
-        (tieneFotos ? 145 : 0) +
-        50                                // separador con más aire ahora
+        altoTitulo + 1 +
+        altoMeta +
+        altoDesc +
+        altoInfo +
+        altoFotos +
+        36                                // separador con aire entre baldosas
 
       // Si no entra en lo que queda de la página, salto.
       // Excepción: si es la primera baldosa de esta página y de todos modos no entra,
@@ -471,11 +497,11 @@ export async function GET(
 
       // Numerito + nombre principal
       doc.font('Helvetica-Bold').fontSize(13).fillColor(C_STONE)
-        .text(`${i + 1}. ${b.nombre || 'Sin nombre'}`, MARGIN, y, { width: CONTENT_W })
+        .text(b.nombre || 'Sin nombre', MARGIN, y, { width: CONTENT_W })
       y = doc.y + 1
 
       // Código + dirección/barrio
-      const metaB = [b.codigo, b.direccion, b.barrio].filter(Boolean).join(' · ')
+      const metaB = [b.direccion, b.barrio].filter(Boolean).join(' · ')
       if (metaB) {
         doc.font('Helvetica').fontSize(8.5).fillColor(C_DUST)
           .text(metaB, MARGIN, y, { width: CONTENT_W })
@@ -504,13 +530,19 @@ export async function GET(
       if (b.fotosProcesadas.length > 0) {
         const n = b.fotosProcesadas.length
         const gap = 6          // gap chico, queda mejor cuando las fotos son uniformes
-        const fW = (CONTENT_W - gap * (n - 1)) / n
-        // Alto fijo a 3/4 del ancho (proporción 4:3 idéntica al crop del preprocess).
-        // Tope de 132pt (+20% sobre los 110 anteriores).
-        const fH = Math.min((fW * 3) / 4, 132)
+
+        // Cuando hay 1 sola foto, limitar al 50% del ancho para que no quede
+        // estirada (manteniendo proporción 4:3 sería un rectángulo gigante).
+        // Cuando hay 2 o 3, ocupan todo el ancho disponible repartido en partes iguales.
+        const anchoUsable = n === 1 ? CONTENT_W * 0.5 : CONTENT_W
+        const fW = (anchoUsable - gap * (n - 1)) / n
+        // Alto a 3/4 del ancho (proporción 4:3 idéntica al crop del preprocess).
+        const fH = (fW * 3) / 4
+        // Si hay 1 sola, centrarla horizontalmente; si hay más, alineadas a la izquierda
+        const offsetX = n === 1 ? (CONTENT_W - fW) / 2 : 0
         const fotosY = y + 4
         for (let j = 0; j < n; j++) {
-          const fx = MARGIN + j * (fW + gap)
+          const fx = MARGIN + offsetX + j * (fW + gap)
           try {
             // La foto entra exactamente en su caja porque comparten proporción
             doc.image(b.fotosProcesadas[j], fx, fotosY, {
