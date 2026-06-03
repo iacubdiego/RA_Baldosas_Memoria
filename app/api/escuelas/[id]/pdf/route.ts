@@ -122,30 +122,98 @@ async function procesarFoto(src: string): Promise<Buffer | null> {
   }
 }
 
-// ─── Render: footer en cada página ────────────────────────────────────────
-function renderFooter(doc: PDFKit.PDFDocument) {
-  // Guardar estado del documento
-  const savedY = doc.y
-  const savedBottomMargin = (doc.page as any).margins.bottom
+// ─── Render: footer final (solo en la última página, estilo web) ──────────
+/**
+ * Footer al estilo de la web: fondo oscuro (--color-stone) con logo +
+ * nombre del proyecto, lista de organizaciones de memoria, y créditos a
+ * gcoop y malefico3d.
+ *
+ * El footer ocupa aproximadamente 200pt de alto. Si no entra en la página
+ * actual, el caller debe agregar una página nueva antes de llamarlo.
+ *
+ * @param y donde arranca verticalmente el footer
+ */
+function renderFooterFinal(doc: PDFKit.PDFDocument, logo: Buffer | null, y: number) {
+  const FOOTER_H = 200
+  const PAD_X = 32
+  const PAD_TOP = 22
 
-  // Bajar el bottom margin a 0 temporalmente, así pdfkit no triggerea
-  // un page break automático cuando escribimos el footer (que está más
-  // abajo que el margen original).
-  ;(doc.page as any).margins.bottom = 0
+  // Banda oscura de fondo, full-width (de borde a borde de la hoja)
+  doc.save()
+  doc.rect(0, y, PAGE_W, FOOTER_H).fill(C_STONE)
+  // Línea azul superior del footer (como en la web)
+  doc.rect(0, y, PAGE_W, 2).fill(C_PRIMARY)
+  doc.restore()
 
-  const footerY = PAGE_H - 50
+  // ── Columna izquierda: logo + nombre del proyecto ──
+  // El ancho total de esta columna es 175pt (de PAD_X=32 hasta X=207).
+  // La columna central empieza en X=220, dejando 13pt de aire.
+  let yCol = y + PAD_TOP
+  if (logo) {
+    doc.image(logo, PAD_X, yCol, { width: 44, height: 44 })
+  }
+  // "Recorremos Memoria" — ancho acotado para que no se monte sobre la columna central
+  doc.font('Helvetica-Bold').fontSize(12).fillColor(C_PARCHMENT)
+    .text('Recorremos Memoria', PAD_X + (logo ? 52 : 0), yCol + 8, {
+      width: 120, lineBreak: true,
+    })
 
-  doc.fontSize(8).fillColor(C_DUST)
-  doc.text('Recorremos Memoria · recorremosmemoria.com.ar', MARGIN, footerY, {
-    width: CONTENT_W, lineBreak: false,
+  // Web (debajo del nombre)
+  doc.font('Helvetica').fontSize(7.5).fillColor('#a8b3bd')
+    .text('recorremosmemoria.com.ar', PAD_X + (logo ? 52 : 0), yCol + 36, {
+      width: 120, lineBreak: false,
+    })
+
+  // ── Columna central: organizaciones ──
+  const colCentralX = 220
+  const colCentralW = 200
+  const yCentral = y + PAD_TOP
+
+  doc.font('Helvetica-Bold').fontSize(7).fillColor('#d4d8dc')
+    .text('UN APORTE DE GCOOP A LA CAMPAÑA', colCentralX, yCentral, {
+      width: colCentralW, lineBreak: false, characterSpacing: 0.8,
+    })
+  doc.text('PARA ABRAZAR LA MEMORIA DE:', colCentralX, yCentral + 10, {
+    width: colCentralW, lineBreak: false, characterSpacing: 0.8,
   })
-  doc.text('Un proyecto de gcoop', MARGIN, footerY + 11, {
-    width: CONTENT_W, lineBreak: false,
-  })
 
-  // Restaurar
-  ;(doc.page as any).margins.bottom = savedBottomMargin
-  doc.y = savedY
+  doc.font('Helvetica').fontSize(8).fillColor('#a8b3bd')
+  const organizaciones = [
+    'Madres de Plaza de Mayo Línea Fundadora',
+    'Abuelas de Plaza de Mayo',
+    'H.I.J.O.S. Capital',
+    'Familiares de Desaparecidos',
+    'CELS',
+  ]
+  let yOrg = yCentral + 28
+  for (const org of organizaciones) {
+    doc.text(org, colCentralX, yOrg, { width: colCentralW, lineBreak: false })
+    yOrg += 13
+  }
+
+  // ── Columna derecha: créditos ──
+  const colDerX = PAGE_W - PAD_X - 130
+  const yDer = y + PAD_TOP + 20
+
+  // gcoop
+  doc.font('Helvetica-Bold').fontSize(16).fillColor('#bcc4cc')
+    .text('gcoop', colDerX, yDer, { width: 130, lineBreak: false, align: 'right' })
+
+  // Línea separadora
+  doc.font('Helvetica').fontSize(13).fillColor('#5a6770')
+    .text('+', colDerX, yDer + 22, { width: 130, lineBreak: false, align: 'right' })
+
+  // "Animación por"
+  doc.font('Helvetica').fontSize(7).fillColor('#7a8590')
+    .text('ANIMACIÓN POR', colDerX, yDer + 44, {
+      width: 130, lineBreak: false, align: 'right', characterSpacing: 1,
+    })
+
+  // malefico3d
+  doc.font('Helvetica-Bold').fontSize(16).fillColor('#bcc4cc')
+    .text('malefico3d', colDerX, yDer + 54, {
+      width: 130, lineBreak: false, align: 'right',
+    })
 }
 
 // ─── Endpoint ─────────────────────────────────────────────────────────────
@@ -165,7 +233,8 @@ export async function GET(
     }
     const [eLng, eLat] = escuela.ubicacion?.coordinates ?? [escuela.lng, escuela.lat]
 
-    // Baldosas dentro del radio (consulta geoespacial)
+    // Baldosas dentro del radio (consulta geoespacial — igual que las que el
+    // mapa carga desde /api/baldosas/pins y filtra por radio del lado del cliente).
     const baldosasCrudas: any[] = await Baldosa.find({
       activo: true,
       ubicacion: {
@@ -249,8 +318,8 @@ export async function GET(
 
     // Dimensiones
     const LOGO_SIZE = 90
-    const mapaW = Math.round(CONTENT_W * 0.75)
-    const mapaH = Math.round(mapaW * 0.52)
+    const mapaW = Math.round(CONTENT_W * 0.78)
+    const mapaH = Math.round(mapaW * 0.65)
     const mapaX = MARGIN + Math.round((CONTENT_W - mapaW) / 2)
 
     let yCursor = MARGIN
@@ -300,50 +369,17 @@ export async function GET(
     // Mapa estático con marco
     doc.image(mapaBuf, mapaX, yCursor, { width: mapaW, height: mapaH })
     doc.lineWidth(1.2).strokeColor(C_DUST).rect(mapaX, yCursor, mapaW, mapaH).stroke()
-    yCursor += mapaH + 44   // más aire entre mapa e índice
+    yCursor += mapaH + 28
 
     // Aviso si se truncó
     if (truncado) {
-      doc.fontSize(8).fillColor('#c0392b')
+      doc.fontSize(9).fillColor('#c0392b')
         .text(
           `Se incluyen las ${MAX_BALDOSAS} baldosas más cercanas. Hay ${totalEnRadio} baldosas en el radio total.`,
           MARGIN, yCursor, { width: CONTENT_W, align: 'center' },
         )
-      yCursor = doc.y + 10
+      yCursor = doc.y + 18
     }
-
-    // Índice de baldosas (dos columnas con altura dinámica de fila) — centrado
-    doc.fontSize(12).fillColor(C_STONE).font('Helvetica-Bold')
-      .text('Baldosas incluidas', MARGIN, yCursor, { width: CONTENT_W, align: 'center' })
-    yCursor = doc.y + 10
-
-    // Para evitar que líneas largas se superpongan: dibujamos en serpentina
-    // (izquierda → derecha → izquierda...) y trackeamos la Y máxima de cada fila.
-    const colW = (CONTENT_W - 20) / 2
-    const colX = [MARGIN, MARGIN + colW + 20]
-    doc.font('Helvetica').fontSize(8.5).fillColor(C_CONCRETE)
-
-    let yCol = [yCursor, yCursor]    // cursor vertical por columna
-    const limiteIndiceY = PAGE_H - 200 // dejamos espacio para QR + footer
-
-    for (let i = 0; i < baldosas.length; i++) {
-      const col = i % 2
-      const b = baldosasConFotos[i]
-      const label = `${i + 1}. ${b.nombre}${b.direccion ? ' — ' + b.direccion : ''}`
-
-      // Si no entra en ninguna columna, paramos
-      if (yCol[col] > limiteIndiceY) continue
-
-      const beforeY = yCol[col]
-      doc.text(truncar(label, 90), colX[col], beforeY, {
-        width: colW,
-        lineGap: 1,
-      })
-      yCol[col] = doc.y + 3
-    }
-
-    // Y final del índice = la mayor de las dos columnas
-    yCursor = Math.max(yCol[0], yCol[1]) + 18
 
     // QR centrado al pie de la portada con texto explicativo
     if (qrBuf) {
@@ -363,8 +399,7 @@ export async function GET(
         )
     }
 
-    // Footer página 1 (sin QR — el QR ahora es parte del cuerpo de la portada)
-    renderFooter(doc)
+    // (Footer de la web se renderiza solo al final del documento — ver más abajo)
 
     // ═══ BALDOSAS EN FLUJO CONTINUO ════════════════════════════════════
     // Nueva página solo para empezar el listado (después la portada queda libre)
@@ -391,8 +426,8 @@ export async function GET(
 
     let y = headerBottomY + 14
 
-    /** Reserva para el footer; debajo de esto no se escribe */
-    const FOOTER_RESERVA = 60
+    /** Reserva inferior — solo el margen normal de la página */
+    const FOOTER_RESERVA = MARGIN
 
     for (let i = 0; i < baldosasConFotos.length; i++) {
       const b = baldosasConFotos[i]
@@ -414,7 +449,6 @@ export async function GET(
       const yaEscribiAlgoEnEstaPagina = y > headerBottomY + 14 + 5
 
       if (yaEscribiAlgoEnEstaPagina && altoEstim > espacioRestante) {
-        renderFooter(doc)
         doc.addPage()
         // Header chico en cada página
         if (logo) doc.image(logo, MARGIN, MARGIN, { width: 32 })
@@ -504,18 +538,32 @@ export async function GET(
       }
     }
 
-    // Footer de la última página
-    renderFooter(doc)
+    // ═══ FOOTER FINAL (solo en la última página, estilo web) ═══════════
+    const FOOTER_FINAL_H = 200
+    // Si el footer no entra en lo que queda de la última página, agregar página nueva.
+    // Necesitamos al menos FOOTER_FINAL_H pt para el footer + un margen.
+    const yDesponible = PAGE_H - y
+    if (yDesponible < FOOTER_FINAL_H + 20) {
+      doc.addPage()
+    }
+    // Dibujar el footer al pie de la página actual (sea esta o la recién agregada)
+    renderFooterFinal(doc, logo, PAGE_H - FOOTER_FINAL_H)
 
     doc.end()
     const pdfBuf = await donePromise
 
+    // Timestamp YYYY-MM-DD_HHmm para evitar colisiones al descargar
+    // varios PDFs de la misma escuela en distintos momentos
+    const now = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`
+
     const filename = `recorrido-${(escuela.nombre || 'escuela')
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase().slice(0, 60)}.pdf`
+      .replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase().slice(0, 50)}-${timestamp}.pdf`
 
     return new NextResponse(new Uint8Array(pdfBuf), {
-        status: 200,
+      status: 200,
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${filename}"`,

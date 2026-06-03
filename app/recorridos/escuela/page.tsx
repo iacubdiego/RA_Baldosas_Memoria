@@ -357,14 +357,9 @@ export default function EscuelasIndexPage() {
                       fontSize: '0.8rem',
                       color: 'var(--color-dust)',
                       display: 'flex',
-                      justifyContent: 'space-between',
-                      gap: '8px',
-                      flexWrap: 'wrap',
+                      justifyContent: 'flex-end',
                       alignItems: 'center',
                     }}>
-                      <span>
-                        Radio {radio} m
-                      </span>
                       <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
                         Ver en el mapa →
                       </span>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useSearchParams } from 'next/navigation'
+import { useParams, useSearchParams, useRouter, usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
 
 // MapView se importa dinámico igual que en /mapa para evitar SSR de Leaflet
@@ -29,19 +29,46 @@ const BANNER_HEIGHT = 58 // px — banner superior (sin contar safe-area-inset-t
 
 // Default razonable si la URL no trae filtros
 const DEFAULT_RADIO = 500
+// Rango del slider del panel de filtros — coincide con el del listado
+const RADIO_MIN = 100
+const RADIO_MAX = 1500
+const RADIO_STEP = 50
 
 export default function RecorridoEscuelaPage() {
   const { id } = useParams<{ id: string }>()
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
   const [recorrido, setRecorrido] = useState<DatosRecorrido | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [descargandoPDF, setDescargandoPDF] = useState(false)
   const [errorPDF, setErrorPDF] = useState<string | null>(null)
+  // Panel flotante de filtros
+  const [mostrarPanelFiltros, setMostrarPanelFiltros] = useState(false)
 
   // Lectura del filtro de radio desde URL (con default razonable)
   const radioParam = Number(searchParams.get('radio'))
   const filtroRadio = Number.isFinite(radioParam) && radioParam > 0 ? radioParam : DEFAULT_RADIO
+
+  // Estado local del slider dentro del panel (se aplica al cerrar / soltar)
+  const [radioLocal, setRadioLocal] = useState(filtroRadio)
+
+  // Si la URL cambia (ej. atrás en el browser), sincronizar el slider local
+  useEffect(() => {
+    setRadioLocal(filtroRadio)
+  }, [filtroRadio])
+
+  /**
+   * Aplica el nuevo radio: actualiza la URL con ?radio=X, lo cual hace que
+   * filtroRadio cambie y MapView se re-renderice con el nuevo prop.
+   * Usa router.replace para no llenar el historial con cada cambio.
+   */
+  const aplicarRadio = (nuevoRadio: number) => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('radio', String(nuevoRadio))
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+  }
 
   /** Descarga el PDF del recorrido. Maneja loading + errores. */
   const descargarPDF = async () => {
@@ -158,10 +185,10 @@ export default function RecorridoEscuelaPage() {
           gap: '8px',
           minWidth: 0,
         }}>
-          {/* Info de la escuela — clickeable, vuelve al listado */}
+          {/* Info de la escuela — clickeable, vuelve al listado de escuelas */}
           <a
             href="/recorridos/escuela"
-            aria-label="Volver al listado y cambiar filtros"
+            aria-label="Volver al listado de escuelas"
             style={{
               minWidth: 0,
               flex: 1,
@@ -240,10 +267,11 @@ export default function RecorridoEscuelaPage() {
             )}
           </button>
 
-          {/* Botón "Cambiar filtros" */}
-          <a
-            href="/recorridos/escuela"
-            aria-label="Volver al listado y cambiar filtros"
+          {/* Botón "Filtros" — abre panel flotante para cambiar el radio sin salir del mapa */}
+          <button
+            type="button"
+            onClick={() => setMostrarPanelFiltros(true)}
+            aria-label="Cambiar el radio del filtro"
             style={{
               flexShrink: 0,
               display: 'inline-flex',
@@ -257,7 +285,8 @@ export default function RecorridoEscuelaPage() {
               fontWeight: 600,
               color: '#fff',
               whiteSpace: 'nowrap',
-              textDecoration: 'none',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
             }}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
@@ -269,7 +298,7 @@ export default function RecorridoEscuelaPage() {
               <circle cx="7" cy="18" r="2" fill="currentColor" stroke="none"/>
             </svg>
             Filtros
-          </a>
+          </button>
         </div>
         <style dangerouslySetInnerHTML={{ __html: `@keyframes ra-spin { to { transform: rotate(360deg); } }` }} />
       </div>
@@ -292,6 +321,162 @@ export default function RecorridoEscuelaPage() {
         }}>
           {errorPDF}
         </div>
+      )}
+
+      {/* Panel flotante de filtros — slider del radio sin salir del mapa */}
+      {mostrarPanelFiltros && (
+        <>
+          {/* Overlay sutil sobre el mapa para que el panel resalte */}
+          <div
+            onClick={() => setMostrarPanelFiltros(false)}
+            style={{
+              position: 'absolute',
+              top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(26, 42, 58, 0.25)',
+              zIndex: 1002,
+              backdropFilter: 'blur(2px)',
+              WebkitBackdropFilter: 'blur(2px)',
+            }}
+          />
+          {/* Panel propiamente dicho */}
+          <div
+            style={{
+              position: 'absolute',
+              top: `calc(${BANNER_HEIGHT}px + env(safe-area-inset-top, 0px) + 14px)`,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 1003,
+              width: 'min(92vw, 380px)',
+              background: '#fff',
+              borderRadius: '12px',
+              padding: '18px 20px 20px',
+              boxShadow: '0 6px 26px rgba(0, 0, 0, 0.22)',
+            }}
+          >
+            {/* Header del panel */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '14px',
+            }}>
+              <span style={{
+                fontSize: '1rem',
+                fontWeight: 700,
+                color: 'var(--color-stone, #1a2a3a)',
+              }}>
+                Radio de búsqueda
+              </span>
+              <button
+                type="button"
+                onClick={() => setMostrarPanelFiltros(false)}
+                aria-label="Cerrar panel de filtros"
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'inline-flex',
+                  color: 'var(--color-dust, #4a6b7c)',
+                  fontFamily: 'inherit',
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* Valor actual */}
+            <div style={{
+              fontSize: '1.6rem',
+              fontWeight: 700,
+              color: 'var(--color-primary, #2563eb)',
+              textAlign: 'center',
+              marginBottom: '6px',
+              lineHeight: 1.1,
+            }}>
+              {radioLocal} m
+            </div>
+            <div style={{
+              fontSize: '0.78rem',
+              color: 'var(--color-dust, #4a6b7c)',
+              textAlign: 'center',
+              marginBottom: '14px',
+            }}>
+              Distancia desde la escuela
+            </div>
+
+            {/* Slider */}
+            <input
+              type="range"
+              min={RADIO_MIN}
+              max={RADIO_MAX}
+              step={RADIO_STEP}
+              value={radioLocal}
+              onChange={e => setRadioLocal(Number(e.target.value))}
+              onPointerUp={() => {
+                if (radioLocal !== filtroRadio) {
+                  aplicarRadio(radioLocal)
+                  setMostrarPanelFiltros(false)
+                }
+              }}
+              onTouchEnd={() => {
+                if (radioLocal !== filtroRadio) {
+                  aplicarRadio(radioLocal)
+                  setMostrarPanelFiltros(false)
+                }
+              }}
+              onKeyUp={e => {
+                // Para accesibilidad: aplicar al soltar tecla
+                if (e.key === 'Enter' && radioLocal !== filtroRadio) {
+                  aplicarRadio(radioLocal)
+                  setMostrarPanelFiltros(false)
+                }
+              }}
+              style={{
+                width: '100%',
+                accentColor: 'var(--color-primary, #2563eb)',
+                cursor: 'pointer',
+              }}
+            />
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontSize: '0.72rem',
+              color: 'var(--color-dust, #4a6b7c)',
+              marginTop: '6px',
+            }}>
+              <span>{RADIO_MIN} m</span>
+              <span>{RADIO_MAX} m</span>
+            </div>
+
+            {/* Botón "Aplicar" (para teclado y como respaldo) */}
+            <button
+              type="button"
+              onClick={() => {
+                if (radioLocal !== filtroRadio) aplicarRadio(radioLocal)
+                setMostrarPanelFiltros(false)
+              }}
+              style={{
+                marginTop: '18px',
+                width: '100%',
+                padding: '10px 14px',
+                background: 'var(--color-primary, #2563eb)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '0.9rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              Aplicar
+            </button>
+          </div>
+        </>
       )}
 
       {/* Mapa — debajo del banner, ocupa el resto de la pantalla */}
